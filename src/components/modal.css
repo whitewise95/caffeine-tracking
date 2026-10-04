@@ -1,0 +1,28 @@
+.popup-dialog { color: var(--text-primary); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); width: min(360px, calc(100% - 40px - var(--safe-left) - var(--safe-right))); max-width: 100%; max-height: calc(100dvh - 40px - var(--safe-top) - var(--safe-bottom)); margin: auto; padding: 20px 24px 12px; overflow-y: auto; overscroll-behavior: contain; }
+.popup-dialog[open] { animation: popup-in var(--motion-fast) var(--ease); }
+.popup-dialog::backdrop { background: rgba(0,0,0,.72); }
+.popup-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.popup-eyebrow { color: var(--text-secondary); font-size: .6875rem; letter-spacing: .14em; font-weight: 600; }
+.popup-heading .icon-button { flex-shrink: 0; margin-right: -12px; }
+.popup-dialog h2 { font-size: 1.375rem; line-height: 1.45; font-weight: 650; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.popup-dialog h2:focus { outline: none; }
+.popup-description { color: var(--text-secondary); font-size: .875rem; line-height: 1.7; margin-top: 10px; overflow-wrap: anywhere; }
+.daily-check-in-form { margin-top: 24px; }
+.daily-check-in-choices { min-width: 0; }
+.daily-check-in-choices legend { color: var(--text-secondary); font-size: .8125rem; line-height: 1.6; padding: 0; margin-bottom: 12px; }
+.daily-check-in-options { display: grid; gap: 10px; }
+.daily-check-in-option { position: relative; min-height: 58px; padding: 14px 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-elevated); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background var(--motion-fast), border-color var(--motion-fast); }
+.daily-check-in-option input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; margin: 0; }
+.daily-check-in-option > svg:first-of-type { color: var(--text-secondary); flex-shrink: 0; }
+.daily-check-in-option > span { flex: 1; min-width: 0; font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere; }
+.daily-check-in-option.is-selected { border-color: var(--accent-pink); color: var(--accent-pink); box-shadow: var(--selected-glow); }
+.daily-check-in-option.is-selected > svg { color: var(--accent-pink); }
+.daily-check-in-option:has(input:focus-visible) { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.daily-check-in-option:has(input:disabled) { cursor: default; }
+.daily-check-in-option:not(:has(input:disabled)):active { background: var(--surface-pressed); }
+.daily-check-in-option .daily-check-in-mark { flex: 0 0 18px; width: 18px; height: 18px; }
+.daily-check-in-form .button-primary { width: 100%; margin-top: 24px; min-height: 50px; }
+.daily-check-in-dismiss { display: block; width: 100%; min-height: 48px; margin-top: 4px; padding: 12px; border: 0; background: transparent; color: var(--text-secondary); font-size: .8125rem; line-height: 1.5; }
+.daily-check-in-form .personal-error { margin-top: 16px; }
+@keyframes popup-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .popup-dialog[open] { animation: none; } }

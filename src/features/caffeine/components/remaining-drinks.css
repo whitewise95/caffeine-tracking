@@ -1,0 +1,16 @@
+.remaining-drinks { margin-top: 28px; min-width: 0; }
+.remaining-drinks > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.remaining-drinks h2 { font-size: .9375rem; font-weight: 600; }
+.remaining-drinks > header > span { color: var(--text-secondary); font-size: .75rem; }
+.remaining-drinks-list { padding: 0; margin: 0; list-style: none; }
+.remaining-drinks-list > li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 76px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+.remaining-drink-icon { width: 36px; height: 36px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text-secondary); }
+.remaining-drink-copy { min-width: 0; overflow-wrap: anywhere; }
+.remaining-drink-copy h3 { font-size: .875rem; font-weight: 500; line-height: 1.5; }
+.remaining-drink-copy time { display: block; margin-top: 4px; font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
+.remaining-drink-amount { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 4px; max-width: 120px; }
+.remaining-drink-amount strong { font-size: 1rem; font-weight: 550; font-variant-numeric: tabular-nums; }
+.remaining-drink-amount > span { color: var(--text-secondary); font-size: .75rem; }
+.remaining-drinks-note, .remaining-drinks-empty { font-size: .75rem; line-height: 1.7; color: var(--text-secondary); overflow-wrap: anywhere; }
+.remaining-drinks-note { margin-top: 12px; }
+.remaining-drinks-empty { padding: 20px 0; border-bottom: 1px solid var(--border); }

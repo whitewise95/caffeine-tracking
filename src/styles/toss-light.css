@@ -1,0 +1,29 @@
+/* Current Apps in Toss non-game review checklist requires a light mini-app theme.
+   OLED remains the default browser preview. ?theme=light previews the Toss palette. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface-elevated: #F0F2F5;
+  --surface-pressed: #E7EBF0;
+  --text-primary: #191F28;
+  --text-secondary: #5E6876;
+  --text-tertiary: #687382;
+  --border: rgba(25,31,40,.09);
+  --border-strong: rgba(25,31,40,.18);
+  --accent-pink: #A34365;
+  --accent-pink-strong: #7E3053;
+  --selected-glow: 0 0 12px rgba(163,67,101,.1);
+  --caffeine-blue: #277CBB;
+  --caffeine-cyan: #258994;
+  --danger: #AD3932;
+  --body-glass-start: #E1E7EE;
+  --body-glass-mid: #EFF3F7;
+  --body-glass-end: #D9E1EA;
+  --body-outline: #8495A477;
+  --body-grid: #6D839342;
+}
+[data-theme='light'] .bottom-nav { width: min(calc(100% - 32px), 448px); bottom: calc(12px + var(--safe-bottom)); padding: 10px 18px 14px; border: 1px solid var(--border); border-radius: 26px; background: rgba(255,255,255,.96); box-shadow: 0 6px 24px #1921300d; }
+[data-theme='light'] .button-primary:hover { background: #333D4A; }
+[data-theme='light'] .sheet-handle { background: #191F2840; }
+[data-theme='light'] .home-cta { bottom: calc(92px + var(--safe-bottom)); }
