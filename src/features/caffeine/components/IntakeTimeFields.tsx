@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { ArrowRight, Clock3 } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
 import type { IntakeTimeDraft } from './useIntakeTimeFields'
 import { localDateTimeInput, parseLocalDateTime } from './useIntakeTimeFields'
 import type { IntakeTimeTarget } from './IntakeTimePicker'
@@ -55,7 +55,6 @@ export function IntakeTimeFields({ draft, disabled, showInstantTime = false, onC
         <div className="intake-period-heading"><span>마신 시간</span>{duration > 0 && <span className="intake-duration" role="status" aria-label="마신 기간" aria-atomic="true">{durationText}</span>}</div>
         <div className="intake-time-range">
           <IntakeTimeCard onPickTime={() => onPickTime('start')} title="시작" timeLabel="마시기 시작한 시각" dateLabel="마시기 시작한 날짜" value={draft.start} max={draft.end && end ? draft.end : maxTime} disabled={disabled} hintId={`${id}-hint`} onChange={start => onChange({ ...draft, start })} />
-          <span className="intake-time-arrow" aria-hidden="true"><ArrowRight size={14} /></span>
           <IntakeTimeCard onPickTime={() => onPickTime('end')} title="종료" timeLabel="마신 마지막 시각" dateLabel="마신 마지막 날짜" value={draft.end} max={maxTime} disabled={disabled} hintId={`${id}-hint`} onChange={end => onChange({ ...draft, end })} />
         </div>
         <p className="intake-time-hint" id={`${id}-hint`}>이 시간 동안 일정하게 나눠 마신 것으로 추정해요.</p>

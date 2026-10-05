@@ -19,7 +19,7 @@ test('knowledge tab follows navigation, direct routes, reload and back', async (
   await expect(page).toHaveURL(/\/knowledge$/);
   await expect(page.getByRole('heading', { name: '지식', exact: true })).toBeVisible();
   await expect(nav.getByRole('button', { name: '지식', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(page).toHaveTitle('카페인 지식 · 카페인');
+  await expect(page).toHaveTitle('카페인 지식 · 지금 카페인');
   await page.goBack();
   await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible();
   await page.goForward();
@@ -49,7 +49,7 @@ test('FAQ answers and sources expand by touch or keyboard and retain research li
   await expect(faqs.first()).toContainText('4시간 30분');
   await expect(faqs.first()).not.toContainText('5시간');
   await expect(faqs.first()).toContainText('2~8시간');
-  await expect(faqs.first()).toContainText('카페인 트래커에서는');
+  await expect(faqs.first()).toContainText('지금 카페인에서는');
   await expect(faqs.first().getByRole('link', { name: /EFSA/ })).toHaveAttribute('href', 'https://www.efsa.europa.eu/sites/default/files/corporate_publications/files/efsaexplainscaffeine150527.pdf');
   const summary = faqs.first().locator('summary');
   await summary.focus();
@@ -104,6 +104,33 @@ test('bundled FAQ remains readable offline without fetching content', async ({ p
   expect(requests).toEqual([]);
 });
 
+test('opening an answer reveals its question and content without moving on close', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/knowledge');
+  const faq = page.locator('.knowledge-faq').first();
+  const summary = faq.locator('summary');
+  await summary.scrollIntoViewIfNeeded();
+  await summary.tap();
+  await expect(faq).toHaveAttribute('open', '');
+  await expect.poll(async () => (await summary.boundingBox())!.y).toBeLessThanOrEqual(26);
+  await expect(faq.locator('.knowledge-answer > p').first()).toBeInViewport();
+  const openScrollY = await page.evaluate(() => window.scrollY);
+  await summary.tap();
+  await expect(faq).not.toHaveAttribute('open');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(openScrollY);
+});
+
+test('accordion backgrounds stay unchanged on hover and touch', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/knowledge');
+  const summary = page.locator('.knowledge-faq summary').first();
+  const background = await summary.evaluate(element => getComputedStyle(element).backgroundColor);
+  await summary.hover();
+  await expect(summary).toHaveCSS('background-color', background);
+  await summary.tap();
+  await expect(summary).toHaveCSS('background-color', background);
+});
+
 for (const theme of ['dark', 'light']) {
   test(`knowledge FAQ is readable with enlarged text and reduced motion in ${theme}`, async ({ page }, testInfo) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -128,5 +155,32 @@ for (const theme of ['dark', 'light']) {
     const navBounds = await page.getByRole('navigation').boundingBox();
     expect(sourceBounds!.y + sourceBounds!.height).toBeLessThanOrEqual(navBounds!.y);
     await page.screenshot({ path: `test-results/${testInfo.project.name}-knowledge-enlarged-${theme}.png`, fullPage: true });
+  });
+
+  test(`last FAQ keeps space above navigation with a device inset in ${theme}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`/knowledge${theme === 'light' ? '?theme=light' : ''}`);
+    const lastFaq = page.locator('.knowledge-faq').last();
+    const nav = page.getByRole('navigation');
+    await expect(lastFaq).toBeVisible();
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--safe-bottom', '34px');
+    });
+    // Apply the inset before moving to the end, as it would exist on device.
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+      resolve();
+    })));
+    const lastBounds = await lastFaq.boundingBox();
+    const navBounds = await nav.boundingBox();
+    expect(navBounds!.y - lastBounds!.y - lastBounds!.height).toBeGreaterThanOrEqual(32);
+    await lastFaq.locator('summary').tap();
+    await expect(lastFaq).toHaveAttribute('open', '');
+    await expect(lastFaq.getByRole('link').last()).toBeInViewport();
+    await expect.poll(async () => {
+      const expandedBounds = await lastFaq.boundingBox();
+      const expandedNavBounds = await nav.boundingBox();
+      return expandedNavBounds!.y - expandedBounds!.y - expandedBounds!.height;
+    }).toBeGreaterThanOrEqual(32);
   });
 }

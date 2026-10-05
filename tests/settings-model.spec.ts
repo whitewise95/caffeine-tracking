@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 for (const theme of ['', '?theme=light']) {
   test(`settings explains half-life with research sources and legible absorption formula at enlarged text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await page.goto(`/settings${theme}`);
-    await expect(page.getByTestId('half-life-description')).toHaveText('카페인 트래커에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+    await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
     await expect(page.getByRole('heading', { name: '카페인 반감기' })).toBeVisible();
     await expect(page.getByText('몸에 남아 있는 카페인이 절반으로 줄어드는 데 걸리는 시간이에요.')).toBeVisible();
     await expect(page.getByText(/EFSA.*평균 약 4시간.*2~8시간/)).toBeVisible();

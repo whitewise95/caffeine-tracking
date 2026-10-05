@@ -40,8 +40,12 @@ export interface CaffeineEntry extends CaffeineIntakeTiming {
   sourceType?: Drink['sourceType']
 }
 
+export type AppTheme = 'light' | 'dark'
+
 export interface CaffeineSettings {
   halfLifeHours: number
+  /** Absent for existing users until they choose an appearance on this device. */
+  theme?: AppTheme
 }
 
 export interface CaffeineState {

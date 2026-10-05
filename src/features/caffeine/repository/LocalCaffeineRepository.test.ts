@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from '../model/caffeine'
-import type { CaffeineState } from '../model/caffeine.types'
+import type { AppTheme, CaffeineState } from '../model/caffeine.types'
 import { LocalCaffeineRepository, CAFFEINE_STORAGE_KEY } from './LocalCaffeineRepository'
 import type { CaffeineStorage } from './CaffeineRepository'
 import { addCustomDrink, availableDrinks, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, renameDrinkCategory, reorderDrinkCategories } from '../model/drinkCategories'
@@ -21,6 +21,79 @@ function populatedState(): CaffeineState {
 }
 
 describe('LocalCaffeineRepository', () => {
+  it.each<AppTheme>(['light', 'dark'])('persists the %s theme with existing records, photos and category changes', async theme => {
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    const original = populatedState()
+    original.entries[0].startedAt = '2026-10-02T04:00:00.000Z'
+    original.customDrinks[0].photoDataUrl = 'data:image/jpeg;base64,/9j/2Q=='
+    const state = renameDrinkCategory(deleteDrinkFromCatalog(original, 'earl-grey'), 'coffee', '내 커피')
+    state.settings.theme = theme
+
+    await repository.save(state)
+
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(state)
+  })
+
+  it.each([1, 2, 3, 4])('preserves a valid theme when migrating version %s records', async version => {
+    const storage = new MemoryStorage()
+    const original = populatedState()
+    storage.setItem(CAFFEINE_STORAGE_KEY, JSON.stringify({ ...original, version, settings: { halfLifeHours: 5, theme: 'dark' } }))
+    const loaded = await new LocalCaffeineRepository(storage).load()
+
+    expect(loaded.entries).toEqual(original.entries)
+    expect(loaded.customDrinks).toEqual(original.customDrinks)
+    expect(loaded.settings).toEqual({ halfLifeHours: 4.5, theme: 'dark' })
+  })
+
+  it.each(['sepia', '', null, 1, { selected: 'dark' }])('ignores an invalid stored theme without blocking records or rewriting storage: %j', async theme => {
+    const storage = new MemoryStorage()
+    const original = populatedState()
+    const raw = JSON.stringify({ ...original, settings: { ...original.settings, theme } })
+    storage.setItem(CAFFEINE_STORAGE_KEY, raw)
+
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(original)
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+  })
+
+  it.each(['sepia', '', null, 1, { selected: 'dark' }])('refuses an invalid theme on new saves without replacing the previous preference: %j', async theme => {
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    const original = populatedState()
+    original.settings.theme = 'light'
+    await repository.save(original)
+    const invalid = { ...original, settings: { ...original.settings, theme } } as unknown as CaffeineState
+
+    await expect(repository.save(invalid)).rejects.toThrow()
+    expect(await repository.load()).toEqual(original)
+  })
+
+  it('retains the previous theme and all records on write failure, then allows a retry', async () => {
+    const memory = new MemoryStorage()
+    let fails = false
+    const storage: CaffeineStorage = {
+      getItem: key => memory.getItem(key),
+      setItem: (key, value) => {
+        if (fails) throw new Error('storage full')
+        memory.setItem(key, value)
+      },
+      removeItem: key => memory.removeItem(key),
+    }
+    const repository = new LocalCaffeineRepository(storage)
+    const original = populatedState()
+    original.settings.theme = 'light'
+    await repository.save(original)
+    const changed: CaffeineState = { ...original, settings: { ...original.settings, theme: 'dark' } }
+    fails = true
+
+    await expect(repository.save(changed)).rejects.toThrow()
+    expect(await repository.load()).toEqual(original)
+
+    fails = false
+    await repository.save(changed)
+    expect(await repository.load()).toEqual(changed)
+  })
+
   it('keeps default drink deletions across save and reload and resets them with app data', async () => {
     const storage = new MemoryStorage()
     const repository = new LocalCaffeineRepository(storage)

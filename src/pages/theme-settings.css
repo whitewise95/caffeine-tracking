@@ -1,0 +1,6 @@
+.theme-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.theme-option { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 56px; padding: 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-elevated); color: var(--text-secondary); }
+.theme-option span { overflow-wrap: anywhere; }
+.theme-option[aria-pressed='true'] { border-color: var(--accent-pink); color: var(--accent-pink); box-shadow: var(--selected-glow); }
+.theme-retry { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; color: var(--text-secondary); font-size: var(--font-sm); }
+.theme-retry .text-button { min-height: 48px; }

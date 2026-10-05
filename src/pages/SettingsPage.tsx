@@ -2,17 +2,19 @@ import { Clock3, Info, RotateCcw, ChevronRight, Smartphone, ListOrdered } from '
 import { DEFAULT_CAFFEINE_HALF_LIFE_HOURS } from '../features/caffeine/model/caffeine';
 import { CaffeineModelFormula } from '../features/caffeine/components/CaffeineModelFormula';
 import { formatHoursMinutes } from '../features/caffeine/format';
+import { ThemeSettings, type ThemeSettingsProps } from './ThemeSettings';
 import './secondary.css';
 
-export function SettingsPage({ onReset, onManageCategories }: { onReset: () => void; onManageCategories: () => void }) {
+export function SettingsPage({ onReset, onManageCategories, themeSettings }: { onReset: () => void; onManageCategories: () => void; themeSettings?: ThemeSettingsProps }) {
   const halfLifeHours = DEFAULT_CAFFEINE_HALF_LIFE_HOURS;
   return <main className="page" id="main-content">
     <header className="page-header"><div><h1 className="page-title">설정</h1><p className="page-subtitle">나의 기록 기준을 설정해요.</p></div></header>
+    {themeSettings && <ThemeSettings {...themeSettings} />}
     <button className="settings-section settings-category-entry" aria-label="카테고리 관리" onClick={onManageCategories}><ListOrdered size={20} aria-hidden="true" /><span>카테고리 관리<small>음료를 나누고 순서를 정해요</small></span><ChevronRight size={20} aria-hidden="true" /></button>
     <section className="settings-section" aria-labelledby="half-life-title"><div className="section-heading"><Clock3 size={18} aria-hidden="true" /><h2 id="half-life-title">카페인 반감기</h2></div>
       <p className="settings-description">몸에 남아 있는 카페인이 절반으로 줄어드는 데 걸리는 시간이에요.</p>
       <p className="settings-description">유럽식품안전청(EFSA)은 일반 성인의 반감기를 평균 약 4시간, 개인차에 따라 약 2~8시간으로 설명해요.</p>
-      <p className="settings-description" data-testid="half-life-description">카페인 트래커에서는 반감기를 {formatHoursMinutes(halfLifeHours)}으로 두고 잔존량을 추정해요.</p>
+      <p className="settings-description" data-testid="half-life-description">지금 카페인에서는 반감기를 {formatHoursMinutes(halfLifeHours)}으로 두고 잔존량을 추정해요.</p>
       <details className="half-life-sources">
         <summary>연구와 출처 보기</summary>
         <p>성인 남성 59명을 분석한 연구에서는 비흡연자의 평균 반감기가 약 4.3시간으로 보고됐어요. 모든 사람의 반감기가 같은 것은 아니에요.</p>
@@ -29,6 +31,6 @@ export function SettingsPage({ onReset, onManageCategories }: { onReset: () => v
       <p className="settings-description">기기를 변경하거나 토스 앱·기기 데이터를 삭제하면 기록이 사라질 수 있어요. 삭제된 데이터는 복구할 수 없어요.</p>
       <button className="reset-row" onClick={onReset}><RotateCcw size={18} aria-hidden="true" /><span>모든 데이터 초기화</span><ChevronRight size={18} aria-hidden="true" /></button>
     </section>
-    <footer className="app-info"><span className="brand">카페인 트래커</span><span>나를 알아가는 한 잔의 기록</span></footer>
+    <footer className="app-info"><span className="brand">지금 카페인</span><span>나를 알아가는 한 잔의 기록</span></footer>
   </main>;
 }

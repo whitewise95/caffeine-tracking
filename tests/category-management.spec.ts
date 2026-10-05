@@ -95,6 +95,8 @@ test('category management opens from settings without leaving the current page',
   await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '카테고리 관리', exact: true })).toBeVisible();
   expect(page.url()).toBe(settingsUrl);
+  await expect(page.locator('.sheet-header .sheet-back')).toHaveCount(0);
+  await expect(page.getByRole('dialog').getByRole('button', { name: '닫기', exact: true })).toBeVisible();
   await page.screenshot({ path: `test-results/${testInfo.project.name}-category-manager.png`, animations: 'disabled' });
   await page.goBack();
   await expect(page.getByRole('dialog')).not.toBeVisible();

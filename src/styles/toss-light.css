@@ -1,5 +1,5 @@
-/* Current Apps in Toss non-game review checklist requires a light mini-app theme.
-   OLED remains the default browser preview. ?theme=light previews the Toss palette. */
+/* Apps in Toss requires a light non-game theme. Browser users can choose a
+   theme in Settings; ?theme=light previews this palette before a choice is saved. */
 :root[data-theme='light'] {
   color-scheme: light;
   --bg: #F7F8FA;
@@ -14,8 +14,7 @@
   --accent-pink: #A34365;
   --accent-pink-strong: #7E3053;
   --selected-glow: 0 0 12px rgba(163,67,101,.1);
-  --caffeine-blue: #277CBB;
-  --caffeine-cyan: #258994;
+  --caffeine-fill-bottom: var(--accent-pink-strong);
   --danger: #AD3932;
   --body-glass-start: #E1E7EE;
   --body-glass-mid: #EFF3F7;

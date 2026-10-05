@@ -14,7 +14,7 @@
 .intake-time-inputs { min-width: 0; }
 .intake-period-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; color: var(--text-secondary); font-size: .75rem; }
 .intake-duration { display: inline-flex; gap: 4px; padding: 4px 9px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--text-primary); background: var(--surface-elevated); font-variant-numeric: tabular-nums; }
-.intake-time-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; position: relative; }
+.intake-time-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .intake-time-card { min-width: 0; padding: 12px 10px 4px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--surface-elevated); transition: border-color var(--motion-fast); }
 .intake-time-card:focus-within { border-color: var(--accent-pink); }
 .intake-time-label { display: block; padding-inline: 4px; color: var(--text-secondary); font-size: .75rem; }
@@ -25,12 +25,10 @@
 .intake-date-control input::-webkit-calendar-picker-indicator { width: 12px; padding: 2px; opacity: .6; cursor: pointer; }
 .intake-time-card input::-webkit-date-and-time-value { text-align: left; min-width: 0; }
 .intake-time-card:has(input:disabled) { opacity: .5; }
-.intake-time-arrow { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--text-secondary); background: var(--surface); pointer-events: none; }
 .intake-time-hint { margin-top: 10px; color: var(--text-secondary); font-size: .75rem; line-height: 1.7; }
 .intake-instant-field input { color-scheme: dark; }
 .entry-intake-period { display: block; margin-top: 6px; color: var(--text-secondary); font-size: .75rem; line-height: 1.6; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 [data-theme='light'] .intake-time-inputs input { color-scheme: light; }
 @container (width < 20rem) {
   .intake-time-range { grid-template-columns: 1fr; gap: 10px; }
-  .intake-time-arrow { display: none; }
 }

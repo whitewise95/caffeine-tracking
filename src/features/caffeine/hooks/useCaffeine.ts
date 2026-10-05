@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createInitialState, DEFAULT_CAFFEINE_HALF_LIFE_HOURS, MAX_CAFFEINE_MG } from '../model/caffeine';
-import type { CaffeineEntry, CaffeineIntakeTiming, CaffeineState, CustomDrinkDraft, Drink, DrinkCategoryId } from '../model/caffeine.types';
+import type { AppTheme, CaffeineEntry, CaffeineIntakeTiming, CaffeineState, CustomDrinkDraft, Drink, DrinkCategoryId } from '../model/caffeine.types';
 import { addCustomDrink, availableDrinks, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, renameDrinkCategory, reorderDrinkCategories } from '../model/drinkCategories';
 import { isValidIntakeTiming } from '../model/intakeTiming';
 import type { CaffeineRepository } from '../repository/CaffeineRepository';
@@ -89,6 +89,7 @@ export function useCaffeine(repository: CaffeineRepository) {
   async function renameCategory(id: DrinkCategoryId, name: string): Promise<boolean> { return commit(previous => renameDrinkCategory(previous, id, name)); }
   async function deleteCategory(id: DrinkCategoryId, destinationId?: DrinkCategoryId): Promise<boolean> { return commit(previous => deleteDrinkCategory(previous, id, destinationId)); }
   async function reorderCategories(ids: DrinkCategoryId[]): Promise<boolean> { return commit(previous => reorderDrinkCategories(previous, ids)); }
+  async function setTheme(theme: AppTheme): Promise<boolean> { return commit(previous => ({ ...previous, settings: { ...previous.settings, theme } })); }
   async function reset() {
     if (locked.current) return false;
     locked.current = true;
@@ -98,5 +99,5 @@ export function useCaffeine(repository: CaffeineRepository) {
     catch (cause) { setError(cause instanceof Error ? cause.message : '초기화하지 못했어요. 다시 시도해 주세요.'); return false; }
     finally { locked.current = false; setBusy(false); }
   }
-  return { state, halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS, now, loading, loaded, busy, error, clearError: () => setError(''), reload, categories: drinkCategories(state), drinks: availableDrinks(state), record, createDrink, deleteDrink, createCategory, renameCategory, deleteCategory, reorderCategories, updateEntry, deleteEntry, reset };
+  return { state, halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS, now, loading, loaded, busy, error, clearError: () => setError(''), reload, categories: drinkCategories(state), drinks: availableDrinks(state), record, createDrink, deleteDrink, createCategory, renameCategory, deleteCategory, reorderCategories, setTheme, updateEntry, deleteEntry, reset };
 }

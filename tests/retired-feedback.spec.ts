@@ -17,7 +17,7 @@ test('old feedback cannot change the fixed calculation or open a survey, while d
   await expect(page.getByTestId('remaining-mg')).toHaveText(String(Math.round(remainingCaffeine([entry], now))));
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
-  await expect(page.getByTestId('half-life-description')).toHaveText('카페인 트래커에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
   await expect(page.getByRole('heading', { name: '체감 기록' })).toHaveCount(0);
   await expect(page.getByRole('switch')).toHaveCount(0);
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();

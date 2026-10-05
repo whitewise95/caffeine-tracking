@@ -8,7 +8,7 @@ import './remaining-drinks.css';
 export function RemainingDrinks({ entries, drinks, now, halfLifeHours }: { drinks: readonly Drink[]; entries: CaffeineEntry[]; now: Date; halfLifeHours: number }) {
   const remaining = remainingIntakes(entries, now, halfLifeHours);
   return <section className="remaining-drinks" aria-labelledby="remaining-drinks-title">
-    <header><h2 id="remaining-drinks-title">아직 남아 있는 카페인</h2><span>흡수된 양의 추정치</span></header>
+    <header><h2 id="remaining-drinks-title">아직 남아 있는 카페인</h2></header>
     {remaining.length > 0 ? <ul className="remaining-drinks-list">
       {remaining.map(({ entry, remainingMg }) => {
         const absorptionMinutes = absorptionMinutesRemaining(entry, now, halfLifeHours);
@@ -22,13 +22,20 @@ export function RemainingDrinks({ entries, drinks, now, halfLifeHours }: { drink
         return <li key={entry.id}>
           <span className="remaining-drink-icon"><DrinkIcon photoDataUrl={drinks.find(drink => drink.id === entry.drinkId)?.photoDataUrl} type={entry.icon} size={18} /></span>
           <div className="remaining-drink-copy"><h3>{entry.drinkName}</h3><time dateTime={entry.consumedAt}>{timeLabel}</time></div>
-          <div className="remaining-drink-status">
-            {remainingMg >= MIN_VISIBLE_REMAINING_MG && <p className="remaining-drink-amount"><strong>{remainingMg.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}</strong><span>mg 남음</span></p>}
-            {absorptionMinutes !== null && <span className="remaining-drink-absorbing"><span>흡수 중</span><strong className="remaining-absorption-time">약 {formatHoursMinutes(absorptionMinutes / 60)} 남음</strong></span>}
-          </div>
+          <dl className="remaining-drink-status">
+            <div className="remaining-drink-estimate">
+              <dt>추정 잔존량</dt>
+              <dd className="remaining-drink-amount"><strong>{remainingMg.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}</strong><span>mg</span></dd>
+            </div>
+            {absorptionMinutes !== null && <div className="remaining-drink-absorbing">
+              <dt>흡수 중</dt>
+              <dd className="remaining-absorption-time">약 {formatHoursMinutes(absorptionMinutes / 60)} 더</dd>
+            </div>}
+          </dl>
         </li>;
       })}
     </ul> : <p className="remaining-drinks-empty">현재 표시할 음료가 없어요.</p>}
-    <p className="remaining-drinks-note">흡수 중이거나 추정 잔존량이 {MIN_VISIBLE_REMAINING_MG}mg 이상인 음료예요. 더 적은 잔존량도 전체 추정치에 포함돼요.</p>
+    {remaining.some(({ absorbingMg }) => absorbingMg >= MIN_VISIBLE_REMAINING_MG) && <p className="remaining-absorption-note">남은 시간은 흡수가 마무리될 때까지의 추정치예요. 카페인이 몸에서 사라지는 시간과는 달라요.</p>}
+    <p className="remaining-drinks-note">잔존량은 흡수된 카페인 중 몸에 남아 있을 것으로 추정되는 양이에요. 흡수 중이거나 추정 잔존량이 {MIN_VISIBLE_REMAINING_MG}mg 이상인 음료를 표시하며, 더 적은 잔존량도 전체 추정치에 포함돼요.</p>
   </section>;
 }

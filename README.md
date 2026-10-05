@@ -1,4 +1,8 @@
-# 카페인 · 나의 카페인 기록
+# 지금 카페인 · 나의 카페인 기록
+
+영문 앱 이름은 `Nowcaffeine`, 기본 Apps in Toss 식별자(`appName`)는 `now-caffeine`입니다. 콘솔에 등록된 식별자를 그대로 유지합니다.
+
+공식 로고는 홈의 앱 이름 옆에 있는 흰색 커피잔(Lucide Coffee)입니다. 제출용 원본은 `public/app-logo.svg`, 브라우저 아이콘은 `public/favicon.svg`이며, Lucide 라이선스 고지는 `public/logo-LICENSE.txt`에 포함돼 있습니다.
 
 Apps in Toss WebView용 React + TypeScript + Vite MVP입니다. 섭취한 카페인과 경과 시간으로 **현재 잔존 카페인의 추정치**를 계산합니다. 의료기기나 측정 서비스가 아닙니다.
 
@@ -13,7 +17,7 @@ npm install
 npm run dev
 ```
 
-기본 주소는 `http://localhost:5173`입니다. `/`, `/history`, `/knowledge`, `/settings` 경로를 지원합니다. 로컬 미리보기는 요청한 OLED 다크 디자인이며 `/?theme=light`로 Toss용 라이트 테마를 확인할 수 있습니다.
+기본 주소는 `http://localhost:5173`입니다. `/`, `/history`, `/knowledge`, `/settings` 경로를 지원합니다. 브라우저에서는 설정의 ‘화면 테마’에서 밝게·어둡게를 선택할 수 있으며, 선택은 이 기기에 저장됩니다. 처음에는 OLED 다크 테마를 사용하고, 저장된 선택이 없을 때 `/?theme=light`로 라이트 테마를 미리 볼 수 있습니다.
 
 하단 메뉴는 홈·기록·지식·설정입니다. 지식 탭의 FAQ는 반감기, 흡수, 여러 잔과 천천히 마시기, 개인차, 수면, 디카페인, 음료별 함량을 설명합니다. 질문을 누르면 답변과 논문·공식 자료 링크가 펼쳐집니다. 답변은 앱에 포함되어 별도 네트워크 요청 없이 읽을 수 있고, 원문 링크를 여는 데는 인터넷 연결이 필요합니다. 연구 결과와 앱의 계산 가정을 구분하며, 카페인량은 추정치임을 안내합니다.
 
@@ -23,7 +27,7 @@ npm run lint
 npm test           # 계산·저장소·Toss adapter 단위 테스트
 npm run test:e2e    # 375px / 390px 실제 Chrome 사용자 흐름
 npm run build      # TypeScript 검사 + dist/ 생성
-npm run build:toss # 위 빌드 + caffeine-tracking.ait 생성
+npm run build:toss # 위 빌드 + now-caffeine.ait 생성
 ```
 
 브라우저 테스트는 기본적으로 설치된 Chrome을 사용합니다. Chrome 대신 Playwright Chromium을 쓰려면 `npx playwright install chromium` 후 `PLAYWRIGHT_BROWSER=chromium npm run test:e2e`를 실행합니다. 브라우저 테스트는 임시 테스트 저장소만 사용하며 미리보기의 사용자 기록을 변경하지 않습니다.
@@ -100,10 +104,10 @@ H = 기본 4.5시간 = 4시간 30분 (고정)
 - SDK 3.x `apps-in-toss.config.ts`, `webView`, `webBundleDir`, `ait build` 적용.
 - `SafeArea.get/subscribe`, `graniteEvent`의 `backEvent`, `Screen.setIosSwipeBack`, `Storage` 연결.
 - 추가 모달의 입력 화면에서는 뒤로가기로 음료 목록에 돌아오고, 목록에서는 모달이 닫힙니다. 시작·종료 시간을 누르면 같은 모달 안의 휠 선택 화면으로 전환합니다. 오전·오후 / 시 / 분은 상하 스와이프, 숫자 탭, 방향키로 선택하며 완료할 때만 반영합니다. 시간 선택 중 뒤로가기·취소·Escape는 원래 시간을 유지하고 기록 화면으로 돌아옵니다. 그 외 화면에서 닫기·Escape·저장 완료는 모달 전체를 닫습니다. 홈에서는 호스트의 기본 종료 동작을 사용합니다. 지연 저장이 끝나더라도 이미 돌아간 화면에서 추가 뒤로가기가 발생하지 않도록 방어합니다.
-- 비게임 앱 공식 체크리스트는 **라이트 모드**와 floating 하단 탭을 요구합니다. 따라서 Toss 런타임은 라이트 테마를 사용하고, 일반 웹 미리보기는 요청한 OLED 디자인을 유지합니다.
+- 비게임 앱 공식 체크리스트는 **라이트 모드**와 floating 하단 탭을 요구합니다. 따라서 Toss 런타임은 라이트 테마를 유지하며 테마 선택을 제공하지 않습니다. 브라우저에서만 밝게·어둡게를 선택하고 저장할 수 있습니다.
 - SDK 3.x는 과거 별도 Sandbox 앱 대신 **AIT Devtools와 실제 토스 앱 QR 테스트**를 사용합니다. Devtools는 모의 환경이며 실제 기기 확인을 대신하지 않습니다.
 
-콘솔에서 등록한 appName을 사용해 빌드하세요. 현재 `caffeine-tracking`은 개발용 기본값이며 실제 콘솔 등록을 완료했다는 의미가 아닙니다.
+콘솔에서 등록한 appName을 사용해 빌드하세요. 현재 기본값은 사용자가 확인한 콘솔 식별자인 `now-caffeine`이며 대소문자와 하이픈까지 일치해야 합니다. 콘솔의 영문 앱 이름은 `Nowcaffeine`, 한글 앱 이름은 `지금 카페인`입니다. 등록된 appName은 수정할 수 없으므로, 다른 콘솔 식별자를 사용한다면 아래 환경변수로 맞춰 빌드하세요.
 
 ```bash
 TOSS_APP_NAME=실제등록한appName npm run build:toss

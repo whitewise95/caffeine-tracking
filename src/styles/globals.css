@@ -1,6 +1,8 @@
 @import './tokens.css';
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; scrollbar-width: none; }
+/* Hide indicators without disabling touch, wheel or keyboard scrolling. */
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
 html { background: var(--bg); -webkit-tap-highlight-color: transparent; }
 body { margin: 0; color: var(--text-primary); font-family: var(--font-family); font-size: var(--font-md); line-height: 1.5; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; }
@@ -11,6 +13,8 @@ button { color: inherit; }
 a { color: inherit; }
 button, input, select { outline-offset: 4px; }
 :focus-visible { outline: 2px solid var(--text-primary); }
+/* Route/sheet headings receive announcement focus, but are not input controls. */
+.page-title[tabindex='-1']:focus, .sheet-header h2[tabindex='-1']:focus { outline: none; }
 h1,h2,h3,p { margin: 0; }
 svg { flex-shrink: 0; }
 button { transition: background var(--motion-fast), transform var(--motion-fast), border-color var(--motion-fast); }
@@ -22,7 +26,7 @@ input[type='range'] { padding: 0; accent-color: var(--text-primary); border: 0; 
 input[type='number'] { font-variant-numeric: tabular-nums; }
 fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
 .app-shell { max-width: 480px; min-height: 100dvh; margin: 0 auto; position: relative; padding-top: var(--safe-top); }
-.page { padding: 28px 24px 126px; }
+.page { padding: 28px 24px calc(8rem + var(--safe-bottom)); }
 .page { padding-left: max(24px, var(--safe-left)); padding-right: max(24px, var(--safe-right)); }
 .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
 .brand { display: flex; gap: 8px; align-items: center; font-weight: 750; font-size: 1.188rem; letter-spacing: -.8px; }

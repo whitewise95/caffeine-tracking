@@ -1,6 +1,6 @@
 import { isDrinkPhotoDataUrl } from '../model/drinkPhoto'
 import { createInitialState, DEFAULT_CAFFEINE_HALF_LIFE_HOURS, MAX_CAFFEINE_MG } from '../model/caffeine'
-import type { CaffeineEntry, CaffeineState, Drink, DrinkCategory } from '../model/caffeine.types'
+import type { AppTheme, CaffeineEntry, CaffeineState, Drink, DrinkCategory } from '../model/caffeine.types'
 import { categoryNameKey, drinkCategories, isValidCategoryName } from '../model/drinkCategories'
 import type { CaffeineRepository, CaffeineStorage } from './CaffeineRepository'
 import { CATEGORIES, DEFAULT_DRINKS } from '../data/defaultDrinks'
@@ -19,6 +19,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
+}
+
+function isAppTheme(value: unknown): value is AppTheme {
+  return value === 'light' || value === 'dark'
 }
 
 function isCaffeineMg(value: unknown): value is number {
@@ -77,7 +81,12 @@ function isCategory(value: unknown): value is DrinkCategory {
     && typeof value.name === 'string' && isValidCategoryName(value.name))
 }
 
-type StoredState = Omit<CaffeineState, 'version' | 'customCategories'> & { version: 1 | 2 | 3 | 4; customCategories?: DrinkCategory[]; personalization?: unknown }
+type StoredState = Omit<CaffeineState, 'version' | 'customCategories' | 'settings'> & {
+  version: 1 | 2 | 3 | 4
+  customCategories?: DrinkCategory[]
+  settings: Omit<CaffeineState['settings'], 'theme'> & { theme?: unknown }
+  personalization?: unknown
+}
 
 function assertState(value: unknown, allowStoredMigrations = false): asserts value is StoredState {
   if (!isObject(value)
@@ -96,6 +105,7 @@ function assertState(value: unknown, allowStoredMigrations = false): asserts val
     || typeof value.settings.halfLifeHours !== 'number'
     || !Number.isFinite(value.settings.halfLifeHours)
     || value.settings.halfLifeHours <= 0
+    || (!allowStoredMigrations && value.settings.theme !== undefined && !isAppTheme(value.settings.theme))
     || (value.version !== 1
       && value.settings.halfLifeHours !== DEFAULT_CAFFEINE_HALF_LIFE_HOURS
       && !(allowStoredMigrations && value.settings.halfLifeHours === PREVIOUS_FIXED_HALF_LIFE_HOURS))
@@ -178,7 +188,10 @@ export class LocalCaffeineRepository implements CaffeineRepository {
       ...(parsed.categoryCatalog !== undefined ? { categoryCatalog: parsed.categoryCatalog } : {}),
       ...(parsed.defaultDrinkCategoryOverrides !== undefined ? { defaultDrinkCategoryOverrides: parsed.defaultDrinkCategoryOverrides } : {}),
       ...(parsed.deletedDefaultDrinkIds !== undefined ? { deletedDefaultDrinkIds: parsed.deletedDefaultDrinkIds } : {}),
-      settings: { halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS },
+      settings: {
+        halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS,
+        ...(isAppTheme(parsed.settings.theme) ? { theme: parsed.settings.theme } : {}),
+      },
       ...(parsed.version === 1 ? { legacyHalfLifeHours: parsed.settings.halfLifeHours } : parsed.legacyHalfLifeHours !== undefined ? { legacyHalfLifeHours: parsed.legacyHalfLifeHours } : {}),
       ...(parsed.legacyPersonalization !== undefined ? { legacyPersonalization: parsed.legacyPersonalization } : parsed.personalization !== undefined ? { legacyPersonalization: parsed.personalization } : {}),
     }

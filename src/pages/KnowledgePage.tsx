@@ -1,14 +1,36 @@
 import { ChevronDown, ArrowUpRight } from 'lucide-react';
+import { useEffect, useRef, type SyntheticEvent } from 'react';
 import { KNOWLEDGE_FAQ } from '../features/caffeine/data/knowledgeFaq';
 import './knowledge.css';
 
 export function KnowledgePage() {
+  const scrollFrame = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+  }, []);
+
+  function revealAnswer(event: SyntheticEvent<HTMLDetailsElement>) {
+    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    const details = event.currentTarget;
+    if (!details.open) return;
+
+    scrollFrame.current = requestAnimationFrame(() => {
+      scrollFrame.current = null;
+      if (!details.isConnected || !details.open) return;
+      details.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+    });
+  }
+
   return <main className="page knowledge-page" id="main-content">
     <header className="page-header">
       <div><h1 className="page-title">지식</h1><p className="page-subtitle">카페인에 대해 궁금했던 것들.</p></div>
     </header>
     <section className="knowledge-list" aria-label="카페인에 관한 자주 묻는 질문">
-      {KNOWLEDGE_FAQ.map(faq => <details className="knowledge-faq" key={faq.id}>
+      {KNOWLEDGE_FAQ.map(faq => <details className="knowledge-faq" key={faq.id} onToggle={revealAnswer}>
         <summary><span>{faq.question}</span><ChevronDown className="knowledge-chevron" size={18} strokeWidth={1.7} aria-hidden="true" /></summary>
         <div className="knowledge-answer">
           {faq.answer.map(paragraph => <p key={paragraph}>{paragraph}</p>)}

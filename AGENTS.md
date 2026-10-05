@@ -113,7 +113,7 @@ python3 .agents/skills/ui-ux-pro-max/scripts/search.py \
 "dark mobile oled smoked glass ambient glow pill chip health tracker" \
 --design-system \
 -f markdown \
--p "Caffeine Tracker"
+-p "지금 카페인"
 ```
 
 필요하면 아래 도메인도 검색한다.

@@ -14,7 +14,7 @@ Verified config structure:
 import { defineConfig } from '@apps-in-toss/web-framework/config'
 
 export default defineConfig({
-  appName: 'caffeine-tracking', // Must match the registered console appName.
+  appName: 'now-caffeine', // Must match the registered console appName exactly.
   brand: { primaryColor: '#20252D' },
   permissions: [],
   navigationBar: {
@@ -35,6 +35,8 @@ export default defineConfig({
 ```
 
 `brand.displayName`, `brand.icon`, the `web` block, `webViewProps.type`, and `outdir` belong to the older configuration. SDK 3.x keeps only `brand.primaryColor`, uses `webView` and `webBundleDir`, and runs the web bundler directly from package scripts. The native brand name/logo come from the registered app. [Migration guide](https://developers-apps-in-toss.toss.im/documentation/integration/sdk-3.x), [WebView options](https://developers-apps-in-toss.toss.im/documentation/integration/props)
+
+The Korean display name is `지금 카페인`, and the English display name is `Nowcaffeine`. Update both names in the Apps in Toss console's app information; they are not bundled as a `brand.displayName` option in SDK 3.x. The default `appName` is `now-caffeine`, matching the console identifier confirmed by the user, including its hyphen. Preserve registered identifiers exactly; use `TOSS_APP_NAME` for a different existing console identifier. [App registration guide](https://developers-apps-in-toss.toss.im/guide/operation/console-workspace)
 
 ## Runtime, safe area, back handling
 
@@ -66,6 +68,13 @@ Environment.initialURL: string
 
 For `npm run dev:toss` only, `import.meta.env.DEV && import.meta.env.MODE === 'toss'` allows the official Devtools SDK facade without a native bridge, while still validating SDK environment constants. Devtools replaces imports with mocks and intentionally does not inject `ReactNativeWebView`. The exception is removed from production builds. This behavior was verified against the installed Devtools 3.7.0 README and source.
 
+### Mobile layout verification (2026-10-05)
+
+- The current opaque native bar owns the space above the WebView. In Toss, the content top inset is `0px`; bottom and side insets still follow `SafeArea.get()` and `SafeArea.subscribe()`. This avoids the duplicate gap seen on device. Revisit this mapping if `transparentBackground` changes. The native back button is disabled using the documented `navigationBar.withBackButton` option; internal route/sheet back controls remain available.
+- Scrollbars are hidden in CSS without disabling scrolling. The documented WebView configuration does not expose `scrollEnabled` or `showsVerticalScrollIndicator`; no unsupported SDK option is added. [WebView properties](https://developers-apps-in-toss.toss.im/documentation/integration/props)
+- Home padding must outrank the shared `.page` shorthand. Its previous override left the bottom row covered by the fixed actions even at maximum scroll. Mobile tests use actual touch swipes, a 34px bottom inset, 375/390px widths, both themes and 200% text to check reachability and scroll restoration after closing a sheet.
+- Browser layout tests do not validate the native host itself. Recheck the top bar and touch scrolling with the new console QR bundle on an iPhone.
+
 ## Persistence
 
 The official SDK offers native persistent string storage:
@@ -94,7 +103,7 @@ If TDS components are added later, the documented setup is React 18, `@emotion/r
 
 Toss UI assets are licensed for Apps in Toss services. Native accessory icons must be monochrome and are limited to one. [TDS license](https://developers-apps-in-toss.toss.im/design/components), [Navigation icons](https://developers-apps-in-toss.toss.im/documentation/common/navigationbar)
 
-**The requested OLED design conflicts with the current release checklist.** Both the FAQ and non-game checklist require light-mode implementation/release. The app therefore needs a light Toss runtime presentation, while the local design preview can retain the requested OLED palette. A dark native navigation option exists, but it does not override the release requirement. [Non-game checklist](https://developers-apps-in-toss.toss.im/checklist/app-nongame), [Theme FAQ](https://developers-apps-in-toss.toss.im/guide/faq)
+**Toss stays light; manual theme selection is browser-only.** Rechecked on 2026-10-05: both the FAQ and non-game checklist require light-mode implementation/release. The user approved keeping Toss light and offering light/dark selection only in browser Settings. The preference is saved through the existing repository after a successful write and overrides the preview query. Without a saved preference, browsers default to OLED dark and `?theme=light` previews light mode. Toss always resolves to light and hides the selector, even if a dark preference exists. A dark native navigation option exists, but it does not override the release requirement. [Non-game checklist](https://developers-apps-in-toss.toss.im/checklist/app-nongame), [Theme FAQ](https://developers-apps-in-toss.toss.im/guide/faq)
 
 The bottom navigation must use the provided **floating form**, even for custom UI, with two to five items. The app's three destinations—홈, 기록, 설정—fit that requirement. [UI/UX guide](https://developers-apps-in-toss.toss.im/design/consumer-ux-guide)
 

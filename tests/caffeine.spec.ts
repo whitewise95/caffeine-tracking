@@ -78,14 +78,14 @@ test('back closes a sheet first, deep routes work, half-life cannot be edited ma
   await page.goto('/settings');
   await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible();
   await expect(page.getByRole('slider')).toHaveCount(0);
-  await expect(page.getByTestId('half-life-description')).toHaveText('카페인 트래커에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
   await page.reload();
   await expect(page.getByRole('slider')).toHaveCount(0);
   await page.getByRole('button', { name: '모든 데이터 초기화' }).click();
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await page.getByRole('button', { name: '모든 데이터 초기화' }).click();
   await page.getByRole('button', { name: '초기화하기', exact: true }).click();
-  await expect(page.getByTestId('half-life-description')).toHaveText('카페인 트래커에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('0');
 });

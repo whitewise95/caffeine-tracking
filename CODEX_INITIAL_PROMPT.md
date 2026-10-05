@@ -44,7 +44,7 @@ python3 .agents/skills/ui-ux-pro-max/scripts/search.py \
 "dark mobile oled smoked glass ambient glow pill chip health tracker" \
 --design-system \
 -f markdown \
--p "Caffeine Tracker"
+-p "지금 카페인"
 ```
 
 그리고 필요하면 다음도 조사한다.

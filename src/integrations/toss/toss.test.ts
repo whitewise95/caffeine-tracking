@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Screen, Storage } from '@apps-in-toss/web-framework'
+import { SafeArea, Screen, Storage } from '@apps-in-toss/web-framework'
 import { createInitialState } from '../../features/caffeine/model/caffeine'
 import { createRepository, initializeTossSafeArea, isTossRuntime, setOverlaySwipeBack, subscribeTossBack } from './toss'
 
@@ -115,6 +115,31 @@ describe('Toss runtime boundary', () => {
     expect(() => subscribeTossBack(back)()).not.toThrow()
     expect(() => setOverlaySwipeBack(true)()).not.toThrow()
     expect(back).not.toHaveBeenCalled()
+  })
+
+  it('does not double the opaque native navigation top inset and restores CSS on cleanup', () => {
+    vi.stubGlobal('window', tossWindow())
+    const values = new Map([['--safe-top', '7px'], ['--safe-bottom', '9px']])
+    vi.stubGlobal('document', { documentElement: { style: {
+      getPropertyValue: (name: string) => values.get(name) ?? '',
+      setProperty: (name: string, value: string) => values.set(name, value),
+      removeProperty: (name: string) => values.delete(name),
+    } } })
+    vi.spyOn(SafeArea, 'get').mockReturnValue({ top: 47, bottom: 34, left: 0, right: 0 })
+    const unsubscribe = vi.fn()
+    const subscribe = vi.spyOn(SafeArea, 'subscribe').mockReturnValue(unsubscribe)
+    const cleanup = initializeTossSafeArea()
+    expect(values.get('--safe-top')).toBe('0px')
+    expect(values.get('--safe-bottom')).toBe('34px')
+    subscribe.mock.calls[0][0].onEvent({ top: 59, bottom: 21, left: 44, right: 44 })
+    expect(values.get('--safe-top')).toBe('0px')
+    expect(values.get('--safe-bottom')).toBe('21px')
+    expect(values.get('--safe-left')).toBe('44px')
+    cleanup()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(values.get('--safe-top')).toBe('7px')
+    expect(values.get('--safe-bottom')).toBe('9px')
+    expect(values.has('--safe-left')).toBe(false)
   })
 
   it('restores iOS swipe only after the last active overlay closes', () => {

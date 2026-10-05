@@ -1,4 +1,4 @@
-# Caffeine Tracker MVP
+# 지금 카페인 MVP
 
 사용자가 제공한 AGENTS.md와 CODEX_INITIAL_PROMPT.md를 개발 기준으로 적용한다. 새 React/TypeScript/Vite 프로젝트이며 기존 기능은 없다. 사용자가 중간 승인 없이 실제 구현을 요청했으므로 이 설계에서 바로 개발한다.
 

@@ -14,8 +14,8 @@ export function CaffeineBodyVisual({ caffeineMg }: { caffeineMg: number }) {
       <defs>
         <clipPath id={`${id}-body`}><path d={bodyPath} /></clipPath>
         <linearGradient id={`${id}-glass`} x1="0" x2="1" y1="0" y2=".6"><stop offset="0" stopColor="var(--body-glass-start)" /><stop offset=".5" stopColor="var(--body-glass-mid)" /><stop offset="1" stopColor="var(--body-glass-end)" /></linearGradient>
-        <linearGradient id={`${id}-liquid`} x1="0" y1="0" x2=".15" y2="1"><stop offset="0" stopColor="#82EFF7" stopOpacity=".95" /><stop offset=".35" stopColor="#62BFFF" stopOpacity=".76" /><stop offset="1" stopColor="#7888FF" stopOpacity=".45" /></linearGradient>
-        <radialGradient id={`${id}-ambient`}><stop offset="0" stopColor="#62BFFF" stopOpacity=".16" /><stop offset="1" stopColor="#62BFFF" stopOpacity="0" /></radialGradient>
+        <linearGradient id={`${id}-liquid`} x1="0" y1="0" x2=".15" y2="1"><stop offset="0" stopColor="var(--caffeine-fill-top)" stopOpacity=".95" /><stop offset=".35" stopColor="var(--caffeine-fill-middle)" stopOpacity=".92" /><stop offset="1" stopColor="var(--caffeine-fill-bottom)" stopOpacity=".9" /></linearGradient>
+        <radialGradient id={`${id}-ambient`}><stop offset="0" stopColor="var(--caffeine-ambient)" stopOpacity=".16" /><stop offset="1" stopColor="var(--caffeine-ambient)" stopOpacity="0" /></radialGradient>
       </defs>
       <ellipse cx="120" cy="214" rx="117" ry="129" fill={`url(#${id}-ambient)`} opacity={fill ? .35 + fill * .65 : .12} />
       <ellipse cx="120" cy="324" rx="57" ry="8" fill="none" stroke="var(--body-grid)" strokeWidth="1" />
@@ -24,14 +24,14 @@ export function CaffeineBodyVisual({ caffeineMg }: { caffeineMg: number }) {
       <g clipPath={`url(#${id}-body)`}>
         <g className="body-liquid" style={{ transform: `translateY(${y}px)` }}>
           <g className="liquid-wave liquid-wave-back">
-            <path d="M-90 3C-45-5-13 9 24 3S89-7 132 2S204 8 250 1S302-5 340 3V340H-90Z" fill="#82EFF7" opacity=".24" />
+            <path d="M-90 3C-45-5-13 9 24 3S89-7 132 2S204 8 250 1S302-5 340 3V340H-90Z" fill="var(--caffeine-fill-top)" opacity=".24" />
           </g>
           <g className="liquid-wave liquid-wave-front">
             <path d="M-90 0C-48-8-18 7 23 1S91-6 134 1S205 7 251 0S302-7 340 0V340H-90Z" fill={`url(#${id}-liquid)`} />
-            <path d="M-90 0C-48-8-18 7 23 1S91-6 134 1S205 7 251 0S302-7 340 0" fill="none" stroke="#B8F9FF" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M-90 0C-48-8-18 7 23 1S91-6 134 1S205 7 251 0S302-7 340 0" fill="none" stroke="var(--caffeine-highlight)" strokeWidth="1.4" strokeLinecap="round" />
           </g>
         </g>
-        {Array.from({ length: particles }, (_, i) => <circle key={i} cx={74 + ((i * 29) % 92)} cy={Math.min(301, y + 18 + ((i * 31) % Math.max(10, 280 - y)))} r={i % 3 === 0 ? 1.7 : 1} fill="#C8FAFF" opacity={.25 + (i % 3) * .15} />)}
+        {Array.from({ length: particles }, (_, i) => <circle key={i} cx={74 + ((i * 29) % 92)} cy={Math.min(301, y + 18 + ((i * 31) % Math.max(10, 280 - y)))} r={i % 3 === 0 ? 1.7 : 1} fill="var(--caffeine-particle)" opacity={.25 + (i % 3) * .15} />)}
         <path d="M91 93c-8 2-13 8-16 17l-22 61M109 31c-9 4-13 14-10 22" stroke="#fff" strokeOpacity=".14" strokeWidth="2" fill="none" strokeLinecap="round" />
       </g>
       {level === 'HIGH_VISUAL' && <path d={bodyPath} fill="none" stroke="var(--accent-pink)" strokeOpacity=".4" strokeWidth="1.25" />}

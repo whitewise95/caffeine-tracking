@@ -10,7 +10,7 @@ export function HomePage({ state, halfLifeHours, now, onAdd, onHistory, onRemain
   const last = state.entries.filter(entry => new Date(entry.consumedAt) <= now).sort((a, b) => Date.parse(b.consumedAt) - Date.parse(a.consumedAt))[0];
   const estimate = caffeineEstimate(state.entries, now, halfLifeHours);
   return <main className="page home-page" id="main-content">
-    <header className="page-header"><div className="brand"><span className="brand-mark"><Coffee size={17} strokeWidth={1.65} /></span>카페인 트래커</div><span className="header-date">{now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}</span></header>
+    <header className="page-header"><div className="brand"><span className="brand-mark"><Coffee size={17} strokeWidth={1.65} /></span>지금 카페인</div><span className="header-date">{now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}</span></header>
     <CaffeineHero remaining={estimate.remainingMg} />
     <button id="remaining-details-button" className="remaining-details-button" onClick={onRemaining}>아직 남아 있는 카페인 보기<ChevronRight size={16} aria-hidden="true" /></button>
     <CaffeineSummary today={todayIntake(state.entries, now)} last={last}>

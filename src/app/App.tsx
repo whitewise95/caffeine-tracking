@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, Home, List, BookOpen, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import { HomePage } from '../pages/HomePage';
 import { RemainingCaffeinePage } from '../pages/RemainingCaffeinePage';
@@ -12,12 +12,15 @@ import { EditEntryForm } from '../features/caffeine/components/EditEntryForm';
 import { useCaffeine } from '../features/caffeine/hooks/useCaffeine';
 import { createRepository, initializeTossSafeArea, isTossRuntime, setOverlaySwipeBack, subscribeTossBack } from '../integrations/toss/toss';
 import { useRouter, type Page } from './router';
+import { resolveAppTheme } from './theme';
 
 const navigation = [{ page: 'home', label: '홈', icon: Home }, { page: 'history', label: '기록', icon: List }, { page: 'knowledge', label: '지식', icon: BookOpen }, { page: 'settings', label: '설정', icon: SlidersHorizontal }] as const;
 
 export function App() {
+  const tossRuntime = useMemo(() => isTossRuntime(), []);
   const repository = useMemo(() => createRepository(), []);
   const caffeine = useCaffeine(repository);
+  const theme = resolveAppTheme(caffeine.state.settings.theme, tossRuntime, new URLSearchParams(location.search).get('theme'));
   const router = useRouter();
   const [toast, setToast] = useState('');
   const { page, overlay, depth } = router;
@@ -34,10 +37,11 @@ export function App() {
   const { discardOverlay } = router;
   useEffect(() => { if (invalidOverlay) discardOverlay(); }, [invalidOverlay, discardOverlay]);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = isTossRuntime() || new URLSearchParams(location.search).get('theme') === 'light' ? 'light' : 'dark';
-    return initializeTossSafeArea();
-  }, []);
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#F7F8FA' : '#0A0B0E');
+  }, [theme]);
+  useEffect(() => initializeTossSafeArea(), []);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(''), 3000);
@@ -53,7 +57,7 @@ export function App() {
   }, [overlay, page, handleBack]);
   useEffect(() => setOverlaySwipeBack(hasOverlay), [hasOverlay]);
   useEffect(() => {
-    document.title = `${page === 'home' ? '지금 내 카페인' : page === 'remaining' ? '음료별 잔존 카페인' : page === 'history' ? '카페인 기록' : page === 'knowledge' ? '카페인 지식' : '설정'} · 카페인`;
+    document.title = page === 'home' ? '지금 카페인' : `${page === 'remaining' ? '음료별 잔존 카페인' : page === 'history' ? '카페인 기록' : page === 'knowledge' ? '카페인 지식' : '설정'} · 지금 카페인`;
   }, [page]);
 
   function navigate(next: Page) { caffeine.clearError(); router.navigate(next); }
@@ -68,14 +72,14 @@ export function App() {
       {page === 'remaining' && <RemainingCaffeinePage drinks={caffeine.drinks} entries={caffeine.state.entries} halfLifeHours={caffeine.halfLifeHours} now={caffeine.now} onBack={router.back} />}
       {page === 'history' && <HistoryPage drinks={caffeine.drinks} entries={caffeine.state.entries} now={caffeine.now} onAdd={openAdd} onEdit={entry => router.openOverlay({ type: 'edit', entryId: entry.id })} onDelete={entry => router.openOverlay({ type: 'delete', entryId: entry.id })} />}
       {page === 'knowledge' && <KnowledgePage />}
-      {page === 'settings' && <SettingsPage onReset={() => router.openOverlay({ type: 'reset' })} onManageCategories={() => { caffeine.clearError(); router.openOverlay({ type: 'categories' }); }} />}
+      {page === 'settings' && <SettingsPage themeSettings={tossRuntime ? undefined : { theme, busy: caffeine.busy, onChange: caffeine.setTheme }} onReset={() => router.openOverlay({ type: 'reset' })} onManageCategories={() => { caffeine.clearError(); router.openOverlay({ type: 'categories' }); }} />}
       <nav className="bottom-nav" aria-label="주요 메뉴">{navigation.map(({ page: item, label, icon: Icon }) => {
         const selected = page === item || (page === 'remaining' && item === 'home');
         return <button key={item} className="nav-item" aria-current={selected ? 'page' : undefined} onClick={() => navigate(item)}><Icon size={21} strokeWidth={selected ? 1.9 : 1.5} aria-hidden="true" /><span>{label}</span></button>;
       })}</nav>
     </>}
     {overlay?.type === 'add' && <AddCaffeineSheet key={overlay.key} step={overlay.step ?? 'select'} onStepChange={router.changeOverlayStep} onBack={router.back} onClose={closeSheet} error={caffeine.error} drinks={caffeine.drinks} categories={caffeine.categories} busy={caffeine.busy} onCreateDrink={caffeine.createDrink} onCreateCategory={caffeine.createCategory} onRenameCategory={caffeine.renameCategory} onDeleteCategory={caffeine.deleteCategory} onReorderCategories={caffeine.reorderCategories} onClearError={caffeine.clearError} onDeleteDrink={async id => { const success = await caffeine.deleteDrink(id); if (success) setToast('음료를 삭제했어요'); return success; }} onRecord={async (drink, mg, timing) => { const success = await caffeine.record(drink, mg, timing); if (success) { router.closeOverlay(); setToast(`${drink.name} ${mg}mg 기록했어요`); } return success; }} />}
-    {overlay?.type === 'categories' && <BottomSheet key={overlay.key} title="카테고리 관리" onClose={closeSheet} onBack={router.back} backLabel="설정으로 돌아가기" className="sheet-dialog--add"><CategoryManager categories={caffeine.categories} drinks={caffeine.drinks} busy={caffeine.busy} error={caffeine.error} onCreate={caffeine.createCategory} onRename={caffeine.renameCategory} onDelete={caffeine.deleteCategory} onReorder={caffeine.reorderCategories} onClearError={caffeine.clearError} /></BottomSheet>}
+    {overlay?.type === 'categories' && <BottomSheet key={overlay.key} title="카테고리 관리" onClose={closeSheet} className="sheet-dialog--add"><CategoryManager categories={caffeine.categories} drinks={caffeine.drinks} busy={caffeine.busy} error={caffeine.error} onCreate={caffeine.createCategory} onRename={caffeine.renameCategory} onDelete={caffeine.deleteCategory} onReorder={caffeine.reorderCategories} onClearError={caffeine.clearError} /></BottomSheet>}
     {overlay?.type === 'edit' && selectedEntry && <EditEntryForm key={overlay.key} step={overlay.step ?? 'record'} onStepChange={router.changeOverlayStep} onBack={router.back} onClose={closeSheet} storageError={caffeine.error} entry={selectedEntry} busy={caffeine.busy} onSave={async changes => { const success = await caffeine.updateEntry(selectedEntry.id, changes); if (success) { router.closeOverlay(); setToast('기록을 수정했어요'); } return success; }} />}
     {overlay && overlay.type !== 'edit' && overlay.type !== 'add' && overlay.type !== 'categories' && !invalidOverlay && <BottomSheet key={overlay.key} title={title} onClose={closeSheet}>
       {caffeine.error && <div className="error-message" role="alert">{caffeine.error}</div>}

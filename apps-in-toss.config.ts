@@ -2,11 +2,11 @@ import { defineConfig } from '@apps-in-toss/web-framework/config'
 
 export default defineConfig({
   // Replace with the immutable appName registered in the Apps in Toss console.
-  appName: process.env.TOSS_APP_NAME || 'caffeine-tracking',
+  appName: process.env.TOSS_APP_NAME || 'now-caffeine',
   brand: { primaryColor: '#20252D' },
   permissions: [{ name: 'photos', access: 'read' }],
   navigationBar: {
-    withBackButton: true,
+    withBackButton: false,
     withHomeButton: false,
     withTitle: true,
     transparentBackground: false,

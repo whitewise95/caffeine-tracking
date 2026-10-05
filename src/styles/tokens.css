@@ -11,9 +11,12 @@
   --border-strong: rgba(255,255,255,0.14);
   --accent-pink: #F3A6B8;
   --accent-pink-strong: #FFD0DB;
-  --caffeine-blue: #62BFFF;
-  --caffeine-cyan: #82EFF7;
-  --caffeine-violet: #7888FF;
+  --caffeine-fill-top: var(--accent-pink-strong);
+  --caffeine-fill-middle: var(--accent-pink);
+  --caffeine-fill-bottom: color-mix(in srgb, var(--accent-pink) 70%, var(--surface-pressed));
+  --caffeine-highlight: var(--accent-pink-strong);
+  --caffeine-particle: var(--accent-pink-strong);
+  --caffeine-ambient: var(--accent-pink);
   --selected-glow: 0 0 16px rgba(243,166,184,0.18);
   --danger: #FFAAA3;
   --radius-sm: 12px;

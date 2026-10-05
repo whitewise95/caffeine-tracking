@@ -1,5 +1,7 @@
 :root { --body-glass-start: #343D49; --body-glass-mid: #1C222C; --body-glass-end: #11151B; --body-outline: #74839266; --body-grid: #6D839331; }
-.home-page { padding-top: 24px; padding-bottom: 190px; }
+/* Keep the last row above both fixed controls, including enlarged text/insets.
+   The page-specific selector must outrank the shared .page shorthand. */
+.page.home-page { padding-top: 24px; padding-bottom: calc(12rem + var(--safe-bottom)); }
 .home-page .page-header { margin-bottom: 8px; }
 .caffeine-hero { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .hero-reading { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; max-width: 100%; min-height: 48px; padding: 8px 12px; }

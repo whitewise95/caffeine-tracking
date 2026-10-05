@@ -41,9 +41,13 @@ export function initializeTossSafeArea(): () => void {
   const style = document.documentElement.style
   const sides = ['top', 'right', 'bottom', 'left'] as const
   const previousValues = sides.map((side) => style.getPropertyValue(`--safe-${side}`))
+  // This app uses an opaque native navigation bar (transparentBackground: false).
+  // Its WebView starts below that bar; adding the device's top inset again
+  // creates an empty strip above every page. Bottom/side insets remain needed.
+  style.setProperty('--safe-top', '0px')
   const applyInsets = (insets: ReturnType<typeof SafeArea.get>) => {
     for (const side of sides) {
-      if (Number.isFinite(insets[side])) {
+      if (side !== 'top' && Number.isFinite(insets[side])) {
         style.setProperty(`--safe-${side}`, `${Math.max(0, insets[side])}px`)
       }
     }
