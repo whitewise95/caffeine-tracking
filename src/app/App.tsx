@@ -1,30 +1,36 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Home, List, SlidersHorizontal, AlertCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Home, List, BookOpen, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import { HomePage } from '../pages/HomePage';
+import { RemainingCaffeinePage } from '../pages/RemainingCaffeinePage';
 import { HistoryPage } from '../pages/HistoryPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { KnowledgePage } from '../pages/KnowledgePage';
 import { BottomSheet } from '../components/BottomSheet';
 import { AddCaffeineSheet } from '../features/caffeine/components/AddCaffeineSheet';
+import { CategoryManager } from '../features/caffeine/components/CategoryManager';
 import { EditEntryForm } from '../features/caffeine/components/EditEntryForm';
 import { useCaffeine } from '../features/caffeine/hooks/useCaffeine';
-import { PersonalizationFeedbackEditor, PersonalizationPreferences } from '../features/personalization/PersonalizationExperience';
-import { DailyCheckInModal } from '../features/personalization/components/DailyCheckInModal';
-import { useCheckInPrompt } from '../features/personalization/useCheckInPrompt';
 import { createRepository, initializeTossSafeArea, isTossRuntime, setOverlaySwipeBack, subscribeTossBack } from '../integrations/toss/toss';
 import { useRouter, type Page } from './router';
 
-const navigation = [{ page: 'home', label: '홈', icon: Home }, { page: 'history', label: '기록', icon: List }, { page: 'settings', label: '설정', icon: SlidersHorizontal }] as const;
+const navigation = [{ page: 'home', label: '홈', icon: Home }, { page: 'history', label: '기록', icon: List }, { page: 'knowledge', label: '지식', icon: BookOpen }, { page: 'settings', label: '설정', icon: SlidersHorizontal }] as const;
 
 export function App() {
   const repository = useMemo(() => createRepository(), []);
   const caffeine = useCaffeine(repository);
   const router = useRouter();
-  const checkInCandidate = useCheckInPrompt(caffeine, router);
   const [toast, setToast] = useState('');
   const { page, overlay, depth } = router;
+  const previousPage = useRef(page);
+  useEffect(() => {
+    if (previousPage.current === 'remaining' && page === 'home') {
+      document.getElementById('remaining-details-button')?.focus({ preventScroll: true });
+    }
+    previousPage.current = page;
+  }, [page]);
+  const hasOverlay = Boolean(overlay);
   const selectedEntry = caffeine.state.entries.find(entry => entry.id === overlay?.entryId);
-  const selectedFeedback = caffeine.state.personalization.feedback.find(record => record.id === overlay?.entryId);
-  const invalidOverlay = caffeine.loaded && (((overlay?.type === 'edit' || overlay?.type === 'delete') && !selectedEntry) || (overlay?.type === 'feedback' && !selectedFeedback));
+  const invalidOverlay = caffeine.loaded && (overlay?.type === 'edit' || overlay?.type === 'delete') && !selectedEntry;
   const { discardOverlay } = router;
   useEffect(() => { if (invalidOverlay) discardOverlay(); }, [invalidOverlay, discardOverlay]);
 
@@ -45,9 +51,9 @@ export function App() {
     if (!overlay && page === 'home') return;
     return subscribeTossBack(handleBack);
   }, [overlay, page, handleBack]);
-  useEffect(() => setOverlaySwipeBack(Boolean(overlay)), [overlay]);
+  useEffect(() => setOverlaySwipeBack(hasOverlay), [hasOverlay]);
   useEffect(() => {
-    document.title = `${page === 'home' ? '지금 내 카페인' : page === 'history' ? '카페인 기록' : '설정'} · 카페인`;
+    document.title = `${page === 'home' ? '지금 내 카페인' : page === 'remaining' ? '음료별 잔존 카페인' : page === 'history' ? '카페인 기록' : page === 'knowledge' ? '카페인 지식' : '설정'} · 카페인`;
   }, [page]);
 
   function navigate(next: Page) { caffeine.clearError(); router.navigate(next); }
@@ -58,19 +64,24 @@ export function App() {
   return <div className="app-shell">
     {caffeine.error && !overlay && <div className="error-message" role="alert">{caffeine.error}</div>}
     {caffeine.loading ? <main className="loading-state" role="status">나의 기록을 불러오고 있어요…</main> : !caffeine.loaded ? <main className="page"><div className="empty-state"><AlertCircle size={36} /><h1 className="page-title">기록을 열지 못했어요</h1><p>기존 데이터는 변경하지 않았어요.<br />다시 시도하거나 저장 데이터를 초기화할 수 있어요.</p><button className="button-primary" onClick={() => void caffeine.reload()}>다시 불러오기</button><button className="text-button" onClick={() => router.openOverlay({ type: 'reset' })}>데이터 초기화</button></div></main> : <>
-      {page === 'home' && <HomePage state={caffeine.state} now={caffeine.now} onAdd={openAdd} onSettings={() => navigate('settings')} onHistory={() => navigate('history')} />}
-      {page === 'history' && <HistoryPage entries={caffeine.state.entries} now={caffeine.now} onAdd={openAdd} onEdit={entry => router.openOverlay({ type: 'edit', entryId: entry.id })} onDelete={entry => router.openOverlay({ type: 'delete', entryId: entry.id })} />}
-      {page === 'settings' && <SettingsPage onReset={() => router.openOverlay({ type: 'reset' })} halfLifeHours={caffeine.state.settings.halfLifeHours} personalization={<PersonalizationPreferences caffeine={caffeine} onEdit={record => { caffeine.clearError(); router.openOverlay({ type: 'feedback', entryId: record.id }); }} />} />}
-      <nav className="bottom-nav" aria-label="주요 메뉴">{navigation.map(({ page: item, label, icon: Icon }) => <button key={item} className="nav-item" aria-current={page === item ? 'page' : undefined} onClick={() => navigate(item)}><Icon size={21} strokeWidth={page === item ? 1.9 : 1.5} aria-hidden="true" /><span>{label}</span></button>)}</nav>
+      {page === 'home' && <HomePage state={caffeine.state} halfLifeHours={caffeine.halfLifeHours} now={caffeine.now} onAdd={openAdd} onHistory={() => navigate('history')} onRemaining={() => navigate('remaining')} />}
+      {page === 'remaining' && <RemainingCaffeinePage drinks={caffeine.drinks} entries={caffeine.state.entries} halfLifeHours={caffeine.halfLifeHours} now={caffeine.now} onBack={router.back} />}
+      {page === 'history' && <HistoryPage drinks={caffeine.drinks} entries={caffeine.state.entries} now={caffeine.now} onAdd={openAdd} onEdit={entry => router.openOverlay({ type: 'edit', entryId: entry.id })} onDelete={entry => router.openOverlay({ type: 'delete', entryId: entry.id })} />}
+      {page === 'knowledge' && <KnowledgePage />}
+      {page === 'settings' && <SettingsPage onReset={() => router.openOverlay({ type: 'reset' })} onManageCategories={() => { caffeine.clearError(); router.openOverlay({ type: 'categories' }); }} />}
+      <nav className="bottom-nav" aria-label="주요 메뉴">{navigation.map(({ page: item, label, icon: Icon }) => {
+        const selected = page === item || (page === 'remaining' && item === 'home');
+        return <button key={item} className="nav-item" aria-current={selected ? 'page' : undefined} onClick={() => navigate(item)}><Icon size={21} strokeWidth={selected ? 1.9 : 1.5} aria-hidden="true" /><span>{label}</span></button>;
+      })}</nav>
     </>}
-    {overlay?.type === 'check-in' && checkInCandidate && <DailyCheckInModal key={`${overlay.key}:${checkInCandidate.targetDate}:${checkInCandidate.timeZone}:${checkInCandidate.lastIntakeAt}`} candidate={checkInCandidate} busy={caffeine.busy} onClose={closeSheet} onSubmit={async input => { const saved = await caffeine.answerCheckIn(input); if (saved) { router.closeOverlay(); setToast('체감을 기록했어요'); } return saved; }} />}
-    {overlay?.type === 'feedback' && selectedFeedback && <PersonalizationFeedbackEditor key={overlay.key} caffeine={caffeine} record={selectedFeedback} onClose={closeSheet} />}
-    {overlay && overlay.type !== 'check-in' && overlay.type !== 'feedback' && !invalidOverlay && <BottomSheet key={overlay.key} title={title} onClose={closeSheet}>
+    {overlay?.type === 'add' && <AddCaffeineSheet key={overlay.key} step={overlay.step ?? 'select'} onStepChange={router.changeOverlayStep} onBack={router.back} onClose={closeSheet} error={caffeine.error} drinks={caffeine.drinks} categories={caffeine.categories} busy={caffeine.busy} onCreateDrink={caffeine.createDrink} onCreateCategory={caffeine.createCategory} onRenameCategory={caffeine.renameCategory} onDeleteCategory={caffeine.deleteCategory} onReorderCategories={caffeine.reorderCategories} onClearError={caffeine.clearError} onDeleteDrink={async id => { const success = await caffeine.deleteDrink(id); if (success) setToast('음료를 삭제했어요'); return success; }} onRecord={async (drink, mg, timing) => { const success = await caffeine.record(drink, mg, timing); if (success) { router.closeOverlay(); setToast(`${drink.name} ${mg}mg 기록했어요`); } return success; }} />}
+    {overlay?.type === 'categories' && <BottomSheet key={overlay.key} title="카테고리 관리" onClose={closeSheet} onBack={router.back} backLabel="설정으로 돌아가기" className="sheet-dialog--add"><CategoryManager categories={caffeine.categories} drinks={caffeine.drinks} busy={caffeine.busy} error={caffeine.error} onCreate={caffeine.createCategory} onRename={caffeine.renameCategory} onDelete={caffeine.deleteCategory} onReorder={caffeine.reorderCategories} onClearError={caffeine.clearError} /></BottomSheet>}
+    {overlay?.type === 'edit' && selectedEntry && <EditEntryForm key={overlay.key} step={overlay.step ?? 'record'} onStepChange={router.changeOverlayStep} onBack={router.back} onClose={closeSheet} storageError={caffeine.error} entry={selectedEntry} busy={caffeine.busy} onSave={async changes => { const success = await caffeine.updateEntry(selectedEntry.id, changes); if (success) { router.closeOverlay(); setToast('기록을 수정했어요'); } return success; }} />}
+    {overlay && overlay.type !== 'edit' && overlay.type !== 'add' && overlay.type !== 'categories' && !invalidOverlay && <BottomSheet key={overlay.key} title={title} onClose={closeSheet}>
       {caffeine.error && <div className="error-message" role="alert">{caffeine.error}</div>}
-      {overlay.type === 'add' && <AddCaffeineSheet drinks={caffeine.drinks} busy={caffeine.busy} onCreateDrink={caffeine.createDrink} onRecord={async (drink, mg) => { const success = await caffeine.record(drink, mg); if (success) { router.closeOverlay(); setToast(`${drink.name} ${mg}mg 기록했어요`); } return success; }} />}
-      {overlay.type === 'edit' && selectedEntry && <EditEntryForm entry={selectedEntry} busy={caffeine.busy} onSave={async changes => { const success = await caffeine.updateEntry(selectedEntry.id, changes); if (success) { router.closeOverlay(); setToast('기록을 수정했어요'); } return success; }} />}
+
       {overlay.type === 'delete' && selectedEntry && <div className="dialog-content"><p className="muted">{selectedEntry.drinkName} {selectedEntry.caffeineMg}mg 기록이 삭제돼요.</p><div className="dialog-actions"><button className="button-secondary" onClick={closeSheet}>취소</button><button className="button-primary" disabled={caffeine.busy} onClick={async () => { if (await caffeine.deleteEntry(selectedEntry.id)) { router.closeOverlay(); setToast('기록을 삭제했어요'); } }}>삭제하기</button></div></div>}
-      {overlay.type === 'reset' && <div className="dialog-content"><p className="muted">섭취 기록, 직접 만든 음료와 체감 응답 등 앱에 저장한 데이터가 모두 삭제돼요. 삭제한 데이터는 복구할 수 없어요.</p><div className="dialog-actions"><button className="button-secondary" onClick={closeSheet}>취소</button><button className="button-primary" disabled={caffeine.busy} onClick={async () => { if (await caffeine.reset()) { router.closeOverlay(); setToast('모든 데이터를 초기화했어요'); } }}>초기화하기</button></div></div>}
+      {overlay.type === 'reset' && <div className="dialog-content"><p className="muted">섭취 기록과 직접 만든 음료 등 앱에 저장한 데이터가 모두 삭제돼요. 삭제한 데이터는 복구할 수 없어요.</p><div className="dialog-actions"><button className="button-secondary" onClick={closeSheet}>취소</button><button className="button-primary" disabled={caffeine.busy} onClick={async () => { if (await caffeine.reset()) { router.closeOverlay(); setToast('모든 데이터를 초기화했어요'); } }}>초기화하기</button></div></div>}
     </BottomSheet>}
     {toast && <div className="toast" role="status"><Check size={17} />{toast}</div>}
   </div>;

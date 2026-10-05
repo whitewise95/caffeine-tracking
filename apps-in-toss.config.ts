@@ -4,7 +4,7 @@ export default defineConfig({
   // Replace with the immutable appName registered in the Apps in Toss console.
   appName: process.env.TOSS_APP_NAME || 'caffeine-tracking',
   brand: { primaryColor: '#20252D' },
-  permissions: [],
+  permissions: [{ name: 'photos', access: 'read' }],
   navigationBar: {
     withBackButton: true,
     withHomeButton: false,

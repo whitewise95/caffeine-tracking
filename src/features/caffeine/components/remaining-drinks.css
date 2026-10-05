@@ -11,6 +11,9 @@
 .remaining-drink-amount { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 4px; max-width: 120px; }
 .remaining-drink-amount strong { font-size: 1rem; font-weight: 550; font-variant-numeric: tabular-nums; }
 .remaining-drink-amount > span { color: var(--text-secondary); font-size: .75rem; }
+.remaining-drink-status { display: grid; justify-items: end; gap: 5px; max-width: 120px; }
+.remaining-drink-absorbing { display: grid; justify-items: end; gap: 2px; max-width: 100%; text-align: right; color: var(--text-secondary); font-size: .75rem; line-height: 1.5; }
+.remaining-absorption-time { font-size: var(--font-sm); font-weight: 500; font-variant-numeric: tabular-nums; word-break: keep-all; overflow-wrap: anywhere; }
 .remaining-drinks-note, .remaining-drinks-empty { font-size: .75rem; line-height: 1.7; color: var(--text-secondary); overflow-wrap: anywhere; }
 .remaining-drinks-note { margin-top: 12px; }
 .remaining-drinks-empty { padding: 20px 0; border-bottom: 1px solid var(--border); }

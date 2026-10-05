@@ -115,3 +115,17 @@ Browser Devtools verification on 2026-10-02 passed: automatic light theme, live 
 No login is needed for this local MVP. A future account-sync feature may use `TossAuth.login(): Promise<{ authorizationCode: string; referrer: 'DEFAULT' | 'SANDBOX' }>`; token exchange and secret storage belong on a server. [Login SDK](https://developers-apps-in-toss.toss.im/documentation/sdk/domains-api/tossauth/tossauth.login), [Login integration](https://developers-apps-in-toss.toss.im/documentation/common/authentication/toss-login)
 
 Known documentation inconsistencies were resolved using the specific, newer contract: SDK 3.x migration over old setup examples; registry version over the original v3 launch announcement; SDK 3.1.1+ origin notes over the earlier 3.0 origin table. No documentation feedback or other external messages were sent.
+
+## Album photo icons (2026-10-04)
+
+Toss MCP reverified [Device.getPhotos](https://developers-apps-in-toss.toss.im/documentation/sdk/domains-api/device/device.getphotos) and the [photos/read permission](https://developers-apps-in-toss.toss.im/documentation/common/permission). SDK 3.x config now declares photos/read in `apps-in-toss.config.ts`. The picker is invoked only by the album + button, with `maxCount: 1`, `maxWidth: 360`, `base64: true`. A previously denied permission can be requested again with the documented `Device.getPhotos.openPermissionDialog`; cancellation retains the previous icon.
+
+Browser preview uses a standard image file input. Both paths decode locally, crop to a square and encode a JPEG thumbnail no larger than 160×160px with bounded storage length. Only the resulting thumbnail is committed to the existing device repository, once per custom drink. Records refer to the drink ID, and reset removes the whole app state including its photos. No external image URL is accepted as a persisted photo. Album permissions and cancellation still require a real Toss iOS/Android QR device check before release; mocked API tests cannot certify the OS picker.
+
+## Category management (2026-10-05)
+
+Rechecked the official Toss MCP pages for [Storage](https://developers-apps-in-toss.toss.im/documentation/sdk/domains-api/storage), [Storage.setItem](https://developers-apps-in-toss.toss.im/documentation/sdk/domains-api/storage/storage.setitem), [graniteEvent](https://developers-apps-in-toss.toss.im/documentation/sdk/events/graniteevent), [Screen.setIosSwipeBack](https://developers-apps-in-toss.toss.im/documentation/sdk/domains-api/screen/screen.setiosswipeback), and [BottomSheet](https://tossmini-docs.toss.im/tds-mobile/components/bottom-sheet/).
+
+Category management reuses the existing sheet and history/back integration. From a drink draft it is one history step in the same dialog; the composer stays mounted but hidden so its name, photo and amount survive the round trip. Leaving the manager cancels an uncommitted drag. The existing iOS swipe guard remains active for the whole sheet session. No new native API or UI dependency is introduced.
+
+Renames, order and category removal use the existing device repository. Moving drinks and deleting their category produce one state document and one awaited `Storage.setItem` call; UI state is published only after the write resolves. Storage errors retain the last published state and expose retry. These browser checks do not replace a real Toss Android/iOS device check.

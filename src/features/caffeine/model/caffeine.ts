@@ -1,7 +1,8 @@
 import type { CaffeineEntry, CaffeineState, CaffeineVisualLevel } from './caffeine.types'
-import { createPersonalizationState } from '../../personalization/model'
+import { DEFAULT_CAFFEINE_HALF_LIFE_HOURS, oralCaffeineEstimate, uniformOralCaffeineEstimate, type CaffeineEstimate } from './pharmacokinetics'
+import { isValidIntakeTiming } from './intakeTiming'
 
-export const DEFAULT_CAFFEINE_HALF_LIFE_HOURS = 5
+export { DEFAULT_CAFFEINE_HALF_LIFE_HOURS } from './pharmacokinetics'
 export const MAX_CAFFEINE_MG = 1000
 
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
@@ -16,24 +17,37 @@ function isValidDose(caffeineMg: number): boolean {
   return Number.isFinite(caffeineMg) && caffeineMg >= 0 && caffeineMg <= MAX_CAFFEINE_MG
 }
 
-/** Model estimate only: this does not measure caffeine concentration in the body. */
+/** Model estimates only: these are not measured caffeine concentrations. */
+export function caffeineEstimate(
+  entries: readonly CaffeineEntry[],
+  at: Date,
+  halfLifeHours = DEFAULT_CAFFEINE_HALF_LIFE_HOURS,
+): CaffeineEstimate {
+  const atMs = timestamp(at)
+
+  return entries.reduce<CaffeineEstimate>((total, entry) => {
+    const consumedMs = Date.parse(entry.consumedAt)
+    if (!isValidDose(entry.caffeineMg) || !isValidIntakeTiming(entry)) return total
+    const startedMs = entry.startedAt === undefined ? consumedMs : Date.parse(entry.startedAt)
+    if (startedMs > atMs) return total
+
+    const elapsedHours = (atMs - startedMs) / MILLISECONDS_PER_HOUR
+    const dose = entry.startedAt === undefined
+      ? oralCaffeineEstimate(entry.caffeineMg, elapsedHours, halfLifeHours)
+      : uniformOralCaffeineEstimate(entry.caffeineMg, elapsedHours, (consumedMs - startedMs) / MILLISECONDS_PER_HOUR, halfLifeHours)
+    return {
+      remainingMg: total.remainingMg + dose.remainingMg,
+      absorbingMg: total.absorbingMg + dose.absorbingMg,
+    }
+  }, { remainingMg: 0, absorbingMg: 0 })
+}
+
 export function remainingCaffeine(
   entries: readonly CaffeineEntry[],
   at: Date,
   halfLifeHours = DEFAULT_CAFFEINE_HALF_LIFE_HOURS,
 ): number {
-  const atMs = timestamp(at)
-  const halfLife = Number.isFinite(halfLifeHours) && halfLifeHours > 0
-    ? halfLifeHours
-    : DEFAULT_CAFFEINE_HALF_LIFE_HOURS
-
-  return entries.reduce((total, entry) => {
-    const consumedMs = Date.parse(entry.consumedAt)
-    if (!isValidDose(entry.caffeineMg) || !Number.isFinite(consumedMs) || consumedMs > atMs) return total
-
-    const elapsedHours = (atMs - consumedMs) / MILLISECONDS_PER_HOUR
-    return total + entry.caffeineMg * Math.pow(0.5, elapsedHours / halfLife)
-  }, 0)
+  return caffeineEstimate(entries, at, halfLifeHours).remainingMg
 }
 
 export function todayIntake(entries: readonly CaffeineEntry[], now: Date): number {
@@ -43,7 +57,7 @@ export function todayIntake(entries: readonly CaffeineEntry[], now: Date): numbe
   return entries.reduce((total, entry) => {
     const consumedAt = new Date(entry.consumedAt)
     const consumedMs = consumedAt.getTime()
-    if (!isValidDose(entry.caffeineMg) || !Number.isFinite(consumedMs) || consumedMs > nowMs) return total
+    if (!isValidDose(entry.caffeineMg) || !isValidIntakeTiming(entry) || consumedMs > nowMs) return total
     return localDateKey(consumedAt) === dayKey ? total + entry.caffeineMg : total
   }, 0)
 }
@@ -76,10 +90,10 @@ export function nextEvening(now: Date): Date {
 
 export function createInitialState(): CaffeineState {
   return {
-    version: 2,
+    version: 4,
     entries: [],
     customDrinks: [],
+    customCategories: [],
     settings: { halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS },
-    personalization: createPersonalizationState(),
   }
 }

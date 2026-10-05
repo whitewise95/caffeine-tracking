@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createInitialState, MAX_CAFFEINE_MG } from '../model/caffeine';
-import { DEFAULT_DRINKS } from '../data/defaultDrinks';
-import type { CaffeineEntry, CaffeineState, Drink } from '../model/caffeine.types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createInitialState, DEFAULT_CAFFEINE_HALF_LIFE_HOURS, MAX_CAFFEINE_MG } from '../model/caffeine';
+import type { CaffeineEntry, CaffeineIntakeTiming, CaffeineState, CustomDrinkDraft, Drink, DrinkCategoryId } from '../model/caffeine.types';
+import { addCustomDrink, availableDrinks, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, renameDrinkCategory, reorderDrinkCategories } from '../model/drinkCategories';
+import { isValidIntakeTiming } from '../model/intakeTiming';
 import type { CaffeineRepository } from '../repository/CaffeineRepository';
-import { createPrediction, deleteFeedback, dismissCheckIn, editFeedback, reconcilePersonalization, resetLearning, restoreDefault, setPersonalizationEnabled, submitFeedback, type FeedbackInput } from '../../personalization/model';
 
 export function useCaffeine(repository: CaffeineRepository) {
   const [state, setState] = useState<CaffeineState>(createInitialState);
@@ -23,7 +23,7 @@ export function useCaffeine(repository: CaffeineRepository) {
     try {
       const next = await repository.load();
       if (sequence === loadSequence.current) {
-        publish({ ...next, personalization: reconcilePersonalization(next.personalization, next.entries, new Date()) });
+        publish(next);
         setLoaded(true);
       }
     }
@@ -45,8 +45,7 @@ export function useCaffeine(repository: CaffeineRepository) {
     setBusy(true);
     setError('');
     try {
-      const transformed = transform(current.current);
-      const next = { ...transformed, personalization: reconcilePersonalization(transformed.personalization, transformed.entries, new Date()) };
+      const next = transform(current.current);
       await repository.save(next);
       publish(next);
       return true;
@@ -58,70 +57,38 @@ export function useCaffeine(repository: CaffeineRepository) {
   function validateMg(mg: number) {
     if (!Number.isFinite(mg) || mg < 0 || mg > MAX_CAFFEINE_MG) throw new Error(`카페인량을 0~${MAX_CAFFEINE_MG}mg 사이로 입력해 주세요.`);
   }
-  async function record(drink: Drink, caffeineMg: number) {
+  async function record(drink: Drink, caffeineMg: number, timing?: CaffeineIntakeTiming) {
     return commit(previous => {
       validateMg(caffeineMg);
-      const entry: CaffeineEntry = { id: crypto.randomUUID(), drinkId: drink.id, drinkName: drink.name, caffeineMg, consumedAt: new Date().toISOString(), icon: drink.icon, sourceType: drink.sourceType };
+      const recordedAt = new Date();
+      const intake = timing ?? { consumedAt: recordedAt.toISOString() };
+      if (!isValidIntakeTiming(intake, recordedAt)) throw new Error('마신 시각을 확인해 주세요. 시작은 종료보다 빠르게, 종료는 현재 또는 과거로 입력해 주세요.');
+      const entry: CaffeineEntry = { id: crypto.randomUUID(), drinkId: drink.id, drinkName: drink.name, caffeineMg, consumedAt: intake.consumedAt, ...(intake.startedAt ? { startedAt: intake.startedAt } : {}), icon: drink.icon, sourceType: drink.sourceType };
       return { ...previous, entries: [...previous.entries, entry] };
     });
   }
-  async function createDrink(input: Omit<Drink, 'id' | 'isCustom' | 'sourceType'>): Promise<Drink | null> {
-    const drink: Drink = { ...input, name: input.name.trim(), id: crypto.randomUUID(), isCustom: true, sourceType: 'custom' };
+  async function createDrink(input: CustomDrinkDraft): Promise<Drink | null> {
+    let drink: Drink | null = null;
     const saved = await commit(previous => {
-      validateMg(drink.caffeineMg);
-      if (!drink.name || drink.name.length > 30) throw new Error('음료 이름을 1~30자로 입력해 주세요.');
-      if ([...DEFAULT_DRINKS, ...previous.customDrinks].some(item => item.categoryId === drink.categoryId && item.name === drink.name)) throw new Error('같은 카테고리에 이미 있는 이름이에요. 다른 이름을 입력해 주세요.');
-      return { ...previous, customDrinks: [...previous.customDrinks, drink] };
+      const result = addCustomDrink(previous, input, { drinkId: crypto.randomUUID(), categoryId: `custom:${crypto.randomUUID()}` });
+      drink = result.drink;
+      return result.state;
     });
     return saved ? drink : null;
   }
-  async function updateEntry(id: string, changes: Pick<CaffeineEntry, 'caffeineMg' | 'consumedAt'>) {
+  async function updateEntry(id: string, changes: Pick<CaffeineEntry, 'caffeineMg' | 'consumedAt' | 'startedAt'>) {
     return commit(previous => {
       validateMg(changes.caffeineMg);
-      const date = Date.parse(changes.consumedAt);
-      if (!Number.isFinite(date) || date > Date.now()) throw new Error('섭취 시각은 현재 또는 과거로 입력해 주세요.');
+      if (!isValidIntakeTiming(changes, new Date())) throw new Error('마신 시각을 확인해 주세요. 시작은 종료보다 빠르게, 종료는 현재 또는 과거로 입력해 주세요.');
       return { ...previous, entries: previous.entries.map(entry => entry.id === id ? { ...entry, ...changes } : entry) };
     });
   }
   async function deleteEntry(id: string) { return commit(previous => ({ ...previous, entries: previous.entries.filter(entry => entry.id !== id) })); }
-  async function exposePrediction(id: string) {
-    return commit(previous => {
-      if (previous.personalization.predictions.some(prediction => prediction.id === id)) return previous;
-      const model = reconcilePersonalization(previous.personalization, previous.entries, new Date());
-      const prediction = createPrediction(model, previous.entries, new Date());
-      if (!prediction || prediction.id !== id) throw new Error('기록이나 시각이 바뀌었어요. 현재 예측을 다시 열어 주세요.');
-      return { ...previous, personalization: { ...model, predictions: [...model.predictions, prediction] } };
-    });
-  }
-  async function answerCheckIn(input: FeedbackInput) {
-    return commit(previous => {
-      const personalization = submitFeedback(previous.personalization, previous.entries, new Date(), input);
-      if (personalization === previous.personalization) throw new Error('날짜나 섭취 기록이 바뀌었어요. 팝업을 닫고 앱을 다시 열어 주세요.');
-      return { ...previous, personalization };
-    });
-  }
-  async function skipCheckIn() {
-    return commit(previous => ({ ...previous, personalization: dismissCheckIn(previous.personalization, previous.entries, new Date()) }));
-  }
-  async function removeFeedback(id: string) {
-    return commit(previous => ({ ...previous, personalization: deleteFeedback(previous.personalization, previous.entries, new Date(), id) }));
-  }
-  async function changeFeedback(id: string, input: FeedbackInput) {
-    return commit(previous => {
-      const personalization = editFeedback(previous.personalization, previous.entries, new Date(), id, input);
-      if (personalization === previous.personalization) throw new Error('응답을 수정하지 못했어요. 시간대와 체감 시각 범위를 확인해 주세요.');
-      return { ...previous, personalization };
-    });
-  }
-  async function togglePersonalization(enabled: boolean) {
-    return commit(previous => ({ ...previous, personalization: setPersonalizationEnabled(previous.personalization, enabled) }));
-  }
-  async function restorePersonalizationDefault() {
-    return commit(previous => ({ ...previous, personalization: restoreDefault(previous.personalization) }));
-  }
-  async function clearLearning() {
-    return commit(previous => ({ ...previous, personalization: resetLearning(previous.personalization) }));
-  }
+  async function deleteDrink(id: string) { return commit(previous => deleteDrinkFromCatalog(previous, id)); }
+  async function createCategory(name: string): Promise<boolean> { return commit(previous => createDrinkCategory(previous, name, `custom:${crypto.randomUUID()}`)); }
+  async function renameCategory(id: DrinkCategoryId, name: string): Promise<boolean> { return commit(previous => renameDrinkCategory(previous, id, name)); }
+  async function deleteCategory(id: DrinkCategoryId, destinationId?: DrinkCategoryId): Promise<boolean> { return commit(previous => deleteDrinkCategory(previous, id, destinationId)); }
+  async function reorderCategories(ids: DrinkCategoryId[]): Promise<boolean> { return commit(previous => reorderDrinkCategories(previous, ids)); }
   async function reset() {
     if (locked.current) return false;
     locked.current = true;
@@ -131,6 +98,5 @@ export function useCaffeine(repository: CaffeineRepository) {
     catch (cause) { setError(cause instanceof Error ? cause.message : '초기화하지 못했어요. 다시 시도해 주세요.'); return false; }
     finally { locked.current = false; setBusy(false); }
   }
-  const effectiveState = useMemo(() => ({ ...state, personalization: reconcilePersonalization(state.personalization, state.entries, now) }), [state, now]);
-  return { state: effectiveState, now, loading, loaded, busy, error, clearError: () => setError(''), reload, drinks: [...DEFAULT_DRINKS, ...state.customDrinks], record, createDrink, updateEntry, deleteEntry, reset, exposePrediction, answerCheckIn, skipCheckIn, removeFeedback, changeFeedback, togglePersonalization, restorePersonalizationDefault, clearLearning };
+  return { state, halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS, now, loading, loaded, busy, error, clearError: () => setError(''), reload, categories: drinkCategories(state), drinks: availableDrinks(state), record, createDrink, deleteDrink, createCategory, renameCategory, deleteCategory, reorderCategories, updateEntry, deleteEntry, reset };
 }

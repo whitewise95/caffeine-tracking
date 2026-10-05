@@ -1,22 +1,38 @@
 .settings-section { background: var(--surface); padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 14px; }
+.settings-category-entry { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; text-align: left; }
+.settings-category-entry > span { flex: 1; min-width: 0; font-size: .9375rem; overflow-wrap: anywhere; }
+.settings-category-entry small { display: block; margin-top: 4px; font-size: .75rem; color: var(--text-secondary); }
+.settings-category-entry > svg { color: var(--text-secondary); }
 .section-heading { display: flex; align-items: center; gap: 9px; }
 .section-heading svg { color: var(--text-secondary); }
 .section-heading h2 { font-size: 0.9375rem; font-weight: 600; }
 .settings-description { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.8; margin-top: 10px; }
-.halflife-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 16px; margin: 18px 0 2px; }
-.halflife-value strong { color: var(--text-primary); font-size: 2.125rem; font-weight: 550; font-variant-numeric: tabular-nums; }
-.halflife-part { display: inline-flex; align-items: baseline; gap: 6px; color: var(--text-secondary); font-size: 0.875rem; }
+.half-life-sources { margin-top: 8px; color: var(--text-secondary); font-size: .75rem; line-height: 1.8; }
+.half-life-sources summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+.half-life-source-links { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: 6px; }
+.half-life-source-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--text-primary); text-underline-offset: 3px; }
 .range-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-tertiary); margin-top: -5px; margin-bottom: 22px; }
-.formula { background: var(--surface-elevated); border-radius: var(--radius-sm); padding: 28px 12px 16px; text-align: center; margin: 18px 0; }
-.formula-expression { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 16px 8px; font-size: 1rem; line-height: 1.5; }
-.formula-power { display: inline-grid; grid-template-columns: auto auto; align-items: end; column-gap: 3px; }
-.formula sup { align-self: start; position: relative; top: -.35em; font-size: .75rem; line-height: 1.4; }
+.formula { background: var(--surface-elevated); border-radius: var(--radius-sm); padding: 22px 12px 16px; text-align: center; margin: 18px 0 8px; }
+.formula-expression { display: flex; flex-direction: column; align-items: center; gap: 16px; font-size: 1rem; line-height: 1.5; }
+.formula-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; max-width: 100%; }
+.formula-power { display: inline-flex; align-items: baseline; white-space: nowrap; }
+.formula sup { position: relative; top: -.55em; font-size: .7em; line-height: 1.4; }
+.formula sub, .formula-details sub { font-size: .7em; }
 .formula-fraction { display: inline-flex; flex-direction: column; align-items: stretch; text-align: center; }
 .formula-numerator { padding: 0 4px 3px; }
 .formula-denominator { border-top: 1px solid currentColor; padding: 3px 4px 0; }
 .formula-caption { margin-top: 14px; font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
+.formula-details { margin-bottom: 14px; color: var(--text-secondary); font-size: .75rem; line-height: 1.7; }
+.formula-details summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+.formula-details dl { display: grid; gap: 8px; margin: 0; }
+.formula-details dl > div { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; }
+.formula-details dt { color: var(--text-primary); }
+.formula-details dd { margin: 0; overflow-wrap: anywhere; }
+.formula-details p { margin-top: 12px; }
+.formula-details a { color: var(--text-primary); text-underline-offset: 3px; }
 .model-disclaimer { color: var(--text-secondary); font-size: 0.75rem; line-height: 1.8; }
 .settings-plain { background: transparent; }
+.settings-plain .reset-row { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); min-height: 60px; }
 .reset-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0; background: none; border: 0; text-align: left; }
 .reset-row span { flex: 1; font-size: 0.875rem; }
 .reset-row > svg { color: var(--text-tertiary); }

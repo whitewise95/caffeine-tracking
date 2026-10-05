@@ -13,9 +13,9 @@ export function HistoryCalendar({ selectedDay, today, counts, onSelect }: {
   const lastDay = new Date(year, month + 1, 0, 12).getDate();
   const leading = (firstDay.getDay() + 6) % 7;
   const monthLabel = firstDay.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
-  const days = Array.from({ length: lastDay }, (_, i) => new Date(year, month, i + 1, 12)).filter(day => localDateKey(day) <= today);
+  const days = Array.from({ length: lastDay }, (_, i) => new Date(year, month, i + 1, 12));
   const canMoveNext = selectedDay.slice(0, 7) < today.slice(0, 7);
-  const recordedDays = days.filter(day => counts.has(localDateKey(day))).length;
+  const recordedDays = days.filter(day => localDateKey(day) <= today && counts.has(localDateKey(day))).length;
 
   function moveMonth(offset: number) {
     const target = new Date(year, month + offset, 1, 12);
@@ -40,11 +40,12 @@ export function HistoryCalendar({ selectedDay, today, counts, onSelect }: {
       {Array.from({ length: leading }, (_, i) => <span key={`blank-${i}`} aria-hidden="true" />)}
       {days.map(day => {
         const key = localDateKey(day);
-        const count = counts.get(key) ?? 0;
+        const isFuture = key > today;
+        const count = isFuture ? 0 : counts.get(key) ?? 0;
         const isSelected = key === selectedDay;
         const label = day.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-        return <button key={key} className="calendar-day" aria-pressed={isSelected} aria-current={key === today ? 'date' : undefined}
-          aria-label={`${label}, ${key === today ? '오늘, ' : ''}${count ? `기록 ${count}잔` : '기록 없음'}`} onClick={() => onSelect(key)}>
+        return <button key={key} className="calendar-day" disabled={isFuture} aria-pressed={isSelected} aria-current={key === today ? 'date' : undefined}
+          aria-label={`${label}, ${isFuture ? '미래 날짜, 선택 불가' : `${key === today ? '오늘, ' : ''}${count ? `기록 ${count}잔` : '기록 없음'}`}`} onClick={() => { if (!isFuture) onSelect(key) }}>
           <span>{day.getDate()}</span>
           {isSelected && <Check className="calendar-selected-check" size={10} strokeWidth={2.5} aria-hidden="true" />}
           {count > 0 && <span className="calendar-record-dot" aria-hidden="true" />}

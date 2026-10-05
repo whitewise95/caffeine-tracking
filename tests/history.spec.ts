@@ -53,25 +53,32 @@ test('journal filters local dates and updates the calendar after moving and dele
 });
 
 for (const scenario of [
-  { now: '2026-10-04T09:00:00+09:00', today: '2026년 10월 4일', tomorrow: '2026년 10월 5일', previousLastDay: '2026년 9월 30일', visibleDays: 4 },
-  { now: '2026-01-01T09:00:00+09:00', today: '2026년 1월 1일', tomorrow: '2026년 1월 2일', previousLastDay: '2025년 12월 31일', visibleDays: 1 },
+  { now: '2026-10-04T09:00:00+09:00', today: '2026년 10월 4일', tomorrow: '2026년 10월 5일', previousLastDay: '2026년 9월 30일', monthDays: 31, selectableDays: 4 },
+  { now: '2026-01-01T09:00:00+09:00', today: '2026년 1월 1일', tomorrow: '2026년 1월 2일', previousLastDay: '2025년 12월 31일', monthDays: 31, selectableDays: 1 },
 ]) {
-  test(`journal hides future dates and months at ${scenario.today}`, async ({ page }, testInfo) => {
+  test(`journal shows the whole current month but disables future dates at ${scenario.today}`, async ({ page }, testInfo) => {
     await page.clock.install({ time: new Date(scenario.now) });
     await openJournal(page, '', [{ ...entries[0], id: 'future', consumedAt: '2027-02-01T09:00:00+09:00' }]);
     const today = page.getByRole('button', { name: new RegExp(`^${scenario.today}`) });
     await expect(today).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.calendar-day')).toHaveCount(scenario.visibleDays);
-    await expect(page.getByRole('button', { name: new RegExp(`^${scenario.tomorrow}`) })).toHaveCount(0);
+    await expect(page.locator('.calendar-day')).toHaveCount(scenario.monthDays);
+    await expect(page.locator('.calendar-day:not(:disabled)')).toHaveCount(scenario.selectableDays);
+    const tomorrow = page.getByRole('button', { name: new RegExp(`^${scenario.tomorrow}`) });
+    await expect(tomorrow).toBeVisible();
+    await expect(tomorrow).toBeDisabled();
+    await expect(tomorrow).toHaveAccessibleName(/미래 날짜/);
+    await tomorrow.evaluate((element: HTMLButtonElement) => element.click());
+    await expect(today).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: '다음 달', exact: true })).toHaveCount(0);
 
     await page.getByRole('button', { name: '이전 달', exact: true }).click();
     await page.getByRole('button', { name: new RegExp(`^${scenario.previousLastDay}`) }).click();
     await page.getByRole('button', { name: '다음 달', exact: true }).click();
     await expect(today).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.calendar-day')).toHaveCount(scenario.visibleDays);
+    await expect(page.locator('.calendar-day')).toHaveCount(scenario.monthDays);
+    await expect(page.locator('.calendar-day:not(:disabled)')).toHaveCount(scenario.selectableDays);
     await expect(page.getByRole('button', { name: '다음 달', exact: true })).toHaveCount(0);
-    await page.screenshot({ path: `test-results/${testInfo.project.name}-journal-past-only-${scenario.visibleDays}.png` });
+    await page.screenshot({ path: `test-results/${testInfo.project.name}-journal-future-disabled-${scenario.selectableDays}.png` });
   });
 }
 

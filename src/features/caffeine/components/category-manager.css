@@ -1,0 +1,56 @@
+.category-manager { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+.category-manager-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 0 24px 24px; scroll-padding-block: 16px; }
+.category-manager-hint { margin: 8px 0 16px; color: var(--text-secondary); font-size: .8125rem; line-height: 1.7; overflow-wrap: anywhere; }
+.category-manager-intro { margin-top: 0; }
+.category-manager-error { margin: 0 0 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.category-manager-retry { width: 100%; margin-bottom: 16px; min-height: 52px; }
+.category-manager-list { list-style: none; margin: 0; padding: 0; }
+.category-manager-item { position: relative; min-width: 0; border-bottom: 1px solid var(--border); }
+.category-manager-item.is-dragging { z-index: 2; }
+.category-manager-row { display: grid; position: relative; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 80px; padding-block: 8px; border: 1px solid transparent; border-radius: 12px; background: var(--surface); }
+.category-manager-details { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-block: 4px; }
+.category-manager-name { color: var(--text-primary); font-size: .9375rem; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.category-manager-count { color: var(--text-secondary); font-size: .75rem; line-height: 1.5; }
+.category-manager-grip, .category-manager-close { display: grid; place-items: center; width: 48px; min-width: 48px; min-height: 48px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--text-secondary); }
+.category-manager-grip { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.category-manager-grip[aria-pressed='true'] { cursor: grabbing; color: var(--accent-pink-strong); }
+.category-manager-manage { min-width: 48px; min-height: 48px; max-width: 100%; padding: 10px; border: 0; border-radius: 10px; background: transparent; color: var(--text-secondary); font-size: .8125rem; font-weight: 600; line-height: 1.5; }
+.category-manager-manage[aria-expanded='true'] { color: var(--accent-pink-strong); background: var(--surface-elevated); }
+.category-manager-row.is-open { border-color: var(--border-strong); }
+.category-manager-item.is-dragging .category-manager-row { border-color: var(--accent-pink); background: var(--surface-elevated); box-shadow: var(--selected-glow); }
+.category-manager-item.drop-before::before, .category-manager-item.drop-after::after { content: ''; position: absolute; inset-inline: 8px; z-index: 3; height: 3px; border-radius: 3px; background: var(--accent-pink); pointer-events: none; }
+.category-manager-item.drop-before::before { top: -2px; }
+.category-manager-item.drop-after::after { bottom: -2px; }
+.category-manager-panel { min-width: 0; margin: 8px 0 16px; padding: 16px; border: 1px solid var(--border-strong); border-radius: 16px; background: var(--surface-elevated); }
+.category-manager-panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -8px -8px 8px 0; }
+.category-manager h3 { min-width: 0; margin: 0 0 16px; font-size: .9375rem; line-height: 1.6; overflow-wrap: anywhere; }
+.category-manager-panel-heading h3 { margin: 0; }
+.category-manager-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.category-manager-tools > button { display: flex; flex: 1 1 130px; justify-content: center; align-items: center; gap: 8px; min-width: 0; min-height: 48px; padding: 10px 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-size: .8125rem; line-height: 1.5; overflow-wrap: anywhere; }
+.category-manager-tools svg, .category-manager-footer svg, .category-manager-inline-add svg { flex-shrink: 0; }
+.category-manager-form, .category-manager-delete { min-width: 0; }
+.category-manager-form label, .category-manager-delete label { display: block; margin: 0 0 8px; color: var(--text-secondary); font-size: .8125rem; line-height: 1.6; }
+.category-manager input, .category-manager select { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 52px; padding: 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-size: 1rem; line-height: 1.5; }
+.category-manager input[aria-invalid='true'] { border-color: var(--danger); }
+.category-manager-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.category-manager-actions > button { flex: 1 1 110px; min-width: 0; min-height: 52px; padding: 12px; font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
+.category-manager-destructive { color: var(--danger); }
+.category-manager-inline-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; max-width: 100%; margin-top: 8px; padding: 10px 0; border: 0; background: transparent; color: var(--text-primary); font-size: .8125rem; line-height: 1.5; }
+.category-manager-delete .category-manager-form { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-strong); }
+.category-manager-empty { padding-block: 24px; color: var(--text-secondary); font-size: .875rem; line-height: 1.7; text-align: center; }
+.category-manager-footer { flex: 0 0 auto; padding: 16px 24px 24px; border-top: 1px solid var(--border); background: var(--surface); }
+.category-manager-footer > button { width: 100%; min-height: 54px; font-size: .9375rem; line-height: 1.5; }
+.category-manager button { touch-action: manipulation; }
+.category-manager .category-manager-grip { touch-action: none; }
+.category-manager button:disabled { cursor: default; opacity: .4; }
+.category-manager button:not(:disabled):active { background: var(--surface-pressed); }
+.category-manager .button-primary:not(:disabled):active { opacity: .8; background: var(--text-primary); }
+.category-manager :is(button, input, select):focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 3px; }
+@media (max-width: 375px) {
+  .category-manager-scroll { padding-inline: 20px; }
+  .category-manager-footer { padding-inline: 20px; }
+  .category-manager-panel { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .category-manager *, .category-manager *::before, .category-manager *::after { animation: none; transition: none; scroll-behavior: auto; }
+}

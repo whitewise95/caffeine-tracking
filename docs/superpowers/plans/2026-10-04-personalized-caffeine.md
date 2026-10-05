@@ -1,5 +1,7 @@
 # Personalized caffeine implementation plan
 
+> 보관 문서: 아래는 이전 개인화 설계의 요청·계획입니다. 당시 5시간 기준은 이력으로 보존합니다. 현재 앱은 4시간 30분을 고정 기준으로 사용하며 설문·응답 기반 보정은 제공하지 않습니다. [현재 구현](../../../README.md)을 참고하세요.
+
 > Execution: coordinated model, evidence and UI work with integration and final review in this session. The user supplied the full implementation specification and authorized execution.
 
 **Goal:** Separate fixed caffeine mass estimates from optional, experimentally personalized perceived-duration forecasts and next-day observations.

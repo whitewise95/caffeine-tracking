@@ -1,0 +1,6 @@
+.remaining-page .page-header { justify-content: flex-start; gap: 12px; }
+.remaining-page .page-title { min-width: 0; font-size: var(--font-lg); overflow-wrap: anywhere; }
+.remaining-total { padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.remaining-total p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: 8px; }
+.remaining-total strong { font-size: var(--font-xl); font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+.remaining-total p > span { color: var(--text-secondary); font-size: var(--font-sm); }
