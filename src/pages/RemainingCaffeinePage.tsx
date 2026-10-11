@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { RemainingDrinks } from '../features/caffeine/components/RemainingDrinks';
 import { caffeineEstimate } from '../features/caffeine/model/caffeine';
-import type { CaffeineEntry, Drink } from '../features/caffeine/model/caffeine.types';
+import type { CaffeineEntry, Drink, DrinkPhotoHistory } from '../features/caffeine/model/caffeine.types';
 import './remaining-caffeine.css';
 
-export function RemainingCaffeinePage({ entries, drinks, now, halfLifeHours, onBack }: {
+export function RemainingCaffeinePage({ entries, drinks, photoHistory, now, halfLifeHours, onBack }: {
   entries: CaffeineEntry[];
-  drinks: readonly Drink[];
+  drinks: readonly Drink[]; photoHistory?: DrinkPhotoHistory;
   now: Date;
   halfLifeHours: number;
   onBack: () => void;
@@ -24,6 +24,6 @@ export function RemainingCaffeinePage({ entries, drinks, now, halfLifeHours, onB
       <span className="estimate-label">현재 추정 잔존 카페인</span>
       <p><strong data-testid="remaining-mg">{Math.round(estimate.remainingMg)}</strong><span>mg</span></p>
     </div>
-    <RemainingDrinks entries={entries} drinks={drinks} now={now} halfLifeHours={halfLifeHours} />
+    <RemainingDrinks entries={entries} drinks={drinks} photoHistory={photoHistory} now={now} halfLifeHours={halfLifeHours} />
   </main>;
 }

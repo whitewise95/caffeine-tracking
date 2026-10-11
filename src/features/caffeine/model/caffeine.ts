@@ -3,7 +3,9 @@ import { DEFAULT_CAFFEINE_HALF_LIFE_HOURS, oralCaffeineEstimate, uniformOralCaff
 import { isValidIntakeTiming } from './intakeTiming'
 
 export { DEFAULT_CAFFEINE_HALF_LIFE_HOURS } from './pharmacokinetics'
-export const MAX_CAFFEINE_MG = 1000
+export const MAX_CAFFEINE_MG = 500
+// Keep previously saved doses valid when the input limit changes.
+export const MAX_STORED_CAFFEINE_MG = 1000
 
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000
 
@@ -14,7 +16,7 @@ function timestamp(date: Date): number {
 }
 
 function isValidDose(caffeineMg: number): boolean {
-  return Number.isFinite(caffeineMg) && caffeineMg >= 0 && caffeineMg <= MAX_CAFFEINE_MG
+  return Number.isFinite(caffeineMg) && caffeineMg >= 0 && caffeineMg <= MAX_STORED_CAFFEINE_MG
 }
 
 /** Model estimates only: these are not measured caffeine concentrations. */

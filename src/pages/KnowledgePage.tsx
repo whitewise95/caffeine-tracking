@@ -1,6 +1,7 @@
 import { ChevronDown, ArrowUpRight } from 'lucide-react';
 import { useEffect, useRef, type SyntheticEvent } from 'react';
 import { KNOWLEDGE_FAQ } from '../features/caffeine/data/knowledgeFaq';
+import { ExternalLink } from '../components/ExternalLink';
 import './knowledge.css';
 
 export function KnowledgePage() {
@@ -36,7 +37,7 @@ export function KnowledgePage() {
           {faq.answer.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
           <div className="knowledge-sources">
             <p className="knowledge-source-label">논문·공식 자료</p>
-            {faq.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer"><span>{source.label}</span><ArrowUpRight size={16} aria-hidden="true" /></a>)}
+            {faq.sources.map(source => <ExternalLink key={source.url} href={source.url}><span>{source.label}</span><ArrowUpRight size={16} aria-hidden="true" /></ExternalLink>)}
           </div>
         </div>
       </details>)}

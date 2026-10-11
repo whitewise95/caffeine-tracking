@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type Page = 'home' | 'remaining' | 'history' | 'knowledge' | 'settings';
-export type AddCaffeineStep = 'select' | 'record' | 'compose' | 'categories' | 'time-start' | 'time-end';
-export type Overlay = { type: 'add' | 'reset' | 'edit' | 'delete' | 'categories'; entryId?: string; key: string; step?: AddCaffeineStep; originDepth?: number } | null;
+export type Page = 'home' | 'remaining' | 'history' | 'insights' | 'knowledge' | 'settings';
+export type AddCaffeineStep = 'select' | 'layout' | 'record' | 'compose' | 'compose-dose' | 'categories' | 'time-start' | 'time-end';
+export type Overlay = { type: 'add' | 'reset' | 'edit' | 'delete' | 'categories' | 'exit' | 'bedtime'; entryId?: string; initialConsumedAt?: string; key: string; step?: AddCaffeineStep; originDepth?: number } | null;
 interface Route { page: Page; overlay: Overlay; depth: number }
-const paths: Record<Page, string> = { home: '/', remaining: '/remaining', history: '/history', knowledge: '/knowledge', settings: '/settings' };
+const paths: Record<Page, string> = { home: '/', remaining: '/remaining', history: '/history', insights: '/insights', knowledge: '/knowledge', settings: '/settings' };
 
 // Browser history may still contain overlays from an earlier app version.
 function supportedOverlay(value: unknown): Overlay {
   if (!value || typeof value !== 'object' || !('type' in value) || !('key' in value)) return null;
-  if (!['add', 'reset', 'edit', 'delete', 'categories'].includes(String(value.type)) || typeof value.key !== 'string') return null;
+  if (!['add', 'reset', 'edit', 'delete', 'categories', 'exit', 'bedtime'].includes(String(value.type)) || typeof value.key !== 'string') return null;
   if ((value.type === 'edit' || value.type === 'delete') && (!('entryId' in value) || typeof value.entryId !== 'string')) return null;
   return value as NonNullable<Overlay>;
 }
@@ -17,6 +17,7 @@ function supportedOverlay(value: unknown): Overlay {
 function pageAtLocation(): Page {
   if (location.pathname.replace(/\/$/, '') === '/remaining') return 'remaining';
   if (location.pathname.replace(/\/$/, '') === '/history') return 'history';
+  if (location.pathname.replace(/\/$/, '') === '/insights') return 'insights';
   if (location.pathname.replace(/\/$/, '') === '/knowledge') return 'knowledge';
   if (location.pathname.replace(/\/$/, '') === '/settings') return 'settings';
   return 'home';
@@ -29,8 +30,10 @@ export function useRouter() {
     return initial;
   });
   const current = useRef(route);
+  const traversing = useRef(false);
   useEffect(() => {
     const sync = () => {
+      traversing.current = false;
       const saved = window.history.state as Route | null;
       const next = { page: pageAtLocation(), overlay: supportedOverlay(saved?.overlay), depth: saved?.depth ?? 0 };
       current.current = next;
@@ -40,7 +43,7 @@ export function useRouter() {
     return () => window.removeEventListener('popstate', sync);
   }, []);
 
-  function push(next: Route) { window.history.pushState(next, '', `${paths[next.page]}${location.search}`); current.current = next; setRoute(next); }
+  const push = useCallback((next: Route) => { window.history.pushState(next, '', `${paths[next.page]}${location.search}`); current.current = next; setRoute(next); }, []);
   function navigate(page: Page) { if (page !== route.page) { push({ page, overlay: null, depth: route.depth + 1 }); window.scrollTo(0, 0); } }
   function openOverlay(overlay: Omit<NonNullable<Overlay>, 'key'>) {
     push({ ...route, overlay: { ...overlay, key: crypto.randomUUID(), originDepth: route.depth, ...(overlay.type === 'add' ? { step: 'select' as const } : {}) }, depth: route.depth + 1 });
@@ -58,10 +61,11 @@ export function useRouter() {
   }
   // An async save may finish after back already dismissed this particular sheet.
   function closeOverlay() {
-    if (!route.overlay || current.current.overlay?.key !== route.overlay.key || current.current.depth !== route.depth) return;
+    if (traversing.current || !route.overlay || current.current.overlay?.key !== route.overlay.key || current.current.depth !== route.depth) return;
     current.current = { ...current.current, overlay: null };
     window.history.replaceState(current.current, '', location.href);
     const origin = route.overlay.originDepth ?? route.depth - 1;
+    traversing.current = true;
     window.history.go(-Math.max(1, route.depth - origin));
   }
   const discardOverlay = useCallback(() => {
@@ -70,14 +74,24 @@ export function useRouter() {
     current.current = next;
     setRoute(next);
   }, []);
-  function back() {
-    if (route.depth > 0) window.history.back();
+  const back = useCallback(() => {
+    // Native events can arrive together before the asynchronous popstate update.
+    if (traversing.current) return;
+    const active = current.current;
+    // Home is the app's exit point even when previous tab visits remain in history.
+    // Opening a history-backed overlay lets Android/browser back cancel it normally.
+    if (!active.overlay && active.page === 'home') {
+      push({ ...active, overlay: { type: 'exit', key: crypto.randomUUID(), originDepth: active.depth }, depth: active.depth + 1 });
+    } else if (active.depth > 0) {
+      traversing.current = true;
+      window.history.back();
+    }
     else {
       const next: Route = { page: 'home', overlay: null, depth: 0 };
       window.history.replaceState(next, '', `/${location.search}`);
       current.current = next;
       setRoute(next);
     }
-  }
+  }, [push]);
   return { ...route, navigate, openOverlay, closeOverlay, discardOverlay, changeOverlayStep, back };
 }

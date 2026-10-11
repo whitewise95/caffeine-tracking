@@ -1,0 +1,3 @@
+.category-delete-dialog .category-manager-delete h3 { margin: 0; font-size: var(--font-lg); font-weight: 650; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+.category-delete-dialog .category-manager-hint { margin: 12px 0 20px; }
+.category-delete-dialog .category-manager-delete-action { margin-top: 16px; }

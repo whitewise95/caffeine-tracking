@@ -1,8 +1,3 @@
-import type { AppTheme } from '../features/caffeine/model/caffeine.types';
-
-/** Toss non-game release guidelines currently require a light mini-app. */
-export function resolveAppTheme(preference: AppTheme | undefined, tossRuntime: boolean, previewTheme: string | null): AppTheme {
-  if (tossRuntime) return 'light';
-  if (preference) return preference;
-  return previewTheme === 'light' ? 'light' : 'dark';
-}
+/** One appearance across browsers and Toss; legacy preferences stay in storage. */
+export const APP_THEME = 'dark';
+export const APP_BACKGROUND = '#0A0B0E';

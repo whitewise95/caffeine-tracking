@@ -6,9 +6,12 @@ import { MAX_CAFFEINE_MG } from '../model/caffeine';
 import type { CaffeineEntry } from '../model/caffeine.types';
 import { IntakeTimeFields } from './IntakeTimeFields';
 import { useIntakeTimeFields } from './useIntakeTimeFields';
+import { IntakeNoteField } from './IntakeNoteField';
+import { normalizeIntakeNote } from '../model/intakeNote';
 
-export function EditEntryForm({ entry, busy, step, onStepChange, onBack, onClose, storageError, onSave }: { step: AddCaffeineStep; onStepChange: (step: AddCaffeineStep) => void; onBack: () => void; onClose: () => void; storageError: string; entry: CaffeineEntry; busy: boolean; onSave: (changes: Pick<CaffeineEntry, 'caffeineMg' | 'consumedAt' | 'startedAt'>) => Promise<boolean> }) {
+export function EditEntryForm({ entry, busy, step, onStepChange, onBack, onClose, storageError, onSave }: { step: AddCaffeineStep; onStepChange: (step: AddCaffeineStep) => void; onBack: () => void; onClose: () => void; storageError: string; entry: CaffeineEntry; busy: boolean; onSave: (changes: Pick<CaffeineEntry, 'caffeineMg' | 'consumedAt' | 'startedAt' | 'note'>) => Promise<boolean> }) {
   const [mg, setMg] = useState(String(entry.caffeineMg));
+  const [note, setNote] = useState(entry.note ?? '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const inProgress = useRef(false);
@@ -38,7 +41,7 @@ export function EditEntryForm({ entry, busy, step, onStepChange, onBack, onClose
     inProgress.current = true;
     setSaving(true);
     try {
-      const saved = await onSave({ caffeineMg, ...timing.timing });
+      const saved = await onSave({ caffeineMg, ...timing.timing, note: normalizeIntakeNote(note) });
       if (!saved) setError('기록을 저장하지 못했어요. 다시 시도해 주세요.');
     } catch {
       setError('기록을 저장하지 못했어요. 다시 시도해 주세요.');
@@ -54,6 +57,7 @@ export function EditEntryForm({ entry, busy, step, onStepChange, onBack, onClose
     <p>{entry.drinkName}</p>
     <label className="field">카페인량 (mg)<input type="number" min="0" max={MAX_CAFFEINE_MG} step="any" inputMode="decimal" value={mg} onChange={event => { setMg(event.target.value); setError(''); }} disabled={disabled} required /></label>
     <IntakeTimeFields onPickTime={target => { returnFocus.current = target === 'start' ? '마시기 시작한 시각' : '마신 마지막 시각'; onStepChange(target === 'start' ? 'time-start' : 'time-end'); }} draft={intakeTime.draft} disabled={disabled} showInstantTime onChange={draft => { intakeTime.setDraft(draft); setError(''); }} onToggle={slow => { intakeTime.toggleSlow(slow); setError(''); }} />
+    <IntakeNoteField value={note} disabled={disabled} onChange={value => { setNote(value); setError(''); }} />
     {error && <p className="field-error" role="alert">{error}</p>}
     <button className="button-primary full-width" disabled={disabled}>{disabled ? '저장하는 중…' : '수정 저장'}</button>
   </form>}

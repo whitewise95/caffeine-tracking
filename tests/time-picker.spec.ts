@@ -27,7 +27,7 @@ test('time selection stays in the same modal and commits only on done', async ({
   await hour.press('ArrowUp');
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(start).toHaveText('오전 2:30');
-  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveValue('2026-10-04');
+  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveAttribute('datetime', '2026-10-04');
   await expect(page.locator('.quick-adjust-amount')).toHaveText('150mg');
 });
 
@@ -105,7 +105,7 @@ test('tapping numbers and keyboard boundaries convert noon and midnight correctl
   expect(entries[0].startedAt).toBe('2026-10-03T15:00:00.000Z');
 });
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`time wheel stays usable with enlarged text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openPicker(page, theme);
@@ -138,7 +138,7 @@ test('visible hour and minute numbers can be tapped without dragging', async ({ 
   await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 10:31');
 });
 
-test('edit picker cancels browser back and closes the whole flow with the close button', async ({ page }) => {
+test('edit picker returns to its form before the root close button dismisses editing', async ({ page }) => {
   await openPicker(page);
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await page.getByRole('button', { name: '기록 저장', exact: true }).click();
@@ -154,6 +154,8 @@ test('edit picker cancels browser back and closes the whole flow with the close 
   await page.goBack();
   await expect(page.getByRole('button', { name: '마신 마지막 시각', exact: true })).toHaveText('오전 10:00');
   await page.getByRole('button', { name: '마신 마지막 시각', exact: true }).click();
+  await expect(page.getByRole('button', { name: '닫기', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '기록 화면으로 돌아가기', exact: true }).click();
   await page.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page).toHaveURL(/\/history$/);

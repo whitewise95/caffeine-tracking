@@ -11,7 +11,7 @@ async function swipeUp(page: Page) {
   await session.detach();
 }
 
-for (const theme of ['dark', 'light']) {
+for (const theme of ['dark']) {
   for (const fontSize of [16, 32]) {
     test(`home can reveal its last content above fixed controls: ${theme}, ${fontSize}px`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: page.viewportSize()!.width, height: 700 });
@@ -21,12 +21,13 @@ for (const theme of ['dark', 'light']) {
         document.documentElement.style.fontSize = `${size}px`;
         document.documentElement.style.setProperty('--safe-bottom', '34px');
       }, fontSize);
+      const needsScroll = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight);
       await swipeUp(page);
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      if (needsScroll) await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-      const bottom = await page.locator('.home-bottom-note').boundingBox();
-      const controls = await page.locator('.home-cta').boundingBox();
-      expect(bottom!.y + bottom!.height).toBeLessThanOrEqual(controls!.y - 16);
+      const bottom = await page.getByRole('region', { name: '카페인 기록 요약', exact: true }).boundingBox();
+      const controls = await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox();
+      expect(bottom!.y + bottom!.height).toBeLessThanOrEqual(controls!.y);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: testInfo.outputPath(`home-${theme}-${fontSize}.png`), animations: 'disabled' });
 
@@ -40,7 +41,7 @@ for (const theme of ['dark', 'light']) {
       expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden');
       await page.evaluate(() => window.scrollTo(0, 0));
       await swipeUp(page);
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      if (needsScroll) await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
     });
   }
 }

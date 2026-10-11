@@ -1,12 +1,134 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from './caffeine'
-import { addCustomDrink, availableDrinks, categoryNameKey, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, renameDrinkCategory, reorderDrinkCategories } from './drinkCategories'
+import { addCustomDrink, availableDrinks, categoryNameKey, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, moveDrinkInCatalog, renameDrinkCategory, reorderDrinkCategories, updateDrinkInCatalog } from './drinkCategories'
 import type { DrinkCategoryId } from './caffeine.types'
 
 const ids = { drinkId: 'drink-1', categoryId: 'custom:category-1' as const }
 const draft = { categoryName: '단백질 쉐이크', name: '초코 쉐이크', caffeineMg: 67, icon: 'cup' as const }
 
+describe('stored drink order', () => {
+  it('keeps category order authoritative and applies drink order within each section', () => {
+    const state = reorderDrinkCategories(createInitialState(), ['tea', 'coffee', 'energy', 'other'])
+    const ordered = { ...state, drinkOrder: ['cola', 'cold-brew', 'oolong-tea', 'americano', 'earl-grey', 'caffe-latte', 'green-tea', 'energy-drink'] }
+    expect(availableDrinks(ordered).map(drink => drink.id)).toEqual([
+      'oolong-tea', 'earl-grey', 'green-tea', 'cold-brew', 'americano', 'caffe-latte', 'energy-drink', 'cola',
+    ])
+  })
+
+  it('ignores stale IDs and puts newly added drinks after the saved drinks in their category', () => {
+    const ordered = { ...createInitialState(), drinkOrder: ['gone', 'cold-brew', 'americano'] }
+    const state = addCustomDrink(ordered, { ...draft, categoryName: '커피' }, ids).state
+    expect(availableDrinks(state).filter(drink => drink.categoryId === 'coffee').map(drink => drink.id)).toEqual([
+      'cold-brew', 'americano', 'caffe-latte', 'drink-1',
+    ])
+    expect(availableDrinks(state)).toHaveLength(9)
+  })
+
+  it('preserves the legacy global order when no arrangement was saved', () => {
+    const state = addCustomDrink(createInitialState(), { ...draft, categoryName: '커피' }, ids).state
+    expect(availableDrinks(state).map(drink => drink.id)).toEqual([
+      'americano', 'cold-brew', 'caffe-latte', 'green-tea', 'earl-grey', 'oolong-tea', 'energy-drink', 'cola', 'drink-1',
+    ])
+  })
+})
+
+describe('moving individual drinks', () => {
+  it('reorders a drink before another and appends when no destination drink is given', () => {
+    const state = createInitialState()
+    const moved = moveDrinkInCatalog(state, 'caffe-latte', 'coffee', 'americano')
+    expect(availableDrinks(moved).filter(drink => drink.categoryId === 'coffee').map(drink => drink.id)).toEqual(['caffe-latte', 'americano', 'cold-brew'])
+    const appended = moveDrinkInCatalog(moved, 'caffe-latte', 'coffee')
+    expect(availableDrinks(appended).filter(drink => drink.categoryId === 'coffee').map(drink => drink.id)).toEqual(['americano', 'cold-brew', 'caffe-latte'])
+    expect(state).toEqual(createInitialState())
+  })
+
+  it('moves a default directly into a custom category without changing intake snapshots', () => {
+    const state = addCustomDrink(createInitialState(), draft, ids).state
+    state.entries = [{ id: 'old-coffee', drinkId: 'americano', drinkName: '아메리카노', caffeineMg: 135, icon: 'coffee', consumedAt: '2026-10-05T01:00:00.000Z', note: '이전 기록' }]
+    const snapshot = JSON.stringify(state)
+    const moved = moveDrinkInCatalog(state, 'americano', ids.categoryId, ids.drinkId)
+    expect(availableDrinks(moved).filter(drink => drink.categoryId === ids.categoryId).map(drink => drink.id)).toEqual(['americano', 'drink-1'])
+    expect(availableDrinks(moved).filter(drink => drink.categoryId === 'coffee').map(drink => drink.id)).toEqual(['cold-brew', 'caffe-latte'])
+    expect(moved.defaultDrinkCategoryOverrides).toEqual({ americano: ids.categoryId })
+    expect(moved.entries).toBe(state.entries)
+    expect(JSON.stringify(state)).toBe(snapshot)
+  })
+
+  it('moves a custom drink and its photo to an empty category without changing history', () => {
+    const photoDataUrl = 'data:image/jpeg;base64,/9j/AA=='
+    const created = addCustomDrink(createInitialState(), { ...draft, categoryName: '커피', photoDataUrl }, ids)
+    const state = createDrinkCategory(created.state, '빈 분류', 'custom:empty')
+    state.entries = [{ id: 'old', drinkId: 'drink-1', drinkName: draft.name, caffeineMg: 60, icon: 'cup', consumedAt: '2026-10-05T01:00:00.000Z' }]
+    const moved = moveDrinkInCatalog(state, 'drink-1', 'custom:empty')
+    expect(moved.customDrinks).toEqual([{ ...created.drink, categoryId: 'custom:empty' }])
+    expect(availableDrinks(moved).filter(drink => drink.categoryId === 'custom:empty').map(drink => drink.id)).toEqual(['drink-1'])
+    expect(moved.entries).toBe(state.entries)
+    expect(created.drink.categoryId).toBe('coffee')
+  })
+
+  it('keeps a moved order when categories are reordered and a new drink is appended', () => {
+    const moved = moveDrinkInCatalog(createInitialState(), 'caffe-latte', 'tea', 'earl-grey')
+    const reordered = reorderDrinkCategories(moved, ['tea', 'other', 'coffee', 'energy'])
+    const state = addCustomDrink(reordered, { ...draft, categoryName: '차' }, ids).state
+    expect(availableDrinks(state).map(drink => drink.id)).toEqual([
+      'green-tea', 'caffe-latte', 'earl-grey', 'oolong-tea', 'drink-1', 'cola', 'americano', 'cold-brew', 'energy-drink',
+    ])
+  })
+
+  it('accepts dropping a drink onto itself without changing the state', () => {
+    const state = createInitialState()
+    expect(moveDrinkInCatalog(state, 'americano', 'coffee', 'americano')).toBe(state)
+  })
+
+  it('rejects missing, deleted and mismatched targets without modifying the source', () => {
+    const state = deleteDrinkFromCatalog(createInitialState(), 'americano')
+    const snapshot = JSON.stringify(state)
+    const attempts: [string, DrinkCategoryId, string?][] = [
+      ['missing', 'tea'], ['americano', 'tea'], ['cold-brew', 'custom:missing'],
+      ['cold-brew', 'tea', 'missing'], ['cold-brew', 'tea', 'americano'],
+      ['cold-brew', 'tea', 'caffe-latte'], ['cold-brew', 'tea', 'cold-brew'],
+    ]
+    for (const [id, categoryId, beforeId] of attempts) expect(() => moveDrinkInCatalog(state, id, categoryId, beforeId)).toThrow()
+    expect(JSON.stringify(state)).toBe(snapshot)
+  })
+
+  it('removes deleted default and custom drinks from saved order while retaining their records', () => {
+    const created = addCustomDrink(createInitialState(), { ...draft, categoryName: '커피' }, ids).state
+    created.entries = [{ id: 'old', drinkId: 'drink-1', drinkName: draft.name, caffeineMg: 60, icon: 'cup', consumedAt: '2026-10-05T01:00:00.000Z' }]
+    const ordered = { ...created, drinkOrder: ['drink-1', 'americano', 'cold-brew'] }
+    const deleted = deleteDrinkFromCatalog(deleteDrinkFromCatalog(ordered, 'drink-1'), 'americano')
+    expect(deleted.drinkOrder).toEqual(['cold-brew'])
+    expect(deleted.entries).toBe(created.entries)
+    expect(deleted.retainedDrinkCategories).toEqual({ 'drink-1': 'coffee' })
+  })
+
+  it('cleans up moved drinks and their history when their current category is force deleted', () => {
+    const created = addCustomDrink(createInitialState(), { ...draft, categoryName: '커피' }, ids).state
+    created.entries = [{ id: 'old', drinkId: 'drink-1', drinkName: draft.name, caffeineMg: 60, icon: 'cup', consumedAt: '2026-10-05T01:00:00.000Z' }]
+    const moved = moveDrinkInCatalog(moveDrinkInCatalog(created, 'drink-1', 'tea'), 'americano', 'tea')
+    const deleted = deleteDrinkCategory(moved, 'tea', undefined, 'force')
+    expect(deleted.drinkOrder).toEqual(['cold-brew', 'caffe-latte', 'energy-drink', 'cola'])
+    expect(deleted.entries).toEqual([])
+    expect(availableDrinks(deleted).map(drink => drink.id)).toEqual(['cold-brew', 'caffe-latte', 'energy-drink', 'cola'])
+  })
+})
+
 describe('drink categories', () => {
+  it('uses the chosen category ID even when its name has changed', () => {
+    const state = renameDrinkCategory(createInitialState(), 'coffee', '원두')
+    const result = addCustomDrink(state, { ...draft, categoryId: 'coffee', categoryName: '커피' }, ids)
+    expect(result.drink.categoryId).toBe('coffee')
+    expect(result.state.customCategories).toHaveLength(0)
+    expect(drinkCategories(result.state).find(category => category.id === 'coffee')?.name).toBe('원두')
+  })
+
+  it('does not recreate a deleted category when a draft refers to its ID', () => {
+    const state = deleteDrinkCategory(createInitialState(), 'coffee', 'tea')
+    const before = JSON.stringify(state)
+    expect(() => addCustomDrink(state, { ...draft, categoryId: 'coffee', categoryName: '커피' }, ids)).toThrow('카테고리')
+    expect(JSON.stringify(state)).toBe(before)
+  })
+
   it.each([' 단 백 질쉐 이크 ', '단백질\t쉐이크\n', '단백질\u00a0쉐이크', '단백질\u3000쉐이크'])('ignores whitespace when comparing %s', name => {
     expect(categoryNameKey(name)).toBe(categoryNameKey('단백질 쉐이크'))
   })
@@ -187,5 +309,124 @@ describe('category management', () => {
     const invalidOrders: DrinkCategoryId[][] = [[], ['coffee', 'tea', 'energy', 'other'], ['coffee', 'coffee', 'energy', 'other', 'custom:shake'], ['coffee', 'tea', 'energy', 'other', 'custom:missing']]
     for (const order of invalidOrders) expect(() => reorderDrinkCategories(state, order)).toThrow()
     expect(drinkCategories(state).map(category => category.id)).toEqual(['coffee', 'tea', 'energy', 'other', 'custom:shake'])
+  })
+})
+
+
+describe('forced category deletion', () => {
+  it('removes owned drinks, photos and linked records without affecting another category', () => {
+    const state = createInitialState()
+    state.customDrinks = [
+      { id: 'photo-coffee', categoryId: 'coffee', name: '내 커피', caffeineMg: 90, icon: 'cup', sourceType: 'custom', isCustom: true, photoDataUrl: 'data:image/jpeg;base64,/9j/AA==' },
+      { id: 'photo-tea', categoryId: 'tea', name: '내 차', caffeineMg: 30, icon: 'tea', sourceType: 'custom', isCustom: true, photoDataUrl: 'data:image/jpeg;base64,/9j/2Q==' },
+    ]
+    state.deletedDefaultDrinkIds = ['americano']
+    state.retainedDrinkPhotos = { 'americano': 'data:image/jpeg;base64,/9j/AA==', 'photo-coffee': 'data:image/jpeg;base64,/9j/AA==', 'photo-tea': 'data:image/jpeg;base64,/9j/2Q==' }
+    state.entries = [
+      { id: 'hidden-coffee', drinkId: 'americano', drinkName: '아메리카노', caffeineMg: 150, icon: 'coffee', consumedAt: '2026-10-05T01:00:00.000Z' },
+      { id: 'custom-coffee', drinkId: 'photo-coffee', drinkName: '내 커피', caffeineMg: 90, icon: 'cup', consumedAt: '2026-10-05T02:00:00.000Z' },
+      { id: 'tea', drinkId: 'photo-tea', drinkName: '내 차', caffeineMg: 30, icon: 'tea', consumedAt: '2026-10-05T03:00:00.000Z' },
+    ]
+    const before = JSON.stringify(state)
+    const deleted = deleteDrinkCategory(state, 'coffee', undefined, 'force')
+    expect(drinkCategories(deleted).map(category => category.id)).toEqual(['tea', 'energy', 'other'])
+    expect(availableDrinks(deleted).some(drink => ['americano', 'cold-brew', 'caffe-latte', 'photo-coffee'].includes(drink.id))).toBe(false)
+    expect(deleted.customDrinks.map(drink => drink.id)).toEqual(['photo-tea'])
+    expect(deleted.entries.map(entry => entry.id)).toEqual(['tea'])
+    expect(deleted.retainedDrinkPhotos).toEqual({ 'photo-tea': 'data:image/jpeg;base64,/9j/2Q==' })
+    expect(new Set(deleted.deletedDefaultDrinkIds).size).toBe(deleted.deletedDefaultDrinkIds?.length)
+    expect(JSON.stringify(state)).toBe(before)
+  })
+
+  it('follows current category assignments after a move rather than original default groups', () => {
+    const moved = deleteDrinkCategory(createInitialState(), 'coffee', 'tea')
+    moved.entries = [
+      { id: 'moved', drinkId: 'americano', drinkName: '아메리카노', caffeineMg: 150, icon: 'coffee', consumedAt: '2026-10-05T01:00:00.000Z' },
+      { id: 'energy', drinkId: 'energy-drink', drinkName: '에너지드링크', caffeineMg: 100, icon: 'bolt', consumedAt: '2026-10-05T02:00:00.000Z' },
+    ]
+    const deleted = deleteDrinkCategory(moved, 'tea', undefined, 'force')
+    expect(drinkCategories(deleted).map(category => category.id)).toEqual(['energy', 'other'])
+    expect(deleted.defaultDrinkCategoryOverrides).toEqual({})
+    expect(deleted.entries.map(entry => entry.id)).toEqual(['energy'])
+    expect(availableDrinks(deleted).map(drink => drink.id)).toEqual(['energy-drink', 'cola'])
+    expect(() => deleteDrinkCategory(deleted, 'tea', undefined, 'force')).toThrow()
+  })
+
+  it('also deletes history and retained photos of a custom drink previously removed from the catalog', () => {
+    const created = addCustomDrink(createInitialState(), { ...draft, categoryName: '커피', photoDataUrl: 'data:image/jpeg;base64,/9j/AA==' }, ids)
+    created.state.entries = [{ id: 'old', drinkId: 'drink-1', drinkName: '초코 쉐이크', caffeineMg: 67, icon: 'cup', consumedAt: '2026-10-05T01:00:00.000Z' }]
+    const hidden = deleteDrinkFromCatalog(created.state, 'drink-1')
+    const deleted = deleteDrinkCategory(hidden, 'coffee', undefined, 'force')
+    expect(deleted.entries).toEqual([])
+    expect(deleted.retainedDrinkPhotos).toEqual({})
+  })
+
+  it('can remove the last populated category with no destination or dangling drinks', () => {
+    let state = deleteDrinkCategory(createInitialState(), 'coffee', 'tea')
+    state = deleteDrinkCategory(state, 'tea', 'energy')
+    state = deleteDrinkCategory(state, 'energy', 'other')
+    const deleted = deleteDrinkCategory(state, 'other', undefined, 'force')
+    expect(drinkCategories(deleted)).toEqual([])
+    expect(availableDrinks(deleted)).toEqual([])
+  })
+})
+
+
+it('moves archived custom drink ownership so force deleting the destination includes its records', () => {
+  const created = addCustomDrink(createInitialState(), { ...draft, categoryName: '커피' }, ids)
+  created.state.entries = [{ id: 'old', drinkId: 'drink-1', drinkName: '초코 쉐이크', caffeineMg: 67, icon: 'cup', consumedAt: '2026-10-05T01:00:00.000Z' }]
+  const hidden = deleteDrinkFromCatalog(created.state, 'drink-1')
+  const moved = deleteDrinkCategory(hidden, 'coffee', 'tea')
+  expect(moved.entries).toEqual(created.state.entries)
+  expect(moved.retainedDrinkCategories).toEqual({ 'drink-1': 'tea' })
+  expect(deleteDrinkCategory(moved, 'tea', undefined, 'force').entries).toEqual([])
+})
+
+ it('accepts 500mg and rejects new drinks above the input maximum', () => {
+  expect(addCustomDrink(createInitialState(), { ...draft, caffeineMg: 500 }, ids).drink.caffeineMg).toBe(500)
+  expect(() => addCustomDrink(createInitialState(), { ...draft, caffeineMg: 501 }, ids)).toThrow('0~500mg')
+})
+
+
+describe('editing catalog drink details', () => {
+  it('edits a moved default while preserving its identity, order and intake snapshots', () => {
+    const state = moveDrinkInCatalog(createInitialState(), 'americano', 'tea', 'earl-grey')
+    state.entries = [{ id: 'old', drinkId: 'americano', drinkName: '아메리카노', caffeineMg: 150, icon: 'coffee', consumedAt: '2026-10-05T01:00:00.000Z' }]
+    const snapshot = JSON.stringify(state)
+    const updated = updateDrinkInCatalog(state, 'americano', { name: ' 내 커피 ', icon: 'cup', caffeineMg: 95 })
+    expect(availableDrinks(updated).find(drink => drink.id === 'americano')).toMatchObject({ id: 'americano', categoryId: 'tea', name: '내 커피', icon: 'cup', caffeineMg: 95, sourceType: 'custom', isCustom: false })
+    expect(updated.entries).toBe(state.entries)
+    expect(updated.drinkOrder).toEqual(state.drinkOrder)
+    expect(JSON.stringify(state)).toBe(snapshot)
+  })
+
+  it('updates a custom drink and can replace its photo with an icon', () => {
+    const state = addCustomDrink(createInitialState(), { ...draft, photoDataUrl: 'data:image/jpeg;base64,/9j/AA==' }, ids).state
+    const updated = updateDrinkInCatalog(state, ids.drinkId, { name: '새 이름', caffeineMg: 0, icon: 'tea' })
+    expect(updated.customDrinks[0]).toMatchObject({ id: ids.drinkId, categoryId: ids.categoryId, name: '새 이름', caffeineMg: 0, icon: 'tea', isCustom: true })
+    expect(updated.customDrinks[0].photoDataUrl).toBeUndefined()
+    expect(state.customDrinks[0].photoDataUrl).toBeDefined()
+  })
+
+  it.each([
+    { name: ' ', icon: 'cup', caffeineMg: 50 },
+    { name: '가'.repeat(31), icon: 'cup', caffeineMg: 50 },
+    { name: '콜드브루', icon: 'cup', caffeineMg: 50 },
+    { name: '내 커피', icon: 'unknown', caffeineMg: 50 },
+    { name: '내 커피', icon: 'cup', caffeineMg: -1 },
+    { name: '내 커피', icon: 'cup', caffeineMg: 501 },
+    { name: '내 커피', icon: 'cup', caffeineMg: 1.5 },
+    { name: '내 커피', icon: 'cup', caffeineMg: NaN },
+    { name: '내 커피', icon: 'cup', caffeineMg: 50, photoDataUrl: 'https://example.com/photo.png' },
+  ])('rejects invalid or duplicate edits atomically: %j', input => {
+    const state = createInitialState()
+    expect(() => updateDrinkInCatalog(state, 'americano', input as Parameters<typeof updateDrinkInCatalog>[2])).toThrow()
+    expect(state).toEqual(createInitialState())
+  })
+
+  it('rejects editing a removed or missing drink', () => {
+    const state = deleteDrinkFromCatalog(createInitialState(), 'americano')
+    expect(() => updateDrinkInCatalog(state, 'americano', { name: '커피', icon: 'cup', caffeineMg: 50 })).toThrow()
+    expect(() => updateDrinkInCatalog(state, 'missing', { name: '커피', icon: 'cup', caffeineMg: 50 })).toThrow()
   })
 })

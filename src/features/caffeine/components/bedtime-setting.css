@@ -1,0 +1,21 @@
+.settings-bedtime { container-type: inline-size; }
+.bedtime-setting-intro { margin: 0 0 14px; }
+.bedtime-setting-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; margin-bottom: 14px; }
+.bedtime-setting-time { display: grid; min-width: 0; gap: 4px; font-size: var(--font-xs); color: var(--text-secondary); }
+.bedtime-setting-time button { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; min-height: 48px; padding: 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-elevated); color: var(--text-primary); font-size: var(--font-sm); font-variant-numeric: tabular-nums; text-align: left; }
+.bedtime-setting-time button > span { min-width: 0; }
+.bedtime-setting-time button:focus-visible { outline-color: var(--accent-pink); }
+.sheet-dialog.sheet-dialog--bedtime { height: min(640px, calc(94dvh - var(--safe-top))); }
+.bedtime-setting-reading { display: grid; justify-items: end; gap: 4px; min-width: 0; }
+.bedtime-setting-reading > span { color: var(--text-secondary); font-size: var(--font-xs); }
+.bedtime-setting-reading p { display: flex; gap: 5px; align-items: baseline; flex-wrap: wrap; justify-content: end; min-height: 48px; align-content: center; }
+.bedtime-setting-reading strong { font-size: 1.75rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.bedtime-setting-reading p span { color: var(--text-secondary); font-size: var(--font-xs); }
+@container (width < 17rem) {
+  .bedtime-setting-summary { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .bedtime-setting-reading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+}
+.bedtime-setting-insight h3 { font-size: var(--font-sm); font-weight: 650; margin-bottom: 6px; line-height: 1.5; }
+.bedtime-setting-insight .settings-description { line-height: 1.65; }
+.bedtime-setting-effect { margin-top: 6px; }
+.bedtime-setting-insight .model-disclaimer { margin-top: 8px; line-height: 1.6; }

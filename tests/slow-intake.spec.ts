@@ -21,9 +21,12 @@ async function selectAmericano(page: Page) {
 
 async function setPeriod(page: Page, start: string, end: string) {
   await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
-  await page.getByLabel('마시기 시작한 날짜', { exact: true }).fill(start.slice(0, 10));
+  const startDate = page.getByLabel('마시기 시작한 날짜', { exact: true });
+  if (await startDate.evaluate(element => element.tagName === 'INPUT')) await startDate.fill(start.slice(0, 10));
+  else await expect(startDate).toHaveAttribute('datetime', start.slice(0, 10));
   await pickTime(page, '마시기 시작한 시각', start.slice(11));
-  await page.getByLabel('마신 마지막 날짜', { exact: true }).fill(end.slice(0, 10));
+  const endDate = page.getByLabel('마신 마지막 날짜', { exact: true });
+  if (await endDate.evaluate(element => element.tagName === 'INPUT')) await endDate.fill(end.slice(0, 10));
   await pickTime(page, '마신 마지막 시각', end.slice(11));
 }
 
@@ -81,10 +84,13 @@ test('slow intake survives reload, edits its period, and can return to an instan
 
 test('an intake spanning midnight shows its date range and is grouped on the finishing date', async ({ page }) => {
   await openApp(page, '2026-10-04T01:00:00+09:00');
+  await page.goto('/history');
+  await page.getByRole('button', { name: /^2026년 10월 4일/ }).click();
   await selectAmericano(page);
   await setPeriod(page, '2026-10-03T23:30', '2026-10-04T00:30');
   await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('130');
   await page.getByRole('button', { name: '아직 남아 있는 카페인 보기' }).click();
   await expect(page.getByRole('region', { name: '아직 남아 있는 카페인' }).locator('time')).toHaveText('10월 3일 23:30 – 오늘 00:30');
@@ -98,10 +104,12 @@ test('an intake spanning midnight shows its date range and is grouped on the fin
   await expect(page.getByTestId('daily-count')).toHaveText('1');
 });
 
-test('blank, reversed and future intake periods cannot be saved', async ({ page }) => {
+test('blank, reversed and future intake periods cannot be saved from history', async ({ page }) => {
   await openApp(page);
+  await page.goto('/history');
   await selectAmericano(page);
   await setPeriod(page, '2026-10-04T09:00', '2026-10-04T08:00');
+  await page.getByLabel('마신 마지막 날짜', { exact: true }).fill('2026-10-04');
   const save = page.getByRole('button', { name: '기록 저장', exact: true });
   await save.click();
   await expect(page.getByRole('dialog').getByRole('alert')).toHaveText('시작 시각은 마지막 시각보다 빨라야 해요.');
@@ -115,7 +123,7 @@ test('blank, reversed and future intake periods cannot be saved', async ({ page 
   expect(await savedEntries(page)).toHaveLength(0);
 });
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`slow intake fields and save remain reachable at 200% text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await openApp(page, '2026-10-04T10:00:00+09:00', theme);
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
@@ -157,7 +165,7 @@ test('editing only the dose preserves sub-minute intake timestamps', async ({ pa
   expect((await savedEntries(page))[0]).not.toHaveProperty('startedAt');
 });
 
-test('compact time range exposes editable dates, elapsed duration and keyboard toggle', async ({ page }, testInfo) => {
+test('home time range fixes dates, shows elapsed duration and preserves times through the keyboard toggle', async ({ page }, testInfo) => {
   await openApp(page);
   await selectAmericano(page);
   const toggle = page.getByRole('switch', { name: '천천히 마셨어요' });
@@ -173,18 +181,18 @@ test('compact time range exposes editable dates, elapsed duration and keyboard t
   const endBox = await end.boundingBox();
   expect(Math.abs(startBox!.y - endBox!.y)).toBeLessThan(2);
   expect(endBox!.x).toBeGreaterThan(startBox!.x + startBox!.width);
-  await page.getByLabel('마시기 시작한 날짜', { exact: true }).fill('2026-10-03');
+  await expect(page.locator('input[type="date"]')).toHaveCount(0);
+  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveAttribute('datetime', '2026-10-04');
   await pickTime(page, '마시기 시작한 시각', '23:30');
   await pickTime(page, '마신 마지막 시각', '00:30');
   await expect(page.getByRole('status', { name: '마신 기간' })).toHaveText('1시간 동안');
   await page.getByText('마신 시간', { exact: true }).click();
   await page.screenshot({ path: `test-results/${testInfo.project.name}-time-range.png` });
-  await page.getByLabel('마신 마지막 날짜', { exact: true }).fill('');
-  await expect(page.getByRole('status', { name: '마신 기간' })).toHaveCount(0);
+  await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveAttribute('datetime', '2026-10-05');
   await toggle.focus();
   await page.keyboard.press('Space');
   await expect(toggle).not.toBeChecked();
   await toggle.check();
   await expect(start).toHaveText('오후 11:30');
-  await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveAttribute('datetime', '2026-10-05');
 });

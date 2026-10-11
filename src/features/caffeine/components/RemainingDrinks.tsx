@@ -1,11 +1,11 @@
 import { DrinkIcon } from '../../../components/icons/DrinkIcon';
 import { formatTime, localDateKey } from '../model/caffeine';
-import type { CaffeineEntry, Drink } from '../model/caffeine.types';
+import type { CaffeineEntry, Drink, DrinkPhotoHistory } from '../model/caffeine.types';
 import { absorptionMinutesRemaining, MIN_VISIBLE_REMAINING_MG, remainingIntakes } from '../model/remainingIntakes';
-import { formatHoursMinutes } from '../format';
+import { entryDrinkPhoto } from '../model/drinkPhoto';
 import './remaining-drinks.css';
 
-export function RemainingDrinks({ entries, drinks, now, halfLifeHours }: { drinks: readonly Drink[]; entries: CaffeineEntry[]; now: Date; halfLifeHours: number }) {
+export function RemainingDrinks({ entries, drinks, photoHistory, now, halfLifeHours }: { drinks: readonly Drink[]; photoHistory?: DrinkPhotoHistory; entries: CaffeineEntry[]; now: Date; halfLifeHours: number }) {
   const remaining = remainingIntakes(entries, now, halfLifeHours);
   return <section className="remaining-drinks" aria-labelledby="remaining-drinks-title">
     <header><h2 id="remaining-drinks-title">아직 남아 있는 카페인</h2></header>
@@ -20,7 +20,7 @@ export function RemainingDrinks({ entries, drinks, now, halfLifeHours }: { drink
         const startDay = start && localDateKey(start) !== localDateKey(consumedAt) ? `${start.toLocaleDateString('ko-KR', { ...(start.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}), month: 'long', day: 'numeric' })} ` : '';
         const timeLabel = start ? `${startDay || `${day} `}${formatTime(start)} – ${startDay ? `${day} ` : ''}${formatTime(consumedAt)}` : `${day} ${formatTime(consumedAt)}`;
         return <li key={entry.id}>
-          <span className="remaining-drink-icon"><DrinkIcon photoDataUrl={drinks.find(drink => drink.id === entry.drinkId)?.photoDataUrl} type={entry.icon} size={18} /></span>
+          <span className="remaining-drink-icon"><DrinkIcon photoDataUrl={entryDrinkPhoto(entry, drinks, photoHistory)} type={entry.icon} size={18} /></span>
           <div className="remaining-drink-copy"><h3>{entry.drinkName}</h3><time dateTime={entry.consumedAt}>{timeLabel}</time></div>
           <dl className="remaining-drink-status">
             <div className="remaining-drink-estimate">
@@ -29,7 +29,7 @@ export function RemainingDrinks({ entries, drinks, now, halfLifeHours }: { drink
             </div>
             {absorptionMinutes !== null && <div className="remaining-drink-absorbing">
               <dt>흡수 중</dt>
-              <dd className="remaining-absorption-time">약 {formatHoursMinutes(absorptionMinutes / 60)} 더</dd>
+              <dd className="remaining-absorption-time">({absorptionMinutes < 1 ? '1분 미만' : `${Math.ceil(absorptionMinutes)}분`})</dd>
             </div>}
           </dl>
         </li>;

@@ -48,23 +48,23 @@ describe('remainingIntakes', () => {
 describe('absorptionMinutesRemaining', () => {
   const instant = { ...coffee, caffeineMg: 150, consumedAt: '2026-10-04T10:00:00+09:00' }
 
-  it('counts down to the existing 1mg absorption display cutoff, rounding partial minutes up', () => {
-    expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T10:00:00+09:00'), 4.5)).toBe(67)
-    expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T10:01:00+09:00'), 4.5)).toBe(66)
-    expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T11:06:00+09:00'), 4.5)).toBe(1)
+  it('keeps fractional minutes so the display can distinguish less than a minute', () => {
+    expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T10:00:00+09:00'), 4.5)).toBeCloseTo(66.2198497, 7)
+    expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T10:01:00+09:00'), 4.5)).toBeCloseTo(65.2198497, 7)
+    expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T11:06:00+09:00'), 4.5)).toBeCloseTo(.2198497, 7)
     expect(absorptionMinutesRemaining(instant, new Date('2026-10-04T11:07:00+09:00'), 4.5)).toBeNull()
   })
 
   it('uses the unabsorbed part of a slow drink rather than restarting the full dose at its finish', () => {
     const slow = { ...instant, startedAt: '2026-10-04T09:00:00+09:00' }
-    expect(absorptionMinutesRemaining(slow, new Date('2026-10-04T10:00:00+09:00'), 4.5)).toBe(47)
-    expect(absorptionMinutesRemaining(slow, new Date('2026-10-04T10:30:00+09:00'), 4.5)).toBe(17)
+    expect(absorptionMinutesRemaining(slow, new Date('2026-10-04T10:00:00+09:00'), 4.5)).toBeCloseTo(46.0834032, 7)
+    expect(absorptionMinutesRemaining(slow, new Date('2026-10-04T10:30:00+09:00'), 4.5)).toBeCloseTo(16.0834032, 7)
     expect(absorptionMinutesRemaining(slow, new Date('2026-10-04T10:47:00+09:00'), 4.5)).toBeNull()
   })
 
   it('includes the rest of a valid ongoing drinking period before the absorption tail', () => {
     const ongoing = { ...instant, startedAt: '2026-10-04T09:00:00+09:00' }
-    expect(absorptionMinutesRemaining(ongoing, new Date('2026-10-04T09:30:00+09:00'), 4.5)).toBe(77)
+    expect(absorptionMinutesRemaining(ongoing, new Date('2026-10-04T09:30:00+09:00'), 4.5)).toBeCloseTo(76.0834032, 7)
   })
 
   it('does not depend on the elimination half-life', () => {
@@ -72,9 +72,9 @@ describe('absorptionMinutesRemaining', () => {
     expect(absorptionMinutesRemaining(instant, now, 3)).toBe(absorptionMinutesRemaining(instant, now, 7))
   })
 
-  it('does not show zero minutes while exactly at the cutoff', () => {
+  it('returns zero at the cutoff and null once absorption is no longer displayed', () => {
     const boundary = { ...instant, caffeineMg: 1 }
-    expect(absorptionMinutesRemaining(boundary, new Date(boundary.consumedAt), 4.5)).toBe(1)
+    expect(absorptionMinutesRemaining(boundary, new Date(boundary.consumedAt), 4.5)).toBe(0)
     expect(absorptionMinutesRemaining(boundary, new Date(Date.parse(boundary.consumedAt) + 1), 4.5)).toBeNull()
   })
 

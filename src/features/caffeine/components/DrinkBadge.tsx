@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import { DrinkIcon } from '../../../components/icons/DrinkIcon'
 import type { Drink } from '../model/caffeine.types'
 
@@ -19,10 +18,15 @@ export function DrinkBadge({ drink, selected, disabled, onSelect }: DrinkBadgePr
       disabled={disabled}
       onClick={() => onSelect(drink)}
     >
-      <DrinkIcon photoDataUrl={drink.photoDataUrl} type={drink.icon} size={18} />
-      <span className="drink-badge-name">{drink.name}</span>
-      <span className="drink-badge-dose">{drink.caffeineMg}<span>mg</span></span>
-      {selected && <Check size={14} strokeWidth={2} aria-hidden="true" className="drink-badge-check" />}
+      <DrinkBadgeContent drink={drink} />
     </button>
   )
+}
+
+export function DrinkBadgeContent({ drink }: { drink: Drink }) {
+  return <>
+    <span className={`drink-badge-icon${drink.photoDataUrl ? ' has-photo' : ''}`}><DrinkIcon photoDataUrl={drink.photoDataUrl} type={drink.icon} size={18} /></span>
+    <span className="drink-badge-name">{drink.name}</span>
+    <span className="drink-badge-dose">{drink.caffeineMg}<span>mg</span></span>
+  </>
 }

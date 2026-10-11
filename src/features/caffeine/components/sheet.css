@@ -49,16 +49,10 @@
 .drink-badge-dose > span { font-size: 0.75rem; }
 .drink-badge.is-selected { border-color: var(--accent-pink); color: var(--accent-pink); box-shadow: var(--selected-glow); }
 .drink-badge.is-selected .drink-badge-name { color: var(--accent-pink-strong); }
-.drink-badge-check { position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; padding: 2px; border-radius: 50%; background: var(--accent-pink); color: var(--bg); }
 .drink-badge-add { width: 48px; padding: 0; }
 .drink-badge:not(:disabled):active { background: var(--surface-pressed); }
 .drink-badge:disabled, .sheet-icon-option:disabled { cursor: default; opacity: .45; }
 
-.sheet-data-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 28px; color: var(--text-secondary); }
-.sheet-data-note > svg { flex: 0 0 auto; margin-top: 3px; }
-.sheet-data-note > div { min-width: 0; }
-.sheet-data-note p { margin: 0; font-size: 0.75rem; line-height: 1.7; }
-.sheet-data-note p + p { margin-top: 12px; }
 .sheet-empty-footer { flex-shrink: 0; padding: 20px 24px 26px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.8125rem; text-align: center; }
 
 .sheet-dialog--add { height: min(740px, calc(94dvh - var(--safe-top))); }
@@ -79,7 +73,9 @@
 .quick-adjust-drink h3 { margin: 0; color: var(--text-primary); font-size: 0.9375rem; line-height: 1.5; overflow-wrap: anywhere; }
 .quick-adjust-drink p { margin: 2px 0 0; color: var(--text-secondary); font-size: 0.75rem; line-height: 1.5; }
 .quick-adjust-time { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 4px; color: var(--text-secondary); font-size: 0.75rem; }
-.quick-adjust-delete { width: 100%; min-height: 52px; margin-top: 10px; }
+.quick-adjust-delete-action { margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--border); }
+.quick-adjust-delete { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 12px; border: 0; border-radius: 10px; background: transparent; color: var(--danger); font-size: .8125rem; font-weight: 500; line-height: 1.5; }
+.quick-adjust-delete svg { flex-shrink: 0; }
 .drink-delete-confirmation { padding-top: 20px; }
 .drink-delete-confirmation h3 { margin: 0 0 16px; font-size: 1rem; line-height: 1.5; }
 .drink-delete-confirmation p { color: var(--text-secondary); font-size: .875rem; line-height: 1.7; overflow-wrap: anywhere; }
@@ -90,6 +86,16 @@
 .quick-adjust-record { width: 100%; min-height: 52px; margin-top: 12px; }
 
 .sheet-composer { margin: 0; padding: 0; }
+.sheet-composer-progress { display: flex; flex-wrap: wrap; gap: 12px 20px; list-style: none; margin: 0 0 24px; padding: 0; }
+.sheet-composer-progress li { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: .8125rem; line-height: 1.5; }
+.sheet-composer-progress li > span { display: grid; place-items: center; flex: 0 0 28px; min-height: 28px; border: 1px solid var(--border-strong); border-radius: 50%; font-variant-numeric: tabular-nums; }
+.sheet-composer-progress li[aria-current='step'] { color: var(--text-primary); font-weight: 600; }
+.sheet-composer-progress li[aria-current='step'] > span { border-color: var(--accent-pink); color: var(--accent-pink-strong); background: var(--surface-elevated); }
+.sheet-composer-preview { display: flex; align-items: center; gap: 12px; min-width: 0; margin-bottom: 20px; }
+.sheet-composer-preview strong { min-width: 0; font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere; }
+.sheet-composer-preview-icon { display: grid; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; color: var(--text-secondary); background: var(--surface); }
+.sheet-composer-preview-icon img { width: 100%; height: 100%; border-radius: inherit; }
+.sheet-composer-save { margin-top: 24px; }
 .sheet-category-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .sheet-category-option { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-elevated); color: var(--text-secondary); font-size: .75rem; overflow-wrap: anywhere; }
 .sheet-category-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -105,7 +111,6 @@
 .sheet-icon-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .sheet-icon-option { display: grid; position: relative; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-secondary); }
 .sheet-icon-option.is-selected { border-color: var(--accent-pink); color: var(--accent-pink); }
-.sheet-icon-check { position: absolute; right: 3px; bottom: 3px; }
 .sheet-field-label { display: block; margin-top: 14px; }
 .sheet-field-label > span { margin-left: 3px; }
 .sheet-composer .field { display: block; box-sizing: border-box; width: 100%; min-height: 48px; font-size: 1rem; }
@@ -124,9 +129,8 @@
 
 .drink-photo { flex-shrink: 0; display: block; object-fit: cover; border-radius: 5px; }
 .quick-adjust-icon .drink-photo { width: 100%; height: 100%; border-radius: inherit; }
-.sheet-photo-option { overflow: hidden; }
+.sheet-photo-option { overflow: hidden; padding: 0; }
 .sheet-photo-option img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
-.sheet-photo-option.is-selected .sheet-icon-check { background: var(--accent-pink); color: var(--bg); border-radius: 50%; }
 .sheet-photo-file { display: none; }
 .sheet-photo-status { flex-basis: 100%; color: var(--text-secondary); font-size: .75rem; line-height: 1.6; }
 .sheet-photo-status.field-error { color: var(--danger); }
@@ -136,10 +140,14 @@
 .sheet-dose-step { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--surface-elevated); color: var(--text-primary); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .sheet-dose-step:not(:disabled):active { background: var(--surface-pressed); }
 .sheet-dose-step:disabled { opacity: .4; cursor: default; }
-.sheet-dose-value { display: flex; justify-content: center; align-items: baseline; gap: 6px; min-width: 0; }
-.sheet-dose-value strong, .sheet-dose-input { font-size: clamp(1.5rem, 10vw, 2.25rem); line-height: 1.2; font-weight: 500; letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
+.sheet-dose-value { position: relative; display: flex; justify-content: center; align-items: baseline; gap: 6px; min-width: 0; }
+.sheet-dose-value strong, .sheet-dose-input { font-size: clamp(1.5rem, 10vw, 2.5rem); line-height: 1.2; font-weight: 650; letter-spacing: -.055em; font-variant-numeric: tabular-nums; }
 .sheet-dose-value > span { color: var(--text-secondary); font-size: 1rem; }
-.sheet-dose-input { width: 4ch; max-width: calc(100% - 2.5rem); min-width: 0; min-height: 48px; padding: 0; border: 0; border-radius: 4px; background: transparent; text-align: center; appearance: textfield; -moz-appearance: textfield; }
+.sheet-dose-input { width: 4ch; max-width: calc(100% - 2.5rem); min-width: 48px; min-height: 48px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; text-align: center; caret-color: var(--accent-pink); appearance: textfield; -moz-appearance: textfield; }
+.sheet-dose-input:focus { outline: none; color: var(--accent-pink); }
+/* A short accent below the reading replaces the input's rectangular focus ring. */
+.sheet-dose-value:has(.sheet-dose-input)::after { content: ''; position: absolute; bottom: -4px; left: 50%; width: min(100%, 96px); height: 3px; border-radius: var(--radius-pill); background: var(--accent-pink); opacity: 0; transform: translateX(-50%); transition: opacity var(--motion-fast); pointer-events: none; }
+.sheet-dose-value:focus-within::after { opacity: 1; }
 .sheet-dose-input::-webkit-inner-spin-button, .sheet-dose-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .sheet-dose-slider input { width: 100%; height: 48px; min-height: 48px; margin: 0; padding: 0; background: transparent; cursor: pointer; accent-color: var(--accent-pink); }
 .sheet-dose-slider input:disabled { opacity: .4; cursor: default; }
@@ -150,3 +158,7 @@
 .sheet-dose-slider input::-moz-range-track { height: 6px; border-radius: var(--radius-pill); background: var(--surface-pressed); }
 .sheet-dose-slider input::-moz-range-progress { height: 6px; border-radius: var(--radius-pill); background: var(--accent-pink); }
 .sheet-dose-slider input::-moz-range-thumb { width: 20px; height: 20px; border: 2px solid var(--accent-pink-strong); border-radius: 50%; background: var(--accent-pink); }
+
+.drink-badge-icon { display: grid; place-items: center; flex: 0 0 auto; }
+.drink-badge-icon.has-photo { width: 28px; height: 28px; overflow: hidden; border-radius: 7px; }
+.drink-badge-icon .drink-photo { width: 100%; height: 100%; object-fit: cover; }

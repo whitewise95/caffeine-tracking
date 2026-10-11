@@ -1,6 +1,6 @@
 # 지금 카페인
 
-**v1.0.0**
+**v1.1.0**
 
 마신 음료를 기록하고, 몸에 남아 있을 것으로 추정되는 카페인량을 확인하는 앱입니다.
 
@@ -8,31 +8,47 @@
 
 ## 지금 내 카페인
 
-현재 추정 잔존량을 캐릭터로 확인해요. 오늘 섭취량, 마지막 섭취 시각과 밤 10시 예상 잔존량도 함께 볼 수 있어요.
+현재 추정 잔존량을 액체가 채워지는 캐릭터로 확인해요. 오늘 섭취량, 마지막 섭취 시각과 설정한 취침 시각의 예상 잔존량도 함께 볼 수 있어요.
 
-<img src="docs/screenshots/v1.0.0/home.png" alt="현재 추정 잔존 카페인과 오늘의 기록" width="280">
+<img src="docs/screenshots/v1.1.0/home.jpg" alt="현재 추정 잔존 카페인과 오늘의 기록" width="280">
 
 ## 한 잔 기록하기
 
-음료를 고르고 카페인량과 마신 시각을 조절해 기록해요. 천천히 마신 음료는 시작·종료 시각을 남길 수 있어요. 내 음료는 이름·아이콘 또는 사진·카페인량을 직접 등록해요.
+음료를 고르고 카페인량과 메모를 남겨 기록해요. 천천히 마신 음료는 시작·종료 시각을 남길 수 있어요. 내 음료는 이름·아이콘 또는 사진·카페인량을 직접 등록해요.
 
-| 음료 선택 | 카페인 기록 | 내 음료 추가 |
-| --- | --- | --- |
-| <img src="docs/screenshots/v1.0.0/add-caffeine.png" alt="카테고리별 음료 선택" width="240"> | <img src="docs/screenshots/v1.0.0/record-drink.png" alt="카페인량과 섭취 시각 조절" width="240"> | <img src="docs/screenshots/v1.0.0/custom-drink.png" alt="이름과 아이콘을 정해 내 음료 등록" width="240"> |
+| 음료 선택 | 카페인 기록 |
+| --- | --- |
+| <img src="docs/screenshots/v1.1.0/add-caffeine.jpg" alt="카테고리별 음료 선택" width="240"> | <img src="docs/screenshots/v1.1.0/record-drink.jpg" alt="카페인량 조절과 메모 입력" width="240"> |
+
+## 음료와 카테고리 편집
+
+음료 선택 화면에서 편집을 켜면 배지와 카테고리를 끌어 순서를 바꾸고 음료를 다른 카테고리로 옮길 수 있어요. 이동 중 배치를 바로 확인하며, 작은 삭제 표시로 삭제할 수 있어요. 카테고리를 탭하면 제목 자리에서 이름을 바꾸고, 음료를 탭하면 아이콘·이름·기본 카페인량을 수정해요. 음료 수정은 이후 기록부터 적용하며 기존 기록은 유지해요.
+
+| 배치 편집 | 음료 정보 수정 |
+| --- | --- |
+| <img src="docs/screenshots/v1.1.0/catalog-edit.jpg" alt="배지와 카테고리를 끌어 배치 편집" width="240"> | <img src="docs/screenshots/v1.1.0/drink-edit.jpg" alt="음료 아이콘과 이름 및 기본 카페인량 수정" width="240"> |
 
 ## 날짜별 기록
 
 캘린더에서 날짜별 섭취량과 음료 목록을 확인하고, 기록을 수정하거나 삭제해요. 음료와 카테고리도 직접 관리할 수 있어요.
 
-<img src="docs/screenshots/v1.0.0/history.png" alt="캘린더와 날짜별 카페인 섭취 기록" width="280">
+<img src="docs/screenshots/v1.1.0/history.jpg" alt="캘린더와 메모를 포함한 날짜별 섭취 기록" width="280">
+
+## 카페인 리포트
+
+24시간 예상 잔존량과 오늘의 추정 최고점, 지금 양의 절반이 되는 예상 시각을 살펴봐요. 오늘·7일·이번 달의 섭취 그래프, 기록에서 발견한 패턴과 월간 요약도 볼 수 있어요.
+
+<img src="docs/screenshots/v1.1.0/report.jpg" alt="예상 잔존량 곡선과 현재 카페인 지표" width="280">
 
 ## 카페인 지식과 설정
 
-카페인에 관한 궁금증을 FAQ와 참고 자료로 살펴봐요. 설정에서는 계산 방식, 화면 테마와 데이터 초기화를 확인할 수 있어요.
+카페인에 관한 궁금증을 FAQ와 참고 자료로 살펴봐요. 설정에서는 취침 시각, 기울임 애니메이션, 계산 방식과 데이터 초기화를 확인할 수 있어요.
 
 | 카페인 지식 | 설정 |
 | --- | --- |
-| <img src="docs/screenshots/v1.0.0/knowledge.png" alt="카페인 지식과 자주 묻는 질문" width="240"> | <img src="docs/screenshots/v1.0.0/settings.png" alt="계산 방식과 화면 테마 설정" width="240"> |
+| <img src="docs/screenshots/v1.1.0/knowledge.jpg" alt="카페인 지식과 자주 묻는 질문" width="240"> | <img src="docs/screenshots/v1.1.0/settings.jpg" alt="취침 시각과 애니메이션 및 계산 방식 설정" width="240"> |
+
+스크린샷은 v1.1.0 브라우저 개발 빌드의 다크 화면에서 가상 기록으로 촬영했어요. 뷰포트는 390 × 844 CSS px이며, 저장된 JPEG는 화면 배율에 따라 481 × 1041px입니다. 이전 버전 화면은 해당 [GitHub Release](https://github.com/whitewise95/caffeine-tracking/releases/tag/v1.0.0)에 보관돼 있어요.
 
 ## 계산 모델
 
@@ -112,7 +128,8 @@ flowchart TD
 | 위치 | 역할 |
 | --- | --- |
 | [src/app/](src/app/) | 앱 구성, 화면 이동과 오버레이 관리 |
-| [src/pages/](src/pages/) | 홈·기록·카페인 지식·설정 등 화면 |
+| [src/pages/](src/pages/) | 홈·기록·리포트·카페인 지식·설정 등 화면 |
+| [src/features/insights/](src/features/insights/) | 기간별 리포트, 예상량 그래프와 월간 요약 |
 | [src/features/caffeine/components/](src/features/caffeine/components/) | 카페인 시각화와 음료 기록 UI |
 | [src/features/caffeine/model/](src/features/caffeine/model/) | 흡수·제거 계산, 시간·입력 검증과 음료 데이터 처리 |
 | [src/features/caffeine/hooks/](src/features/caffeine/hooks/) | 상태 갱신과 기록 작업, 저장 실패 처리 |

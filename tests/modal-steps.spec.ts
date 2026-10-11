@@ -44,6 +44,7 @@ test('drink and custom creation replace content inside the same modal', async ({
   await expect(page.locator('.sheet-category')).toHaveCount(0);
   await expect(page.locator('.quick-adjust')).toHaveCount(0);
   await page.getByLabel('메뉴명').fill('나의 커피');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   await page.getByLabel('카페인량 mg', { exact: true }).fill('67');
   await page.screenshot({ path: `test-results/${testInfo.project.name}-modal-custom.png` });
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
@@ -57,6 +58,8 @@ test('drink and custom creation replace content inside the same modal', async ({
   await expect(page.getByLabel('메뉴명')).toHaveCount(0);
   await page.getByRole('button', { name: /나의 커피\s*67\s*mg/ }).click();
   await expect(page.locator('.quick-adjust-amount')).toHaveText('67mg');
+  await expect(page.getByRole('button', { name: '닫기', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '음료 목록으로 돌아가기' }).click();
   await page.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByRole('button', { name: '카페인 추가', exact: true })).toBeFocused();
@@ -90,7 +93,7 @@ test('a save finishing after back to the list does not close that screen', async
   await expect(page.getByRole('dialog')).not.toBeVisible();
 });
 
-test('modal screens support focus, reduced motion and closing from custom creation', async ({ page }) => {
+test('modal screens support focus, reduced motion and returning from custom creation before closing', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/?theme=light');
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
@@ -99,6 +102,8 @@ test('modal screens support focus, reduced motion and closing from custom creati
   await expect.poll(() => page.locator('.sheet-step').evaluate(element => getComputedStyle(element).animationName)).toBe('none');
   await page.keyboard.press('Tab');
   expect(await page.evaluate(() => !!document.activeElement?.closest('dialog'))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: '어떤 카페인을 마셨나요?' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByRole('button', { name: '카페인 추가', exact: true })).toBeFocused();

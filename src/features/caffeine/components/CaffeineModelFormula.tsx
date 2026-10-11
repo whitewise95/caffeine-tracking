@@ -1,4 +1,5 @@
 import { DEFAULT_CAFFEINE_ABSORPTION_RATE_PER_HOUR } from '../model/pharmacokinetics';
+import { ExternalLink } from '../../../components/ExternalLink';
 
 export function CaffeineModelFormula({ halfLifeHours }: { halfLifeHours: number }) {
   const eliminationRate = Math.LN2 / halfLifeHours;
@@ -19,7 +20,7 @@ export function CaffeineModelFormula({ halfLifeHours }: { halfLifeHours: number 
         <div><dt>k<sub>e</sub></dt><dd>감소 속도 상수 ln(2) ÷ 반감기<br />현재 {eliminationRate.toFixed(3)} /시간</dd></div>
       </dl>
       <p>음료별로 계산한 값을 더해요. 천천히 마신 기록은 시작부터 마지막 시각까지 일정하게 나눠 마신 것으로 계산해요.</p>
-      <p>섭취한 카페인이 모두 흡수된다고 가정해요 (F = 1). 흡수 속도는 <a href="https://pubmed.ncbi.nlm.nih.gov/14674790/" target="_blank" rel="noreferrer">성인 대상 연구</a>의 값을 사용해요.</p>
+      <p>섭취한 카페인이 모두 흡수된다고 가정해요 (F = 1). 흡수 속도는 <ExternalLink href="https://pubmed.ncbi.nlm.nih.gov/14674790/">성인 대상 연구</ExternalLink>의 값을 사용해요.</p>
     </details>
   </>;
 }

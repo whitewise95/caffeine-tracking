@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { formatTime, localDateKey } from '../model/caffeine'
 import type { CaffeineIntakeTiming } from '../model/caffeine.types'
+import { inferIntakeEndDay } from '../model/intakeTiming'
+import type { IntakeTimeTarget } from './IntakeTimePicker'
 
 export function localDateTimeInput(date: Date) {
   return `${localDateKey(date)}T${formatTime(date)}`
@@ -18,17 +20,35 @@ export function parseLocalDateTime(value: string) {
   return Number.isFinite(date.getTime()) && localDateTimeInput(date) === value ? date : null
 }
 
+function defaultSlowStart(end: Date, sameDay: boolean) {
+  const start = new Date(end.getTime() - 30 * 60_000)
+  if (sameDay && localDateKey(start) !== localDateKey(end)) {
+    return new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  }
+  return start
+}
+
 export function useIntakeTimeFields(initial?: CaffeineIntakeTiming) {
   const [draft, setDraft] = useState<IntakeTimeDraft>(() => {
     const end = initial ? new Date(initial.consumedAt) : new Date()
     return {
       slow: Boolean(initial?.startedAt),
-      start: localDateTimeInput(initial?.startedAt ? new Date(initial.startedAt) : new Date(end.getTime() - 30 * 60_000)),
+      start: localDateTimeInput(initial?.startedAt ? new Date(initial.startedAt) : defaultSlowStart(end, !initial)),
       end: localDateTimeInput(end),
     }
   })
 
   const hasOpenedSlowFields = useRef(Boolean(initial?.startedAt))
+
+  function pickTime(target: IntakeTimeTarget, time: string, inferOvernight = false) {
+    setDraft(previous => {
+      const next = { ...previous, [target]: `${previous[target].split('T')[0]}T${time}` }
+      if (!inferOvernight || !next.slow) return next
+      const start = parseLocalDateTime(next.start)
+      const end = parseLocalDateTime(next.end)
+      return start && end ? { ...next, end: localDateTimeInput(inferIntakeEndDay(start, end)) } : next
+    })
+  }
 
   function toggleSlow(slow: boolean) {
     if (slow && !hasOpenedSlowFields.current) {
@@ -36,7 +56,7 @@ export function useIntakeTimeFields(initial?: CaffeineIntakeTiming) {
       setDraft(previous => {
         const end = initial ? parseLocalDateTime(previous.end) : new Date()
         if (!end) return { ...previous, slow }
-        return { slow, start: localDateTimeInput(new Date(end.getTime() - 30 * 60_000)), end: localDateTimeInput(end) }
+        return { slow, start: localDateTimeInput(defaultSlowStart(end, !initial)), end: localDateTimeInput(end) }
       })
       return
     }
@@ -57,5 +77,5 @@ export function useIntakeTimeFields(initial?: CaffeineIntakeTiming) {
     return { timing: { consumedAt: end.toISOString(), startedAt: start.toISOString() } }
   }
 
-  return { draft, setDraft, toggleSlow, resolveTiming }
+  return { draft, setDraft, pickTime, toggleSlow, resolveTiming }
 }

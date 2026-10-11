@@ -14,7 +14,7 @@ const questions = [
 test('knowledge tab follows navigation, direct routes, reload and back', async ({ page }) => {
   await page.goto('/settings');
   const nav = page.getByRole('navigation', { name: '주요 메뉴' });
-  await expect(nav.getByRole('button')).toHaveText(['홈', '기록', '지식', '설정']);
+  await expect(nav.getByRole('button')).toHaveText(['기록', '리포트', '홈', '지식', '설정']);
   await nav.getByRole('button', { name: '지식', exact: true }).tap();
   await expect(page).toHaveURL(/\/knowledge$/);
   await expect(page.getByRole('heading', { name: '지식', exact: true })).toBeVisible();
@@ -131,10 +131,10 @@ test('accordion backgrounds stay unchanged on hover and touch', async ({ page })
   await expect(summary).toHaveCSS('background-color', background);
 });
 
-for (const theme of ['dark', 'light']) {
+for (const theme of ['dark']) {
   test(`knowledge FAQ is readable with enlarged text and reduced motion in ${theme}`, async ({ page }, testInfo) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`/knowledge${theme === 'light' ? '?theme=light' : ''}`);
+    await page.goto('/knowledge');
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     await page.screenshot({ path: `test-results/${testInfo.project.name}-knowledge-${theme}.png`, fullPage: true });
     await page.getByText(questions[0], { exact: true }).tap();
@@ -159,7 +159,7 @@ for (const theme of ['dark', 'light']) {
 
   test(`last FAQ keeps space above navigation with a device inset in ${theme}`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`/knowledge${theme === 'light' ? '?theme=light' : ''}`);
+    await page.goto('/knowledge');
     const lastFaq = page.locator('.knowledge-faq').last();
     const nav = page.getByRole('navigation');
     await expect(lastFaq).toBeVisible();

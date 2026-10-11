@@ -1,8 +1,23 @@
 import { expect, test } from '@playwright/test';
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`settings explains half-life with research sources and legible absorption formula at enlarged text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await page.goto(`/settings${theme}`);
+    const halfLife = page.locator('.settings-accordion').filter({ has: page.getByRole('heading', { name: '카페인 반감기', exact: true }) });
+    const calculation = page.locator('.settings-accordion').filter({ has: page.getByRole('heading', { name: '추정치는 이렇게 계산해요', exact: true }) });
+    await expect(halfLife).not.toHaveAttribute('open');
+    await expect(calculation).not.toHaveAttribute('open');
+    await expect(page.getByTestId('half-life-description')).not.toBeVisible();
+    await expect(page.getByRole('math')).not.toBeVisible();
+    await expect(halfLife.locator(':scope > summary')).toHaveText('카페인 반감기');
+    await expect(calculation.locator(':scope > summary')).toHaveText('추정치는 이렇게 계산해요');
+    const halfLifeSummary = halfLife.locator(':scope > summary');
+    await halfLifeSummary.focus();
+    await page.keyboard.press('Enter');
+    await expect(halfLife).toHaveAttribute('open', '');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('half-life-description')).not.toBeVisible();
+    await halfLifeSummary.click();
     await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
     await expect(page.getByRole('heading', { name: '카페인 반감기' })).toBeVisible();
     await expect(page.getByText('몸에 남아 있는 카페인이 절반으로 줄어드는 데 걸리는 시간이에요.')).toBeVisible();
@@ -12,6 +27,7 @@ for (const theme of ['', '?theme=light']) {
     await expect(page.getByRole('link', { name: '성인 대상 논문 · 2009' })).toHaveAttribute('href', 'https://pubmed.ncbi.nlm.nih.gov/19125908/');
     await expect(page.getByTestId('half-life-value')).toHaveCount(0);
     await expect(page.getByRole('slider')).toHaveCount(0);
+    await calculation.locator(':scope > summary').click();
     const formula = page.getByRole('math');
     await expect(formula).toHaveAccessibleName(/ka.*ke.*흡수 속도 상수.*감소 속도 상수/);
     const base = await formula.locator('.formula-base').first().boundingBox();

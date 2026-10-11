@@ -1,5 +1,7 @@
 import { isDrinkPhotoDataUrl } from '../model/drinkPhoto'
-import { createInitialState, DEFAULT_CAFFEINE_HALF_LIFE_HOURS, MAX_CAFFEINE_MG } from '../model/caffeine'
+import { isBedtime } from '../model/bedtime'
+import { MAX_INTAKE_NOTE_LENGTH, noteLength } from '../model/intakeNote'
+import { createInitialState, DEFAULT_CAFFEINE_HALF_LIFE_HOURS, MAX_CAFFEINE_MG, MAX_STORED_CAFFEINE_MG } from '../model/caffeine'
 import type { AppTheme, CaffeineEntry, CaffeineState, Drink, DrinkCategory } from '../model/caffeine.types'
 import { categoryNameKey, drinkCategories, isValidCategoryName } from '../model/drinkCategories'
 import type { CaffeineRepository, CaffeineStorage } from './CaffeineRepository'
@@ -26,7 +28,7 @@ function isAppTheme(value: unknown): value is AppTheme {
 }
 
 function isCaffeineMg(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= MAX_CAFFEINE_MG
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= MAX_STORED_CAFFEINE_MG
 }
 
 function isIsoTimestamp(value: unknown): value is string {
@@ -46,6 +48,7 @@ function isEntry(value: unknown): value is CaffeineEntry {
     && isText(value.drinkName)
     && isCaffeineMg(value.caffeineMg)
     && isIsoTimestamp(value.consumedAt)
+    && (value.note === undefined || (typeof value.note === 'string' && noteLength(value.note) <= MAX_INTAKE_NOTE_LENGTH))
     && (value.startedAt === undefined || (isIsoTimestamp(value.startedAt) && Date.parse(value.startedAt) < Date.parse(value.consumedAt)))
     && typeof value.icon === 'string'
     && DRINK_ICONS.has(value.icon)
@@ -84,7 +87,7 @@ function isCategory(value: unknown): value is DrinkCategory {
 type StoredState = Omit<CaffeineState, 'version' | 'customCategories' | 'settings'> & {
   version: 1 | 2 | 3 | 4
   customCategories?: DrinkCategory[]
-  settings: Omit<CaffeineState['settings'], 'theme'> & { theme?: unknown }
+  settings: Omit<CaffeineState['settings'], 'theme' | 'bedtime' | 'tiltAnimation'> & { theme?: unknown; bedtime?: unknown; tiltAnimation?: unknown }
   personalization?: unknown
 }
 
@@ -97,15 +100,24 @@ function assertState(value: unknown, allowStoredMigrations = false): asserts val
     || !Array.isArray(value.customDrinks)
     || !value.customDrinks.every(isCustomDrink)
     || !hasUniqueIds(value.customDrinks)
+    || (value.retainedDrinkCategories !== undefined && (!isObject(value.retainedDrinkCategories)
+      || !Object.entries(value.retainedDrinkCategories).every(([id, categoryId]) => isText(id) && typeof categoryId === 'string' && (BUILTIN_CATEGORY_IDS.has(categoryId) || (categoryId.startsWith('custom:') && categoryNameKey(categoryId.slice(7)).length > 0)))))
+    || (value.retainedDrinkPhotos !== undefined && (!isObject(value.retainedDrinkPhotos)
+      || !Object.entries(value.retainedDrinkPhotos).every(([id, photo]) => isText(id) && isDrinkPhotoDataUrl(photo))))
     || (value.deletedDefaultDrinkIds !== undefined && (!Array.isArray(value.deletedDefaultDrinkIds)
       || !value.deletedDefaultDrinkIds.every(isText)
       || new Set(value.deletedDefaultDrinkIds).size !== value.deletedDefaultDrinkIds.length))
+    || (value.drinkOrder !== undefined && (!Array.isArray(value.drinkOrder)
+      || !value.drinkOrder.every(isText)
+      || new Set(value.drinkOrder).size !== value.drinkOrder.length))
     || (value.version === 4 && (!Array.isArray(value.customCategories) || !value.customCategories.every(isCustomCategory) || !hasUniqueIds(value.customCategories)))
     || !isObject(value.settings)
     || typeof value.settings.halfLifeHours !== 'number'
     || !Number.isFinite(value.settings.halfLifeHours)
     || value.settings.halfLifeHours <= 0
     || (!allowStoredMigrations && value.settings.theme !== undefined && !isAppTheme(value.settings.theme))
+    || (!allowStoredMigrations && value.settings.bedtime !== undefined && !isBedtime(value.settings.bedtime))
+    || (!allowStoredMigrations && value.settings.tiltAnimation !== undefined && typeof value.settings.tiltAnimation !== 'boolean')
     || (value.version !== 1
       && value.settings.halfLifeHours !== DEFAULT_CAFFEINE_HALF_LIFE_HOURS
       && !(allowStoredMigrations && value.settings.halfLifeHours === PREVIOUS_FIXED_HALF_LIFE_HOURS))
@@ -113,6 +125,16 @@ function assertState(value: unknown, allowStoredMigrations = false): asserts val
     throw new Error('저장된 기록의 형식을 확인할 수 없어요. 데이터는 그대로 보관하고 있어요.')
   }
   const catalog = value.categoryCatalog
+  const photoSnapshots = value.drinkPhotoSnapshots
+  const photoIds = value.entryDrinkPhotoIds
+  const entryIds = new Set(value.entries.map(entry => entry.id))
+  if ((photoSnapshots !== undefined && (!isObject(photoSnapshots)
+    || !Object.entries(photoSnapshots).every(([id, photo]) => isText(id) && isDrinkPhotoDataUrl(photo))))
+    || (photoIds !== undefined && (!isObject(photoIds)
+      || !Object.entries(photoIds).every(([id, photoId]) => entryIds.has(id) && (photoId === null
+        || (isText(photoId) && isObject(photoSnapshots) && Object.hasOwn(photoSnapshots, photoId))))))) {
+    throw new Error('저장된 기록 사진을 확인할 수 없어요. 데이터는 그대로 보관하고 있어요.')
+  }
   if (catalog !== undefined) {
     if (value.version !== 4 || !Array.isArray(catalog) || !catalog.every(isCategory) || !hasUniqueIds(catalog)) {
       throw new Error('저장된 카테고리의 형식을 확인할 수 없어요. 데이터는 그대로 보관하고 있어요.')
@@ -127,6 +149,15 @@ function assertState(value: unknown, allowStoredMigrations = false): asserts val
   if (overrides !== undefined && (catalog === undefined || !isObject(overrides)
     || !Object.entries(overrides).every(([id, categoryId]) => DEFAULT_DRINK_IDS.has(id) && typeof categoryId === 'string' && (catalog as DrinkCategory[]).some(category => category.id === categoryId)))) {
     throw new Error('저장된 음료 분류를 확인할 수 없어요. 데이터는 그대로 보관하고 있어요.')
+  }
+  const details = value.defaultDrinkDetailsOverrides
+  if (details !== undefined && (!isObject(details) || !Object.entries(details).every(([id, item]) => DEFAULT_DRINK_IDS.has(id) && isObject(item)
+    && isText(item.name) && item.name.trim().length <= 30
+    && typeof item.icon === 'string' && DRINK_ICONS.has(item.icon)
+    && typeof item.caffeineMg === 'number' && Number.isInteger(item.caffeineMg) && item.caffeineMg >= 0 && item.caffeineMg <= MAX_CAFFEINE_MG
+    && (item.photoDataUrl === undefined || isDrinkPhotoDataUrl(item.photoDataUrl))
+    && Object.keys(item).every(key => ['name', 'icon', 'caffeineMg', 'photoDataUrl'].includes(key))))) {
+    throw new Error('저장된 음료 정보를 확인할 수 없어요. 데이터는 그대로 보관하고 있어요.')
   }
   const categories = drinkCategories({ customDrinks: value.customDrinks, customCategories: value.version === 4 ? value.customCategories as DrinkCategory[] : [], ...(catalog !== undefined ? { categoryCatalog: catalog as DrinkCategory[] } : {}) })
   const ids = new Set(categories.map(category => category.id))
@@ -187,10 +218,18 @@ export class LocalCaffeineRepository implements CaffeineRepository {
       customCategories: originalCategories.filter(category => !categoryAliases.has(category.id)),
       ...(parsed.categoryCatalog !== undefined ? { categoryCatalog: parsed.categoryCatalog } : {}),
       ...(parsed.defaultDrinkCategoryOverrides !== undefined ? { defaultDrinkCategoryOverrides: parsed.defaultDrinkCategoryOverrides } : {}),
+      ...(parsed.defaultDrinkDetailsOverrides !== undefined ? { defaultDrinkDetailsOverrides: parsed.defaultDrinkDetailsOverrides } : {}),
       ...(parsed.deletedDefaultDrinkIds !== undefined ? { deletedDefaultDrinkIds: parsed.deletedDefaultDrinkIds } : {}),
+      ...(parsed.drinkOrder !== undefined ? { drinkOrder: parsed.drinkOrder } : {}),
+      ...(parsed.retainedDrinkCategories !== undefined ? { retainedDrinkCategories: Object.fromEntries(Object.entries(parsed.retainedDrinkCategories).map(([id, categoryId]) => [id, categoryAliases.get(categoryId) ?? categoryId])) } : {}),
+      ...(parsed.retainedDrinkPhotos !== undefined ? { retainedDrinkPhotos: parsed.retainedDrinkPhotos } : {}),
+      ...(parsed.entryDrinkPhotoIds !== undefined ? { entryDrinkPhotoIds: parsed.entryDrinkPhotoIds } : {}),
+      ...(parsed.drinkPhotoSnapshots !== undefined ? { drinkPhotoSnapshots: parsed.drinkPhotoSnapshots } : {}),
       settings: {
         halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS,
         ...(isAppTheme(parsed.settings.theme) ? { theme: parsed.settings.theme } : {}),
+        ...(isBedtime(parsed.settings.bedtime) ? { bedtime: parsed.settings.bedtime } : {}),
+        ...(typeof parsed.settings.tiltAnimation === 'boolean' ? { tiltAnimation: parsed.settings.tiltAnimation } : {}),
       },
       ...(parsed.version === 1 ? { legacyHalfLifeHours: parsed.settings.halfLifeHours } : parsed.legacyHalfLifeHours !== undefined ? { legacyHalfLifeHours: parsed.legacyHalfLifeHours } : {}),
       ...(parsed.legacyPersonalization !== undefined ? { legacyPersonalization: parsed.legacyPersonalization } : parsed.personalization !== undefined ? { legacyPersonalization: parsed.personalization } : {}),

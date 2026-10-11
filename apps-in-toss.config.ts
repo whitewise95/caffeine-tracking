@@ -10,7 +10,7 @@ export default defineConfig({
     withHomeButton: false,
     withTitle: true,
     transparentBackground: false,
-    theme: 'light',
+    theme: 'dark',
   },
   webView: {
     bounces: false,

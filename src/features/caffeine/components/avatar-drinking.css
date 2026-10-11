@@ -1,0 +1,17 @@
+.avatar-drinking { --sip-coffee-light: #BA8866; --sip-coffee-dark: #241917; --sip-glass: #17141B; }
+.liquid-avatar[data-drinking='true'] .avatar-idle,
+.liquid-avatar[data-drinking='true'] .avatar-tension { animation: none; }
+.liquid-avatar[data-drinking='true'] .avatar-face { opacity: .95; }
+.liquid-avatar[data-drinking='true'] .avatar-eyes-rest { opacity: 0; }
+.liquid-avatar[data-drinking='true'] .avatar-eyes-open { opacity: 1; }
+.liquid-avatar[data-drinking='true'] .avatar-eyes-full { opacity: 0; }
+.liquid-avatar[data-drinking='true'] .avatar-mouth { opacity: 0; }
+.avatar-absorption-glow { opacity: 0; animation: avatar-absorption-glow 6s ease-in-out infinite; }
+@keyframes avatar-absorption-glow {
+  0%, 62%, 100% { opacity: 0; }
+  75% { opacity: .85; }
+  88% { opacity: .1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-absorption-glow { animation: none !important; opacity: 0; }
+}

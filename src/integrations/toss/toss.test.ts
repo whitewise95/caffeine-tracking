@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { SafeArea, Screen, Storage } from '@apps-in-toss/web-framework'
+import { Device, NavigationBar, SafeArea, Screen, Storage } from '@apps-in-toss/web-framework'
 import { createInitialState } from '../../features/caffeine/model/caffeine'
-import { createRepository, initializeTossSafeArea, isTossRuntime, setOverlaySwipeBack, subscribeTossBack } from './toss'
+import { createRepository, initializeTossSafeArea, isTossRuntime, openTossExternalURL, setOverlaySwipeBack, subscribeTossBack, syncTossNavigationTheme } from './toss'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -17,6 +17,59 @@ function tossWindow() {
 }
 
 describe('Toss runtime boundary', () => {
+  it('opens external research with the native URL API only in Toss', async () => {
+    const open = vi.spyOn(Device, 'openURL').mockResolvedValue(undefined)
+    const url = 'https://pubmed.ncbi.nlm.nih.gov/19125908/'
+    vi.stubGlobal('window', {})
+    await openTossExternalURL(url)
+    expect(open).not.toHaveBeenCalled()
+    vi.stubGlobal('window', tossWindow())
+    await openTossExternalURL(url)
+    expect(open).toHaveBeenCalledExactlyOnceWith(url)
+  })
+
+  it('propagates native URL failures to the link UI instead of navigating the WebView', async () => {
+    vi.stubGlobal('window', tossWindow())
+    vi.spyOn(Device, 'openURL').mockRejectedValue(new Error('cannot open browser'))
+    await expect(openTossExternalURL('https://pubmed.ncbi.nlm.nih.gov/19125908/')).rejects.toThrow('cannot open browser')
+  })
+
+  it('does not call native navigation from a mobile browser', async () => {
+    vi.stubGlobal('window', {})
+    const options = vi.spyOn(NavigationBar, 'setOptions').mockResolvedValue(undefined)
+    await syncTossNavigationTheme('dark')
+    expect(options).not.toHaveBeenCalled()
+  })
+
+  it('updates native navigation colors without changing the existing buttons', async () => {
+    vi.stubGlobal('window', tossWindow())
+    const options = vi.spyOn(NavigationBar, 'setOptions').mockResolvedValue(undefined)
+    await syncTossNavigationTheme('dark')
+    expect(options).toHaveBeenLastCalledWith({ theme: 'dark', backgroundColor: '#0A0B0E' })
+    await syncTossNavigationTheme('light')
+    expect(options).toHaveBeenLastCalledWith({ theme: 'light', backgroundColor: '#F7F8FA' })
+  })
+
+  it('keeps native theme requests in order and recovers after a bridge failure', async () => {
+    vi.stubGlobal('window', tossWindow())
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let finishFirst!: () => void
+    const options = vi.spyOn(NavigationBar, 'setOptions')
+      .mockImplementationOnce(() => new Promise<void>(resolve => { finishFirst = resolve }))
+      .mockRejectedValueOnce(new Error('native theme failed'))
+      .mockResolvedValue(undefined)
+    const first = syncTossNavigationTheme('dark')
+    const second = syncTossNavigationTheme('light')
+    await Promise.resolve()
+    expect(options).toHaveBeenCalledTimes(1)
+    finishFirst()
+    await Promise.all([first, second])
+    expect(options.mock.calls.map(([value]) => value.theme)).toEqual(['dark', 'light'])
+    expect(warning).toHaveBeenCalledOnce()
+    await syncTossNavigationTheme('dark')
+    expect(options).toHaveBeenLastCalledWith({ theme: 'dark', backgroundColor: '#0A0B0E' })
+  })
+
   it('does not treat a regular browser or an unrelated WebView as Toss', () => {
     expect(isTossRuntime()).toBe(false)
     vi.stubGlobal('window', {})
@@ -78,6 +131,7 @@ describe('Toss runtime boundary', () => {
     state.customDrinks = [{ id: 'my-drink', categoryId: 'custom:device', name: '내 음료', caffeineMg: 67, icon: 'coffee', isCustom: true, sourceType: 'custom' }];
     state.entries = [{ id: 'my-entry', drinkId: 'my-drink', drinkName: '내 음료', caffeineMg: 67, icon: 'coffee', consumedAt: '2026-10-04T01:00:00.000Z', startedAt: '2026-10-04T00:30:00.000Z' }];
     state.legacyPersonalization = { archived: true };
+    state.settings.theme = 'dark';
     await createRepository().save(state);
     expect(set).toHaveBeenCalledWith('caffeine-tracker:state:v1', JSON.stringify(state));
     expect(await createRepository().load()).toEqual(state);

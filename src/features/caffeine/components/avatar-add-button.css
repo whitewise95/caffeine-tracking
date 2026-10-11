@@ -1,0 +1,22 @@
+.caffeine-hero-scene { position: relative; display: grid; place-items: center; width: 100%; max-width: 360px; container-type: inline-size; }
+.avatar-add {
+  --cup-pink: #F3A6B8;
+  --cup-shine: #FFE1ED;
+  --cup-shadow: #18131C;
+  --cup-plus: #FFF2F6;
+  --cup-coffee-light: #CE9B73;
+  --cup-coffee-dark: #452C2D;
+  position: absolute; inset-inline-end: 0; bottom: 28px; width: 104px;
+}
+.avatar-add-button { display: block; width: 104px; height: 112px; padding: 0; border: 0; border-radius: 20px; background: transparent; transition: opacity 150ms ease; }
+.avatar-add-button > svg { display: block; width: 100%; height: 100%; }
+.avatar-add-button:active { opacity: .8; }
+.avatar-add-invitation { position: absolute; inset-inline-end: 0; bottom: calc(100% - 24px); margin: 0; color: var(--accent-pink); font-size: var(--font-xs); font-weight: 500; line-height: 1.5; text-align: center; white-space: nowrap; pointer-events: none; }
+.avatar-add-invitation svg { position: absolute; top: 100%; right: 6px; width: 46px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+@container (max-width: 17em) {
+  .avatar-add { position: static; width: auto; display: flex; align-items: center; gap: 8px; justify-self: end; margin-top: -22px; }
+  .avatar-add-invitation { position: static; white-space: normal; text-align: end; }
+  .avatar-add-invitation svg { display: none; }
+  .avatar-add-button { flex-shrink: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .avatar-add-button { transition: none; } }

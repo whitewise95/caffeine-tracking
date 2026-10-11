@@ -3,7 +3,8 @@ import { createInitialState } from '../model/caffeine'
 import type { AppTheme, CaffeineState } from '../model/caffeine.types'
 import { LocalCaffeineRepository, CAFFEINE_STORAGE_KEY } from './LocalCaffeineRepository'
 import type { CaffeineStorage } from './CaffeineRepository'
-import { addCustomDrink, availableDrinks, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, renameDrinkCategory, reorderDrinkCategories } from '../model/drinkCategories'
+import { addCustomDrink, availableDrinks, createDrinkCategory, deleteDrinkCategory, deleteDrinkFromCatalog, drinkCategories, moveDrinkInCatalog, renameDrinkCategory, reorderDrinkCategories, updateDrinkInCatalog } from '../model/drinkCategories'
+import { deleteCaffeineEntry, snapshotEntryDrinkPhotos } from '../model/drinkPhoto'
 
 class MemoryStorage implements CaffeineStorage {
   values = new Map<string, string>()
@@ -21,6 +22,98 @@ function populatedState(): CaffeineState {
 }
 
 describe('LocalCaffeineRepository', () => {
+  it('round-trips record photo snapshots without changing intake fields or embedding photos in entries', async () => {
+    const base = populatedState()
+    const state = snapshotEntryDrinkPhotos(base, base.entries, 'data:image/jpeg;base64,/9j/AA==')
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    await repository.save(state)
+    expect(await repository.load()).toEqual(state)
+    expect(state.entries).toEqual(base.entries)
+    expect(state.entries[0]).not.toHaveProperty('photoDataUrl')
+  })
+
+  it.each([
+    { entryDrinkPhotoIds: { 'entry-1': 42 } },
+    { entryDrinkPhotoIds: { 'entry-1': 'missing' } },
+    { entryDrinkPhotoIds: { unknown: null } },
+    { entryDrinkPhotoIds: { 'entry-1': 'photo:0' }, drinkPhotoSnapshots: { 'photo:0': 'https://example.com/a.jpg' } },
+    { entryDrinkPhotoIds: { 'entry-1': 'photo:0' }, drinkPhotoSnapshots: { 'photo:0': 'data:image/svg+xml;base64,AA==' } },
+  ])('rejects malformed record photo references without overwriting saved history: %j', async details => {
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    await repository.save(populatedState())
+    const saved = storage.getItem(CAFFEINE_STORAGE_KEY)
+    const state = Object.assign(populatedState(), details) as unknown as CaffeineState
+    await expect(repository.save(state)).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(saved)
+  })
+
+  it.each(['점심 후 마셨어요\n맛있었어요', '가'.repeat(100), '😀'.repeat(100)])('persists an optional intake note: %s', async note => {
+    const state = { ...populatedState(), entries: populatedState().entries.map(entry => ({ ...entry, note })) }
+    const storage = new MemoryStorage()
+    await new LocalCaffeineRepository(storage).save(state)
+    expect((await new LocalCaffeineRepository(storage).load()).entries[0]).toMatchObject({ note })
+  })
+
+  it.each(['가'.repeat(101), 42, null])('rejects malformed notes without overwriting stored records: %j', async note => {
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    const original = populatedState()
+    await repository.save(original)
+    const raw = storage.getItem(CAFFEINE_STORAGE_KEY)
+    const invalid = { ...original, entries: original.entries.map(entry => ({ ...entry, note })) } as unknown as CaffeineState
+    await expect(repository.save(invalid)).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+  })
+
+  it('retains historical drinks and entries above the new 500mg input limit', async () => {
+    const storage = new MemoryStorage()
+    const state = populatedState()
+    state.entries[0].caffeineMg = 750
+    state.customDrinks[0].caffeineMg = 750
+    await new LocalCaffeineRepository(storage).save(state)
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(state)
+  })
+
+  it.each([true, false])('persists tilt animation opt-in %s without losing records', async tiltAnimation => {
+    const storage = new MemoryStorage()
+    const state = populatedState()
+    state.settings.tiltAnimation = tiltAnimation
+    await new LocalCaffeineRepository(storage).save(state)
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(state)
+  })
+
+  it.each(['true', null, 1])('ignores invalid stored tilt opt-in and refuses new invalid saves: %j', async tiltAnimation => {
+    const storage = new MemoryStorage()
+    const original = populatedState()
+    const raw = JSON.stringify({ ...original, settings: { ...original.settings, tiltAnimation } })
+    storage.setItem(CAFFEINE_STORAGE_KEY, raw)
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(original)
+    await expect(new LocalCaffeineRepository(storage).save({ ...original, settings: { ...original.settings, tiltAnimation } } as unknown as CaffeineState)).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+  })
+
+  it('persists planned bedtime with records and photos', async () => {
+    const storage = new MemoryStorage()
+    const original = populatedState()
+    original.customDrinks[0].photoDataUrl = 'data:image/jpeg;base64,/9j/2Q=='
+    const state = { ...original, settings: { ...original.settings, bedtime: '00:30' } }
+    await new LocalCaffeineRepository(storage).save(state)
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(state)
+  })
+
+  it.each(['24:00', '23:60', '7:00', '', null, 42])('ignores invalid stored bedtime without losing records: %j', async bedtime => {
+    const storage = new MemoryStorage()
+    const original = populatedState()
+    const raw = JSON.stringify({ ...original, settings: { ...original.settings, bedtime } })
+    storage.setItem(CAFFEINE_STORAGE_KEY, raw)
+    expect(await new LocalCaffeineRepository(storage).load()).toEqual(original)
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+    await expect(new LocalCaffeineRepository(storage).save({ ...original, settings: { ...original.settings, bedtime } } as unknown as CaffeineState)).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+  })
+
   it.each<AppTheme>(['light', 'dark'])('persists the %s theme with existing records, photos and category changes', async theme => {
     const storage = new MemoryStorage()
     const repository = new LocalCaffeineRepository(storage)
@@ -355,6 +448,80 @@ describe('LocalCaffeineRepository', () => {
 })
 
 describe('updated categories and drink photos', () => {
+  it('reclaims a deleted drink photo only after its last referencing record is removed', async () => {
+    const original = populatedState()
+    const photo = 'data:image/jpeg;base64,/9j/2Q=='
+    original.customDrinks[0].photoDataUrl = photo
+    original.entries.push({ ...original.entries[0], id: 'entry-2' })
+    const repository = new LocalCaffeineRepository(new MemoryStorage())
+    await repository.save(deleteDrinkFromCatalog(original, 'custom-1'))
+    await repository.save(deleteCaffeineEntry(await repository.load(), 'entry-1'))
+    const shared = await repository.load()
+    expect(shared.entries.map(entry => entry.id)).toEqual(['entry-2'])
+    expect(shared.retainedDrinkPhotos).toEqual({ 'custom-1': photo })
+    await repository.save(deleteCaffeineEntry(shared, 'entry-2'))
+    expect((await repository.load()).entries).toEqual([])
+    expect(await repository.load()).not.toHaveProperty('retainedDrinkPhotos')
+    expect(shared.retainedDrinkPhotos).toEqual({ 'custom-1': photo })
+  })
+
+  it('does not archive a photo without records or remove photos of available drinks', async () => {
+    const original = populatedState()
+    original.customDrinks[0].photoDataUrl = 'data:image/jpeg;base64,/9j/2Q=='
+    const noRecords = deleteCaffeineEntry(original, 'entry-1')
+    expect(noRecords.customDrinks).toEqual(original.customDrinks)
+    expect(deleteDrinkFromCatalog(noRecords, 'custom-1')).not.toHaveProperty('retainedDrinkPhotos')
+    const withoutPhoto = populatedState()
+    expect(deleteDrinkFromCatalog(withoutPhoto, 'custom-1')).not.toHaveProperty('retainedDrinkPhotos')
+  })
+
+  it.each([null, [], { 'custom-1': 'https://example.com/photo.jpg' }, { 'custom-1': 'data:image/svg+xml;base64,PHN2Zz4=' }, { 'custom-1': 17 }, { '': 'data:image/jpeg;base64,/9j/2Q==' }])('rejects invalid retained photos without changing stored records: %j', async retainedDrinkPhotos => {
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    await repository.save(populatedState())
+    const validRaw = storage.getItem(CAFFEINE_STORAGE_KEY)
+    const invalid = { ...populatedState(), customDrinks: [], retainedDrinkPhotos } as unknown as CaffeineState
+    await expect(repository.save(invalid)).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(validRaw)
+    const invalidRaw = JSON.stringify(invalid)
+    storage.setItem(CAFFEINE_STORAGE_KEY, invalidRaw)
+    await expect(repository.load()).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(invalidRaw)
+  })
+
+  it('keeps photos and records intact when either drink deletion or last-record deletion cannot save', async () => {
+    const original = populatedState()
+    original.customDrinks[0].photoDataUrl = 'data:image/jpeg;base64,/9j/2Q=='
+    const storage = new MemoryStorage()
+    const writable = new LocalCaffeineRepository(storage)
+    const failing = new LocalCaffeineRepository({ getItem: key => storage.getItem(key), setItem: () => { throw new Error('full') }, removeItem: key => storage.removeItem(key) })
+    await writable.save(original)
+    await expect(failing.save(deleteDrinkFromCatalog(original, 'custom-1'))).rejects.toThrow()
+    expect(await failing.load()).toEqual(original)
+    const archived = deleteDrinkFromCatalog(original, 'custom-1')
+    await writable.save(archived)
+    await expect(failing.save(deleteCaffeineEntry(archived, 'entry-1'))).rejects.toThrow()
+    expect(await failing.load()).toEqual(archived)
+  })
+
+  it('keeps one photo for multiple records after deleting its drink and reloading', async () => {
+    const original = populatedState()
+    const photo = 'data:image/jpeg;base64,/9j/2Q=='
+    original.customDrinks[0].photoDataUrl = photo
+    original.entries.push({ ...original.entries[0], id: 'entry-2' })
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    await repository.save(original)
+    await repository.save(deleteDrinkFromCatalog(await repository.load(), 'custom-1'))
+    const loaded = await new LocalCaffeineRepository(storage).load()
+    expect(loaded.customDrinks).toEqual([])
+    expect(loaded.entries).toEqual(original.entries)
+    expect(loaded).toHaveProperty('retainedDrinkPhotos', { 'custom-1': photo })
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)!.split(photo)).toHaveLength(2)
+    expect(original.customDrinks[0].photoDataUrl).toBe(photo)
+    expect(original).not.toHaveProperty('retainedDrinkPhotos')
+  })
+
   it('retains custom drinks and photos saved in the retired misc category across load and save', async () => {
     const storage = new MemoryStorage()
     const state = populatedState()
@@ -399,6 +566,58 @@ describe('updated categories and drink photos', () => {
 })
 
 describe('persisted category catalog', () => {
+  it('persists individual default and custom moves together with their order and photos', async () => {
+    const original = populatedState()
+    original.customDrinks[0].photoDataUrl = 'data:image/jpeg;base64,/9j/2Q=='
+    const moved = moveDrinkInCatalog(moveDrinkInCatalog(original, 'americano', 'tea', 'earl-grey'), 'custom-1', 'tea')
+    const storage = new MemoryStorage()
+    await new LocalCaffeineRepository(storage).save(moved)
+    const loaded = await new LocalCaffeineRepository(storage).load()
+    expect(loaded).toEqual(moved)
+    expect(loaded.entries).toEqual(original.entries)
+    expect(loaded.customDrinks[0]).toMatchObject({ categoryId: 'tea', photoDataUrl: 'data:image/jpeg;base64,/9j/2Q==' })
+    expect(availableDrinks(loaded).filter(drink => drink.categoryId === 'tea').map(drink => drink.id)).toEqual(['green-tea', 'americano', 'earl-grey', 'oolong-tea', 'custom-1'])
+  })
+
+  it('retains a saved arrangement when an individual move cannot be saved', async () => {
+    const memory = new MemoryStorage()
+    const original = moveDrinkInCatalog(populatedState(), 'cold-brew', 'coffee', 'americano')
+    await new LocalCaffeineRepository(memory).save(original)
+    const raw = memory.getItem(CAFFEINE_STORAGE_KEY)
+    const repository = new LocalCaffeineRepository({ getItem: key => memory.getItem(key), setItem: () => { throw new Error('full') }, removeItem: key => memory.removeItem(key) })
+    const next = moveDrinkInCatalog(original, 'custom-1', 'tea', 'green-tea')
+    await expect(repository.save(next)).rejects.toThrow()
+    expect(await repository.load()).toEqual(original)
+    expect(memory.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+    expect(original.customDrinks[0].categoryId).toBe('coffee')
+  })
+
+  it('round-trips a partial drink order while safely ignoring stale IDs', async () => {
+    const storage = new MemoryStorage()
+    const state = { ...populatedState(), drinkOrder: ['gone', 'custom-1', 'cold-brew'] }
+    await new LocalCaffeineRepository(storage).save(state)
+    const loaded = await new LocalCaffeineRepository(storage).load()
+    expect(loaded).toEqual(state)
+    expect(availableDrinks(loaded).filter(drink => drink.categoryId === 'coffee').map(drink => drink.id)).toEqual([
+      'custom-1', 'cold-brew', 'americano', 'caffe-latte',
+    ])
+  })
+
+  it.each([null, {}, 'americano', [42], [''], ['  '], ['americano', 'americano']])('rejects invalid drink order without replacing the stored state: %j', async drinkOrder => {
+    const storage = new MemoryStorage()
+    const repository = new LocalCaffeineRepository(storage)
+    const original = populatedState()
+    await repository.save(original)
+    const raw = storage.getItem(CAFFEINE_STORAGE_KEY)
+    const invalid = { ...original, drinkOrder } as unknown as CaffeineState
+    await expect(repository.save(invalid)).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
+    const invalidRaw = JSON.stringify(invalid)
+    storage.setItem(CAFFEINE_STORAGE_KEY, invalidRaw)
+    await expect(repository.load()).rejects.toThrow()
+    expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(invalidRaw)
+  })
+
   it.each([1, 2, 3, 4])('loads a legacy v%s catalog without adding config or rewriting the source', async version => {
     const storage = new MemoryStorage()
     const original = populatedState()
@@ -409,6 +628,7 @@ describe('persisted category catalog', () => {
     expect(loaded.customDrinks).toEqual(original.customDrinks)
     expect(loaded).not.toHaveProperty('categoryCatalog')
     expect(loaded).not.toHaveProperty('defaultDrinkCategoryOverrides')
+    expect(loaded).not.toHaveProperty('drinkOrder')
     expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
   })
 
@@ -508,4 +728,71 @@ describe('persisted category catalog', () => {
     await expect(repository.save({ ...valid, customCategories: [{ id: 'custom:extra', name: '이전 이름' }] })).rejects.toThrow()
     expect(await repository.load()).toEqual(valid)
   })
+})
+
+
+it('persists removed drink ownership so a later force delete removes its history and photo', async () => {
+  const storage = new MemoryStorage()
+  const repository = new LocalCaffeineRepository(storage)
+  const original = populatedState()
+  original.customDrinks[0].photoDataUrl = 'data:image/jpeg;base64,/9j/2Q=='
+  await repository.save(deleteDrinkFromCatalog(original, 'custom-1'))
+  const reloaded = await new LocalCaffeineRepository(storage).load()
+  const deleted = deleteDrinkCategory(reloaded, 'coffee', undefined, 'force')
+  await repository.save(deleted)
+  const final = await new LocalCaffeineRepository(storage).load()
+  expect(final.entries).toEqual([])
+  expect(final.retainedDrinkPhotos).toEqual({})
+  expect(availableDrinks(final).some(drink => drink.categoryId === 'coffee')).toBe(false)
+  expect(drinkCategories(final).map(category => category.id)).toEqual(['tea', 'energy', 'other'])
+})
+
+
+it('reclaims archived category ownership after the last record is deleted', async () => {
+  const storage = new MemoryStorage()
+  const repository = new LocalCaffeineRepository(storage)
+  await repository.save(deleteDrinkFromCatalog(populatedState(), 'custom-1'))
+  const archived = await repository.load()
+  expect(archived.retainedDrinkCategories).toEqual({ 'custom-1': 'coffee' })
+  await repository.save(deleteCaffeineEntry(archived, 'entry-1'))
+  expect(await repository.load()).not.toHaveProperty('retainedDrinkCategories')
+})
+
+it.each([null, [], { 'custom-1': 5 }, { 'custom-1': 'unknown' }, { '': 'coffee' }])('rejects invalid archived category ownership without replacing stored data: %j', async retainedDrinkCategories => {
+  const storage = new MemoryStorage()
+  const repository = new LocalCaffeineRepository(storage)
+  const state = populatedState()
+  await repository.save(state)
+  const original = storage.getItem(CAFFEINE_STORAGE_KEY)
+  await expect(repository.save({ ...state, retainedDrinkCategories } as unknown as CaffeineState)).rejects.toThrow()
+  expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(original)
+})
+
+
+it('reloads edited default and custom drinks without changing intake snapshots', async () => {
+  const storage = new MemoryStorage()
+  const repository = new LocalCaffeineRepository(storage)
+  const original = populatedState()
+  const state = updateDrinkInCatalog(updateDrinkInCatalog(original, 'americano', { name: '나의 커피', icon: 'tea', caffeineMg: 75 }), 'custom-1', { name: '바꾼 라떼', icon: 'coffee', caffeineMg: 110 })
+  await repository.save(state)
+  const loaded = await new LocalCaffeineRepository(storage).load()
+  expect(loaded).toEqual(state)
+  expect(availableDrinks(loaded).find(drink => drink.id === 'americano')).toMatchObject({ name: '나의 커피', icon: 'tea', caffeineMg: 75 })
+  expect(loaded.entries).toEqual(original.entries)
+})
+
+it.each([
+  null, [], { unknown: { name: '커피', icon: 'cup', caffeineMg: 50 } },
+  { americano: { name: '', icon: 'cup', caffeineMg: 50 } },
+  { americano: { name: '커피', icon: 'wrong', caffeineMg: 50 } },
+  { americano: { name: '커피', icon: 'cup', caffeineMg: 501 } },
+  { americano: { name: '커피', icon: 'cup', caffeineMg: 1.5 } },
+])('rejects invalid default drink edits without overwriting stored data: %j', async defaultDrinkDetailsOverrides => {
+  const storage = new MemoryStorage()
+  const repository = new LocalCaffeineRepository(storage)
+  const state = populatedState()
+  await repository.save(state)
+  const raw = storage.getItem(CAFFEINE_STORAGE_KEY)
+  await expect(repository.save({ ...state, defaultDrinkDetailsOverrides } as unknown as CaffeineState)).rejects.toThrow()
+  expect(storage.getItem(CAFFEINE_STORAGE_KEY)).toBe(raw)
 })

@@ -1,5 +1,15 @@
 import type { CaffeineIntakeTiming } from './caffeine.types'
 
+/** Earlier clock times finish on the following local calendar day, not 24 hours later. */
+export function inferIntakeEndDay(start: Date, end: Date): Date {
+  const inferred = new Date(end)
+  inferred.setFullYear(start.getFullYear(), start.getMonth(), start.getDate())
+  if (end.getHours() * 60 + end.getMinutes() < start.getHours() * 60 + start.getMinutes()) {
+    inferred.setDate(inferred.getDate() + 1)
+  }
+  return inferred
+}
+
 /** Validate chronology; repositories additionally validate the serialized ISO format. */
 export function isValidIntakeTiming(timing: CaffeineIntakeTiming, at?: Date): boolean {
   const end = Date.parse(timing.consumedAt)

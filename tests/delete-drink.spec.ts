@@ -16,7 +16,7 @@ async function seed(page: import('@playwright/test').Page, theme = '') {
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
 }
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`custom drink deletion preserves recorded intake and categories across reload ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await seed(page, theme);
     await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();

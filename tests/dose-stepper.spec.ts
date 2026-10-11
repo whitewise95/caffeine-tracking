@@ -5,6 +5,8 @@ async function openComposer(page: Page, theme = '') {
   await page.goto(`/${theme}`);
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: '커피에 내 음료 추가', exact: true }).click();
+  await page.getByLabel('메뉴명', { exact: true }).fill('내 커피');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
 }
 
 test('dose buttons change exact milligrams, sync the slider and respect limits', async ({ page }) => {
@@ -12,6 +14,8 @@ test('dose buttons change exact milligrams, sync the slider and respect limits',
   const input = page.getByLabel('카페인량 mg', { exact: true });
   const plus = page.getByRole('button', { name: '카페인량 1mg 늘리기', exact: true });
   const minus = page.getByRole('button', { name: '카페인량 1mg 줄이기', exact: true });
+  await expect(input).toHaveAttribute('max', '500');
+  await expect(page.getByRole('slider', { name: '카페인량 조절' })).toHaveAttribute('max', '500');
   await input.fill('67');
   await plus.click();
   await expect(input).toHaveValue('68');
@@ -24,9 +28,9 @@ test('dose buttons change exact milligrams, sync the slider and respect limits',
   await minus.focus();
   await minus.press('Enter');
   await expect(input).toHaveValue('67');
-  await input.fill('999');
+  await input.fill('499');
   await plus.click();
-  await expect(input).toHaveValue('1000');
+  await expect(input).toHaveValue('500');
   await expect(plus).toBeDisabled();
   await input.fill('1');
   await minus.click();
@@ -58,12 +62,12 @@ test('holding accelerates, releasing stops immediately without an extra click', 
   await expect(input).toHaveValue(String(accelerated));
   await plus.click();
   await expect(input).toHaveValue(String(accelerated + 1));
-  await input.fill('999');
+  await input.fill('499');
   const boundaryBox = (await plus.boundingBox())!;
   await page.mouse.move(boundaryBox.x + boundaryBox.width / 2, boundaryBox.y + boundaryBox.height / 2);
   await page.mouse.down();
   await page.clock.runFor(2000);
-  await expect(input).toHaveValue('1000');
+  await expect(input).toHaveValue('500');
   await expect(plus).toBeDisabled();
   await page.mouse.up();
 });
@@ -88,10 +92,9 @@ test('touch cancellation and page blur stop a held adjustment', async ({ page })
   await expect(input).toHaveValue(blurred);
 });
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`centered input and touch buttons fit enlarged text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await openComposer(page, theme);
-    await page.getByLabel('메뉴명', { exact: true }).fill('내 커피');
     const input = page.getByLabel('카페인량 mg', { exact: true });
     await input.fill('67');
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
@@ -126,7 +129,7 @@ test('record dose uses one milligram taps and a synchronized slider that persist
   await expect(slider).toHaveValue('45');
   await slider.focus();
   await slider.press('End');
-  await expect(page.locator('.quick-adjust-amount')).toHaveText('1000mg');
+  await expect(page.locator('.quick-adjust-amount')).toHaveText('500mg');
   await expect(plus).toBeDisabled();
   await slider.press('Home');
   await expect(minus).toBeDisabled();

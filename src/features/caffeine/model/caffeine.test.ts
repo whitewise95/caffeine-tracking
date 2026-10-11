@@ -17,6 +17,13 @@ function entry(caffeineMg: number, consumedAt: Date, id = 'entry-1'): CaffeineEn
 }
 
 describe('remainingCaffeine', () => {
+  it('continues counting doses saved before the 500mg input limit', () => {
+    const at = new Date('2026-10-06T01:00:00Z')
+    const historical = entry(750, at)
+    expect(todayIntake([historical], at)).toBe(750)
+    expect(remainingCaffeine([historical], new Date('2026-10-06T02:00:00Z'))).toBeCloseTo(5 * remainingCaffeine([entry(150, at)], new Date('2026-10-06T02:00:00Z')), 8)
+  })
+
   it('distributes a slow drink across its start and finish instead of putting the whole dose at the finish', () => {
     const slow = { ...entry(150, new Date('2026-10-02T02:00:00Z')), startedAt: '2026-10-02T01:00:00Z' }
     const atFinish = caffeineEstimate([slow], new Date('2026-10-02T02:00:00Z'))

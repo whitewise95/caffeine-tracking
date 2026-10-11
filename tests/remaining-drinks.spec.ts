@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { createInitialState } from '../src/features/caffeine/model/caffeine';
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`remaining screen shows each drink, returns home, and refreshes after time passes ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await page.clock.install({ time: new Date('2026-10-04T06:00:00+09:00') });
     const state = createInitialState();
@@ -13,8 +13,14 @@ for (const theme of ['', '?theme=light']) {
     await page.addInitScript(state => localStorage.setItem('caffeine-tracker:state:v1', JSON.stringify(state)), state);
     await page.goto(`/${theme}`);
     await expect(page.getByRole('region', { name: '아직 남아 있는 카페인' })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: '카페인 기록 요약' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: '기록 보기', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '아직 남아 있는 카페인 보기' }).click();
     await expect(page).toHaveURL(new RegExp(`/remaining${theme ? '\\?theme=light' : ''}$`));
+    await expect(page.getByRole('region', { name: '카페인 기록 요약' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '기록 보기', exact: true })).toHaveCount(0);
+    await expect(page.locator('main')).not.toContainText('오늘 섭취');
+    await expect(page.locator('main')).not.toContainText('오늘 밤 10시');
     const section = page.getByRole('region', { name: '아직 남아 있는 카페인' });
     await section.scrollIntoViewIfNeeded();
     await expect(section.getByRole('listitem')).toHaveCount(2);
@@ -70,14 +76,14 @@ for (const theme of ['', '?theme=light']) {
     await expect(instant.locator('.remaining-drink-amount strong')).toHaveText('0');
     await expect(slow.locator('.remaining-drink-amount strong')).toHaveText('110.1');
     await expect(page.locator('.remaining-absorption-note')).toContainText('흡수가 마무리될 때까지의 추정치');
-    await expect(instant.locator('.remaining-absorption-time')).toHaveText('약 1시간 7분 더');
-    await expect(slow.locator('.remaining-absorption-time')).toHaveText('약 47분 더');
+    await expect(instant.locator('.remaining-absorption-time')).toHaveText('(67분)');
+    await expect(slow.locator('.remaining-absorption-time')).toHaveText('(47분)');
     await page.screenshot({ path: `test-results/${testInfo.project.name}-absorption-countdown-${theme ? 'light' : 'dark'}.png` });
     await page.clock.fastForward(60_000);
-    await expect(instant.locator('.remaining-absorption-time')).toHaveText('약 1시간 6분 더');
-    await expect(slow.locator('.remaining-absorption-time')).toHaveText('약 46분 더');
+    await expect(instant.locator('.remaining-absorption-time')).toHaveText('(66분)');
+    await expect(slow.locator('.remaining-absorption-time')).toHaveText('(46분)');
     await page.reload();
-    await expect(slow.locator('.remaining-absorption-time')).toHaveText('약 46분 더');
+    await expect(slow.locator('.remaining-absorption-time')).toHaveText('(46분)');
 
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -90,11 +96,17 @@ for (const theme of ['', '?theme=light']) {
 
     await page.clock.setSystemTime(new Date('2026-10-04T10:46:00+09:00'));
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-    await expect(slow.locator('.remaining-absorption-time')).toHaveText('약 1분 더');
+    await expect(slow.locator('.remaining-absorption-time')).toHaveText('(1분 미만)');
     await page.clock.setSystemTime(new Date('2026-10-04T10:47:00+09:00'));
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await expect(slow.locator('.remaining-drink-absorbing')).toHaveCount(0);
-    await expect(instant.locator('.remaining-absorption-time')).toHaveText('약 20분 더');
+    await expect(instant.locator('.remaining-absorption-time')).toHaveText('(20분)');
+    await page.clock.setSystemTime(new Date('2026-10-04T11:05:00+09:00'));
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect(instant.locator('.remaining-absorption-time')).toHaveText('(2분)');
+    await page.clock.setSystemTime(new Date('2026-10-04T11:06:00+09:00'));
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect(instant.locator('.remaining-absorption-time')).toHaveText('(1분 미만)');
     await page.clock.setSystemTime(new Date('2026-10-04T11:07:00+09:00'));
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await expect(page.locator('.remaining-drink-absorbing')).toHaveCount(0);

@@ -7,6 +7,17 @@
 .section-heading svg { color: var(--text-secondary); }
 .section-heading h2 { font-size: 0.9375rem; font-weight: 600; }
 .settings-description { font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.8; margin-top: 10px; }
+.settings-accordion { min-width: 0; padding: 0; }
+.settings-accordion > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 72px; padding: 20px 22px; list-style: none; cursor: pointer; touch-action: manipulation; border-radius: var(--radius-md); scroll-margin-block: 24px 140px; }
+.settings-accordion > summary::-webkit-details-marker { display: none; }
+.settings-accordion .section-heading { min-width: 0; font-size: .9375rem; font-weight: 600; }
+.settings-accordion .section-heading span { min-width: 0; overflow-wrap: anywhere; }
+.settings-accordion .section-heading svg, .settings-accordion-chevron { flex-shrink: 0; }
+.settings-accordion-chevron { color: var(--text-tertiary); }
+.settings-accordion[open] > summary { color: var(--accent-pink); }
+.settings-accordion[open] .settings-accordion-chevron { color: var(--accent-pink); transform: rotate(180deg); }
+.settings-accordion-content { padding: 0 22px 22px; }
+.settings-accordion-content > .settings-description:first-child { margin-top: 0; }
 .half-life-sources { margin-top: 8px; color: var(--text-secondary); font-size: .75rem; line-height: 1.8; }
 .half-life-sources summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
 .half-life-source-links { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: 6px; }

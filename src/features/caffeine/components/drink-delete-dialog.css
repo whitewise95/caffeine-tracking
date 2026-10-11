@@ -1,0 +1,10 @@
+.drink-delete-dialog { width: min(360px, calc(100% - 40px)); max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 40px); overflow-y: auto; margin: auto; padding: 24px; border: 1px solid var(--border-strong); border-radius: 24px; background: var(--surface-elevated); color: var(--text-primary); box-shadow: 0 16px 40px rgb(0 0 0 / .3); }
+.drink-delete-dialog::backdrop { background: rgb(0 0 0 / .45); }
+.drink-delete-dialog h2 { margin: 0; font-size: var(--font-lg); font-weight: 650; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+.drink-delete-dialog p { margin: 12px 0 0; color: var(--text-secondary); font-size: var(--font-sm); line-height: 1.7; overflow-wrap: anywhere; }
+.drink-delete-dialog .field-error { color: var(--danger); }
+.drink-delete-dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.drink-delete-dialog-actions button { flex: 1 1 110px; min-width: 0; min-height: 48px; }
+.drink-delete-dialog-actions .button-primary { background: var(--danger); color: var(--bg); }
+.drink-delete-dialog button:disabled { opacity: .4; cursor: default; }
+.drink-delete-dialog button:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 3px; }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { isTossRuntime } from '../../../integrations/toss/toss'
 import { pickTossAlbumPhoto } from '../../../integrations/toss/album'
 import { createDrinkPhoto } from '../media/drinkPhoto'
@@ -44,7 +44,7 @@ export function DrinkPhotoInput({ photoDataUrl, disabled, onChange, onProcessing
     <button type="button" className={`sheet-icon-option sheet-photo-option${photoDataUrl ? ' is-selected' : ''}`} disabled={disabled || processing}
       aria-label={photoDataUrl ? '앨범 사진 변경' : '앨범 사진 추가'} aria-pressed={Boolean(photoDataUrl)}
       onClick={() => { if (isTossRuntime()) void process(pickTossAlbumPhoto); else input.current?.click() }}>
-      {photoDataUrl ? <><img src={photoDataUrl} alt="" width={44} height={44} /><Check size={10} className="sheet-icon-check" aria-hidden="true" /></> : <Plus size={21} aria-hidden="true" />}
+      {photoDataUrl ? <img src={photoDataUrl} alt="" width={44} height={44} /> : <Plus size={21} aria-hidden="true" />}
     </button>
     <input ref={input} className="sheet-photo-file" type="file" accept="image/*" tabIndex={-1} aria-hidden="true" disabled={disabled} onChange={event => {
       const file = event.currentTarget.files?.[0]

@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useRef } from 'react'
-import type { PointerEvent } from 'react'
+import type { PointerEvent, ReactNode } from 'react'
 import { Minus, Plus } from 'lucide-react'
 
 interface HoldAdjustButtonProps {
   direction: -1 | 1
   disabled: boolean
   onAdjust: (delta: number) => void
+  className?: string
+  ariaLabel?: string
+  children?: ReactNode
 }
 
-export function HoldAdjustButton({ direction, disabled, onAdjust }: HoldAdjustButtonProps) {
+export function HoldAdjustButton({ direction, disabled, onAdjust, className = 'sheet-dose-step', ariaLabel, children }: HoldAdjustButtonProps) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const pointer = useRef<number | null>(null)
   const ignoreClick = useRef(false)
+  const adjust = useRef(onAdjust)
+  useEffect(() => { adjust.current = onAdjust }, [onAdjust])
   const stop = useCallback(() => {
     clearTimeout(timer.current)
     timer.current = undefined
@@ -45,17 +50,17 @@ export function HoldAdjustButton({ direction, disabled, onAdjust }: HoldAdjustBu
       if (pointer.current === null) return
       ignoreClick.current = true
       const elapsed = performance.now() - startedAt
-      // Keep each change at 1mg and smoothly shorten the repeat interval.
+      // Keep each change at one unit and smoothly shorten the repeat interval.
       const delay = Math.max(25, 180 - Math.max(0, elapsed - 600) * 0.07)
-      onAdjust(direction)
+      adjust.current(direction)
       timer.current = setTimeout(repeat, delay)
     }
     timer.current = setTimeout(repeat, 400)
   }
 
   const Icon = direction === 1 ? Plus : Minus
-  return <button type="button" className="sheet-dose-step" disabled={disabled}
-    aria-label={`카페인량 1mg ${direction === 1 ? '늘리기' : '줄이기'}`}
+  return <button type="button" className={className} disabled={disabled}
+    aria-label={ariaLabel ?? `카페인량 1mg ${direction === 1 ? '늘리기' : '줄이기'}`}
     onPointerDown={start} onPointerUp={stop} onPointerCancel={cancel} onLostPointerCapture={stop}
     onPointerMove={event => {
       if (pointer.current !== event.pointerId) return
@@ -67,5 +72,5 @@ export function HoldAdjustButton({ direction, disabled, onAdjust }: HoldAdjustBu
       // Keyboard and assistive clicks have no preceding pointer press.
       if (event.detail !== 0 && ignoreClick.current) { ignoreClick.current = false; return }
       if (!disabled) onAdjust(direction)
-    }}><Icon size={22} aria-hidden="true" /></button>
+    }}>{children ?? <Icon size={22} aria-hidden="true" />}</button>
 }

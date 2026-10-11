@@ -27,14 +27,24 @@ test('record, adjust, visualize, create a drink, reload, edit and delete', async
   await expect(page.getByTestId('remaining-mg')).toHaveText('132');
   await expect(page.locator('.body-visual')).toHaveAttribute('data-level', 'FILLED');
   await expect(page.getByRole('status')).not.toBeVisible();
-  const forecast = await page.locator('.forecast').boundingBox();
-  const addDock = await page.locator('.home-cta').boundingBox();
-  expect(forecast!.y + forecast!.height).toBeLessThanOrEqual(addDock!.y);
+  await expect(page.locator('.forecast')).toHaveCount(1);
+  const summary = page.getByRole('region', { name: '카페인 기록 요약', exact: true });
+  await expect(summary.locator('.summary-value strong').nth(0)).toHaveText('155');
+  await expect(summary.locator('.summary-value strong').nth(1)).toHaveText('10:00');
+  await expect(summary.locator('.forecast strong')).toHaveText('22');
+  const details = await page.getByRole('button', { name: '아직 남아 있는 카페인 보기' }).boundingBox();
+  const navigation = await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox();
+  expect(details!.y + details!.height).toBeLessThanOrEqual(navigation!.y);
+  await expect(page.getByRole('region', { name: '지금 내 카페인', exact: true }).getByRole('button', { name: '카페인 추가', exact: true })).toBeInViewport({ ratio: 1 });
+  await expect(summary).toBeInViewport({ ratio: 1 });
+  const summaryBox = (await summary.boundingBox())!;
+  expect(summaryBox.y + summaryBox.height).toBeLessThanOrEqual(navigation!.y);
   await page.screenshot({ path: `test-results/${testInfo.project.name}-home.png` });
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: '커피에 내 음료 추가' }).click();
   await page.getByRole('button', { name: '테이크아웃 컵', exact: true }).click();
   await page.getByLabel('메뉴명').fill('나의 모닝커피');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   await page.getByLabel('카페인량 mg', { exact: true }).fill('85');
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
   await expect(page.getByRole('heading', { name: '나의 모닝커피', exact: true })).toBeVisible();
@@ -90,10 +100,10 @@ test('back closes a sheet first, deep routes work, half-life cannot be edited ma
   await expect(page.getByTestId('remaining-mg')).toHaveText('0');
 });
 
-test('light Toss theme and keyboard focus remain usable', async ({ page }) => {
+test('dark appearance and keyboard focus remain usable', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-10-04T10:00:00+09:00') });
   await page.goto('/?theme=light');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.keyboard.press('Tab');
   expect(await page.evaluate(() => !!document.activeElement?.closest('dialog'))).toBe(true);
@@ -129,7 +139,7 @@ test('finishing a delayed save does not navigate after the sheet was dismissed',
       });
     };
   });
-  await page.getByRole('button', { name: '지금 기록' }).click();
+  await page.getByRole('button', { name: '기록 저장' }).click();
   await page.goBack();
   await expect(page.getByRole('heading', { name: '어떤 카페인을 마셨나요?' })).toBeVisible();
   await page.goBack();
@@ -148,6 +158,7 @@ test('storage write failure stays visible and does not create a phantom record',
   await page.getByRole('button', { name: '지금 기록' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('alert').first()).toContainText('저장');
+  await page.getByRole('button', { name: '음료 목록으로 돌아가기' }).click();
   await page.getByRole('button', { name: '닫기', exact: true }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('0');
   await page.reload();
@@ -174,18 +185,20 @@ test('the caffeine surface gently sways and stops for reduced motion', async ({ 
   await page.clock.setSystemTime(new Date('2026-10-04T10:30:00+09:00'));
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByTestId('remaining-mg')).toHaveText('132');
-  const frontWave = page.locator('.liquid-wave-front');
-  const backWave = page.locator('.liquid-wave-back');
+  const frontWave = page.locator('.avatar-wave-front');
   await expect(frontWave).toBeVisible();
-  await expect(backWave).toBeVisible();
-  await expect.poll(() => frontWave.evaluate(element => getComputedStyle(element).animationName)).toBe('liquid-sway-front');
-  await expect.poll(() => backWave.evaluate(element => getComputedStyle(element).animationName)).toBe('liquid-sway-back');
-  await expect.poll(() => frontWave.evaluate(element => getComputedStyle(element).animationDuration)).toBe('2.2s');
-  await expect.poll(() => backWave.evaluate(element => getComputedStyle(element).animationDuration)).toBe('2.8s');
+  const surface = page.locator('.avatar-surface-definition');
+  const initialSurface = await surface.getAttribute('d');
+  expect(initialSurface).not.toBeNull();
+  await page.clock.runFor(500);
+  expect(await surface.getAttribute('d')).not.toBe(initialSurface);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(() => frontWave.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
-  await expect.poll(() => backWave.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+  // Media-query change events settle independently of the mocked animation clock.
+  await expect.poll(() => surface.evaluate(element => (element as SVGGraphicsElement).getBBox().height)).toBe(0);
+  const staticSurface = await surface.getAttribute('d');
+  await page.clock.runFor(500);
+  await expect(surface).toHaveAttribute('d', staticSurface!);
 });
 
 test('back clears selection and selecting any drink starts at its default amount', async ({ page }) => {
@@ -210,7 +223,7 @@ test('back clears selection and selecting any drink starts at its default amount
   await expect(coffee).toHaveAttribute('aria-pressed', 'false');
 });
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`back clears selection with the adjustment scrolled and enlarged text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await page.goto(`/${theme}`);
     await page.getByRole('button', { name: '카페인 추가', exact: true }).click();

@@ -34,9 +34,7 @@ for (const hasPhoto of [false, true]) {
       await input.setInputFiles(await photoFixture(page));
       await expect(page.getByRole('button', { name: '앨범 사진 변경', exact: true })).toHaveAttribute('aria-pressed', 'true');
     }
-    await page.getByLabel('카테고리', { exact: true }).fill('내 차');
     await page.getByLabel('메뉴명', { exact: true }).fill('작성 중인 음료');
-    await page.getByLabel('카페인량 mg', { exact: true }).fill('67');
     const originalPhoto = hasPhoto ? await page.locator('.sheet-photo-option img').getAttribute('src') : null;
     const route = await page.evaluate(() => window.history.state);
     // Browsers emit this bubbling, non-cancelable input event for Cancel,
@@ -44,12 +42,12 @@ for (const hasPhoto of [false, true]) {
     await input.dispatchEvent('cancel', { bubbles: true, cancelable: false });
     expect(await page.evaluate(() => window.history.state)).toEqual(route);
     await expect(page.getByRole('dialog', { name: '내 음료 추가' })).toBeVisible();
-    await expect(page.getByLabel('카테고리', { exact: true })).toHaveValue('내 차');
+    await expect(page.getByLabel('카테고리', { exact: true })).toHaveCount(0);
     await expect(page.getByLabel('메뉴명', { exact: true })).toHaveValue('작성 중인 음료');
-    await expect(page.getByLabel('카페인량 mg', { exact: true })).toHaveValue('67');
+    await expect(page.getByLabel('카페인량 mg', { exact: true })).not.toBeVisible();
     if (hasPhoto) await expect(page.locator('.sheet-photo-option img')).toHaveAttribute('src', originalPhoto!);
     else await expect(page.getByRole('button', { name: '커피잔', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: '음료 저장', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '다음', exact: true })).toBeEnabled();
     await expect(page.getByRole('alert')).toHaveCount(0);
     // Actual sheet back and dismissal still work after cancelling a picker.
     await page.getByRole('button', { name: '음료 목록으로 돌아가기', exact: true }).click();
@@ -62,10 +60,7 @@ for (const hasPhoto of [false, true]) {
 
 test('compressed album photo and exact slider dose persist across reload and appear in the journal', async ({ page }) => {
   await openComposer(page);
-  const categories = page.getByRole('group', { name: '기존 카테고리' });
-  for (const name of ['커피', '차', '에너지음료', '탄산']) await expect(categories.getByRole('button', { name, exact: true })).toBeVisible();
-  await expect(categories.getByRole('button', { name: '기타', exact: true })).toHaveCount(0);
-  await categories.getByRole('button', { name: '커피', exact: true }).click();
+  await expect(page.getByRole('group', { name: '기존 카테고리' })).toHaveCount(0);
   const fixture = await photoFixture(page);
   await expect(page.getByRole('button', { name: '앨범 사진 추가', exact: true })).toBeVisible({ timeout: 1500 });
   const chooserPromise = page.waitForEvent('filechooser');
@@ -73,6 +68,7 @@ test('compressed album photo and exact slider dose persist across reload and app
   await (await chooserPromise).setFiles(fixture);
   await expect(page.getByRole('button', { name: '앨범 사진 변경', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByLabel('메뉴명', { exact: true }).fill('사진 커피');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   await page.getByLabel('카페인량 mg', { exact: true }).fill('67');
   const slider = page.getByRole('slider', { name: '카페인량 조절', exact: true });
   await expect(slider).toHaveValue('67');
@@ -114,6 +110,7 @@ test('failed photo replacement preserves the selection and a built-in icon can r
   await page.getByRole('button', { name: '커피잔', exact: true }).click();
   await expect(page.getByRole('button', { name: '앨범 사진 추가', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await page.getByLabel('메뉴명', { exact: true }).fill('아이콘 커피');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   await page.getByLabel('카페인량 mg', { exact: true }).fill('67');
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
   await expect(page.locator('.quick-adjust-icon img')).toHaveCount(0);
@@ -127,6 +124,7 @@ test('a storage failure keeps the compressed photo available for retry without s
   await page.locator('input[type=file]').setInputFiles(await photoFixture(page));
   await expect(page.getByRole('button', { name: '앨범 사진 변경', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByLabel('메뉴명', { exact: true }).fill('저장 재시도 커피');
+  await page.getByRole('button', { name: '다음', exact: true }).click();
   await page.getByLabel('카페인량 mg', { exact: true }).fill('67');
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
@@ -138,20 +136,20 @@ test('a storage failure keeps the compressed photo available for retry without s
   });
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('alert').first()).toContainText('저장하지 못했어요');
-  await expect(page.getByRole('button', { name: '앨범 사진 변경', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.sheet-composer-preview-icon img')).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).customDrinks)).toHaveLength(0);
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
   await expect(page.locator('.quick-adjust-icon img')).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).customDrinks)).toHaveLength(1);
 });
 
-for (const theme of ['', '?theme=light']) {
+for (const theme of ['']) {
   test(`photo and range controls are usable with 200% text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await openComposer(page, theme);
     await page.locator('input[type=file]').setInputFiles(await photoFixture(page));
     await expect(page.getByRole('button', { name: '앨범 사진 변경', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('group', { name: '기존 카테고리' }).getByRole('button', { name: '에너지음료', exact: true }).click();
     await page.getByLabel('메뉴명', { exact: true }).fill('나의 음료');
+    await page.getByRole('button', { name: '다음', exact: true }).click();
     await page.getByLabel('카페인량 mg', { exact: true }).fill('67');
     await page.screenshot({ path: `test-results/${testInfo.project.name}-photo-composer-${theme ? 'light' : 'dark'}.png` });
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
@@ -160,8 +158,8 @@ for (const theme of ['', '?theme=light']) {
     const box = (await slider.boundingBox())!;
     await page.touchscreen.tap(box.x + box.width * .5, box.y + box.height / 2);
     const amount = page.getByLabel('카페인량 mg', { exact: true });
-    expect(Number(await amount.inputValue())).toBeGreaterThan(400);
-    expect(Number(await amount.inputValue())).toBeLessThan(600);
+    expect(Number(await amount.inputValue())).toBeGreaterThan(200);
+    expect(Number(await amount.inputValue())).toBeLessThan(300);
     await amount.fill('67');
     await expect(slider).toHaveValue('67');
     const save = page.getByRole('button', { name: '음료 저장', exact: true });

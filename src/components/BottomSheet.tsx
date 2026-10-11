@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 
-export function BottomSheet({ title, onClose, onBack, backLabel = '음료 목록으로 돌아가기', onCancel, className = '', children }: { title: string; onClose: () => void; onBack?: () => void; backLabel?: string; onCancel?: () => void; className?: string; children: ReactNode }) {
+export function BottomSheet({ title, onClose, onBack, backLabel = '음료 목록으로 돌아가기', onCancel, headerAction, className = '', children }: { title: string; onClose: () => void; onBack?: () => void; backLabel?: string; onCancel?: () => void; headerAction?: ReactNode; className?: string; children: ReactNode }) {
+  const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
@@ -17,20 +18,28 @@ export function BottomSheet({ title, onClose, onBack, backLabel = '음료 목록
     };
   }, []);
   useLayoutEffect(() => { heading.current?.focus({ preventScroll: true }); }, [title]);
-  return <dialog ref={ref} className={`sheet-dialog ${className}`} aria-labelledby="sheet-title"
+  return <dialog ref={ref} className={`sheet-dialog ${className}`} aria-labelledby={titleId}
+    onKeyDown={event => {
+      // Handle Escape before native dialog dismissal, which can become non-cancelable.
+      // Nested dialogs and controls that already handled Escape own their navigation.
+      if (event.key !== 'Escape' || event.defaultPrevented || !(event.target instanceof Element) || event.target.closest('dialog') !== event.currentTarget) return;
+      event.preventDefault();
+      event.stopPropagation();
+      (onCancel ?? onBack ?? onClose)();
+    }}
     onCancel={event => {
       // A file picker inside the sheet emits its own bubbling cancel event.
       // Only a cancellation of the dialog itself should dismiss or go back.
       if (event.target !== event.currentTarget) return;
       event.preventDefault();
-      (onCancel ?? onClose)();
+      (onCancel ?? onBack ?? onClose)();
     }}
     onClick={event => { if (event.target === event.currentTarget) {
       const rect = event.currentTarget.getBoundingClientRect();
-      if (event.clientY < rect.top || event.clientX < rect.left || event.clientX > rect.right) onClose();
+      if (event.clientY < rect.top || event.clientX < rect.left || event.clientX > rect.right) (onBack ?? onClose)();
     } }}>
     <div className="sheet-handle" aria-hidden="true" />
-    <div className="sheet-header">{onBack && <button className="icon-button sheet-back" aria-label={backLabel} onClick={onBack}><ArrowLeft size={22} aria-hidden="true" /></button>}<h2 ref={heading} tabIndex={-1} id="sheet-title">{title}</h2><button className="icon-button" aria-label="닫기" onClick={onClose}><X size={22} /></button></div>
+    <div className="sheet-header">{onBack && <button className="icon-button sheet-back" aria-label={backLabel} onClick={onBack}><ArrowLeft size={22} aria-hidden="true" /></button>}<h2 ref={heading} tabIndex={-1} id={titleId}>{title}</h2>{headerAction}{!onBack && <button className="icon-button" aria-label="닫기" onClick={onClose}><X size={22} aria-hidden="true" /></button>}</div>
     {children}
   </dialog>;
 }

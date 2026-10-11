@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { Clock3, Trash2 } from 'lucide-react'
 import { DrinkIcon } from '../../../components/icons/DrinkIcon'
 import { CaffeineDoseControl } from './CaffeineDoseControl'
+import { IntakeNoteField } from './IntakeNoteField'
 import type { Drink } from '../model/caffeine.types'
 import { IntakeTimeFields } from './IntakeTimeFields'
 import type { IntakeTimeTarget } from './IntakeTimePicker'
@@ -14,14 +15,17 @@ interface QuickAdjustBarProps {
   error: string
   onChange: (value: number) => void
   onRecord: () => void
+  note: string
+  onNoteChange: (note: string) => void
   onDelete: () => void
   timingDraft: IntakeTimeDraft
+  showInstantTime?: boolean
   onTimingChange: (draft: IntakeTimeDraft) => void
   onPickTime: (target: IntakeTimeTarget) => void
   onTimingToggle: (slow: boolean) => void
 }
 
-export function QuickAdjustBar({ drink, caffeineMg, busy, error, onChange, onRecord, onDelete, timingDraft, onTimingChange, onTimingToggle, onPickTime }: QuickAdjustBarProps) {
+export function QuickAdjustBar({ drink, caffeineMg, busy, error, onChange, onRecord, note, onNoteChange, onDelete, timingDraft, showInstantTime = false, onTimingChange, onTimingToggle, onPickTime }: QuickAdjustBarProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const deleteButton = useRef<HTMLButtonElement>(null)
   const confirmHeading = useRef<HTMLHeadingElement>(null)
@@ -41,10 +45,10 @@ export function QuickAdjustBar({ drink, caffeineMg, busy, error, onChange, onRec
           <span className="quick-adjust-icon"><DrinkIcon photoDataUrl={drink.photoDataUrl} type={drink.icon} size={21} /></span>
           <div>
             <h3>{drink.name}</h3>
-            <p>{drink.isCustom ? '내 음료' : drink.sourceType === 'official' ? '공식 정보' : '참고용 기본값'}{drink.servingMl ? ` · ${drink.servingMl}ml` : ''}</p>
+            <p>{drink.isCustom ? '내 음료' : drink.sourceType === 'custom' ? '수정한 기본값' : drink.sourceType === 'official' ? '공식 정보' : '참고용 기본값'}{drink.servingMl ? ` · ${drink.servingMl}ml` : ''}</p>
           </div>
         </div>
-        <span className="quick-adjust-time"><Clock3 size={13} aria-hidden="true" /> {timingDraft.slow ? '나눠 마심' : '지금'}</span>
+        <span className="quick-adjust-time"><Clock3 size={13} aria-hidden="true" /> {timingDraft.slow ? '나눠 마심' : showInstantTime ? '날짜 지정' : '지금'}</span>
       </div>
       <div className="quick-adjust-content">
         {confirmingDelete ? <section className="drink-delete-confirmation" aria-labelledby="drink-delete-title">
@@ -58,13 +62,16 @@ export function QuickAdjustBar({ drink, caffeineMg, busy, error, onChange, onRec
           </div>
         </section> : <>
         <CaffeineDoseControl value={String(caffeineMg)} disabled={busy} onChange={value => onChange(Number(value))} />
-        <p className="quick-adjust-hint">{caffeineMg === 0 ? '기록하려면 카페인량을 0mg보다 크게 조절해 주세요.' : '± 1mg · 길게 누르면 더 빠르게 조절돼요.'}</p>
-        <IntakeTimeFields onPickTime={onPickTime} draft={timingDraft} disabled={busy} onChange={onTimingChange} onToggle={onTimingToggle} />
+        {caffeineMg === 0 && <p className="quick-adjust-hint">기록하려면 카페인량을 0mg보다 크게 조절해 주세요.</p>}
+        <IntakeTimeFields lockDates={!showInstantTime} showInstantTime={showInstantTime} onPickTime={onPickTime} draft={timingDraft} disabled={busy} onChange={onTimingChange} onToggle={onTimingToggle} />
+        <IntakeNoteField value={note} disabled={busy} onChange={onNoteChange} />
         {error && <p className="field-error" role="alert">{error}</p>}
         <button type="button" className="button-primary quick-adjust-record" disabled={busy || caffeineMg <= 0} onClick={onRecord}>
-          {busy ? '기록하는 중…' : timingDraft.slow ? '기록 저장' : '지금 기록'}
+          {busy ? '기록하는 중…' : timingDraft.slow || showInstantTime ? '기록 저장' : '지금 기록'}
         </button>
-        <button ref={deleteButton} type="button" className="button-secondary quick-adjust-delete" disabled={busy} onClick={() => setConfirmingDelete(true)}><Trash2 size={18} aria-hidden="true" />음료 삭제</button>
+        <div className="quick-adjust-delete-action">
+          <button ref={deleteButton} type="button" className="quick-adjust-delete" disabled={busy} onClick={() => setConfirmingDelete(true)}><Trash2 size={18} aria-hidden="true" />음료 삭제</button>
+        </div>
         </>}
       </div>
     </div>

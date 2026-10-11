@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Check, Trash2, X } from 'lucide-react'
 import type { DrinkCategory, DrinkCategoryId } from '../model/caffeine.types'
 import { categoryNameKey, isValidCategoryName, MAX_CATEGORY_NAME_LENGTH } from '../model/drinkCategories'
 
@@ -12,6 +13,8 @@ interface CategoryNameFormProps {
   onSave: (name: string) => Promise<boolean>
   onDone: (name: string) => void
   onCancel?: () => void
+  onDelete?: () => void
+  inline?: boolean
 }
 
 function nameError(name: string, categories: readonly DrinkCategory[], editingId?: DrinkCategoryId): string {
@@ -20,7 +23,7 @@ function nameError(name: string, categories: readonly DrinkCategory[], editingId
   return ''
 }
 
-export function CategoryNameForm({ categories, busy, category, title, submitLabel, onSave, onDone, onCancel }: CategoryNameFormProps) {
+export function CategoryNameForm({ categories, busy, category, title, submitLabel, onSave, onDone, onCancel, onDelete, inline = false }: CategoryNameFormProps) {
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
   const mounted = useRef(true)
@@ -31,8 +34,9 @@ export function CategoryNameForm({ categories, busy, category, title, submitLabe
   useEffect(() => {
     mounted.current = true
     input.current?.focus()
+    if (inline) input.current?.select()
     return () => { mounted.current = false }
-  }, [])
+  }, [inline])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -54,16 +58,19 @@ export function CategoryNameForm({ categories, busy, category, title, submitLabe
     }
   }
 
-  return <form className="category-manager-form" onSubmit={event => void submit(event)} noValidate aria-labelledby={`${id}-title`}>
-    <h3 id={`${id}-title`}>{title}</h3>
-    <label htmlFor={`${id}-name`}>카테고리 이름</label>
-    <input ref={input} id={`${id}-name`} value={name} onChange={event => { setName(event.target.value); setError('') }} maxLength={MAX_CATEGORY_NAME_LENGTH} autoComplete="off" placeholder="예: 나의 차" required disabled={busy} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : `${id}-hint`} />
-    <p id={`${id}-hint`} className="category-manager-hint">최대 {MAX_CATEGORY_NAME_LENGTH}자까지 입력할 수 있어요.</p>
+  return <form className={`category-manager-form${inline ? ' catalog-category-name-form' : ''}`} onSubmit={event => void submit(event)} onKeyDown={event => { if (inline && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (!busy && !submitting.current) onCancel?.() } }} noValidate aria-labelledby={`${id}-title`}>
+    <h3 id={`${id}-title`} className={inline ? 'sr-only' : undefined}>{title}</h3>
+    <label htmlFor={`${id}-name`} className={inline ? 'sr-only' : undefined}>카테고리 이름</label>
+    <input ref={input} id={`${id}-name`} className={inline ? 'field' : undefined} value={name} onChange={event => { setName(event.target.value); setError(''); setSaveError('') }} onBlur={() => { if (inline) setError(nameError(name, categories, category?.id)) }} maxLength={MAX_CATEGORY_NAME_LENGTH} autoComplete="off" enterKeyHint="done" placeholder="예: 나의 차" required disabled={busy} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : `${id}-hint`} />
+    <p id={`${id}-hint`} className={inline ? 'sr-only' : 'category-manager-hint'}>최대 {MAX_CATEGORY_NAME_LENGTH}자까지 입력할 수 있어요.</p>
     {error && <p id={`${id}-error`} className="field-error" role="alert">{error}</p>}
     {saveError && <p className="field-error" role="alert">{saveError}</p>}
-    <div className="category-manager-actions">
-      {onCancel && <button type="button" className="button-secondary" disabled={busy} onClick={onCancel}>취소</button>}
-      <button type="submit" className="button-primary" disabled={busy}>{busy ? '저장 중…' : submitLabel}</button>
+    <div className={inline ? 'catalog-category-name-controls' : `category-manager-actions${onDelete ? ' category-manager-actions--stacked' : ''}`}>
+      {onCancel && <button type="button" className="button-secondary" aria-label={inline ? '카테고리 이름 변경 취소' : undefined} disabled={busy} onClick={onCancel}>{inline ? <X size={18} aria-hidden="true" /> : '취소'}</button>}
+      <button type="submit" className="button-primary" aria-label={inline ? '카테고리 이름 저장' : undefined} disabled={busy}>{inline ? <Check size={18} aria-hidden="true" /> : busy ? '저장 중…' : submitLabel}</button>
     </div>
+    {onDelete && <div className="category-manager-delete-action">
+      <button type="button" className="category-manager-destructive" disabled={busy} onClick={onDelete}><Trash2 size={18} aria-hidden="true" />삭제</button>
+    </div>}
   </form>
 }

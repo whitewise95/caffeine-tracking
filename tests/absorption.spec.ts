@@ -5,6 +5,7 @@ test('a fresh dose absorbs over time, forecasts the evening amount, and excludes
   await page.clock.install({ time: new Date('2026-10-04T09:00:00+09:00') });
   await page.clock.pauseAt(new Date('2026-10-04T10:00:00+09:00'));
   const state = createInitialState();
+  state.settings.bedtime = '22:00';
   state.entries = [
     { id: 'now', drinkId: 'coffee', drinkName: '지금 마신 커피', caffeineMg: 150, consumedAt: '2026-10-04T10:00:00+09:00', icon: 'coffee' },
     { id: 'future', drinkId: 'coffee', drinkName: '미래 기록', caffeineMg: 1000, consumedAt: '2026-10-04T12:00:00+09:00', icon: 'coffee' },

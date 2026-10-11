@@ -1,4 +1,5 @@
-import { Device, Environment, SafeArea, Screen, Storage, graniteEvent } from '@apps-in-toss/web-framework'
+import { Device, Environment, NavigationBar, SafeArea, Screen, Storage, graniteEvent } from '@apps-in-toss/web-framework'
+import type { AppTheme } from '../../features/caffeine/model/caffeine.types'
 import type { CaffeineRepository } from '../../features/caffeine/repository/CaffeineRepository'
 import { LocalCaffeineRepository } from '../../features/caffeine/repository/LocalCaffeineRepository'
 
@@ -33,6 +34,33 @@ export function createRepository(): CaffeineRepository {
     setItem: (key, value) => Storage.setItem(key, value),
     removeItem: (key) => Storage.removeItem(key),
   })
+}
+
+/** Open research sources outside the mini-app; failures are handled by the link UI. */
+export async function openTossExternalURL(url: string): Promise<void> {
+  if (!isTossRuntime()) return
+  await Device.openURL(url)
+}
+
+/** Leave the mini-app only after an explicit user confirmation. */
+export async function closeTossApp(): Promise<void> {
+  if (!isTossRuntime()) throw new Error('토스 앱에서만 앱을 종료할 수 있어요.')
+  await Screen.close()
+}
+
+let navigationThemeUpdate: Promise<void> = Promise.resolve()
+
+/** Serialize updates so a slower previous request cannot replace the latest theme. */
+export function syncTossNavigationTheme(theme: AppTheme): Promise<void> {
+  if (!isTossRuntime()) return Promise.resolve()
+  navigationThemeUpdate = navigationThemeUpdate.then(async () => {
+    try {
+      await NavigationBar.setOptions({ theme, backgroundColor: theme === 'light' ? '#F7F8FA' : '#0A0B0E' })
+    } catch (error) {
+      console.warn('토스 상단 바 테마를 적용하지 못했어요.', error)
+    }
+  })
+  return navigationThemeUpdate
 }
 
 export function initializeTossSafeArea(): () => void {
@@ -71,7 +99,7 @@ export function initializeTossSafeArea(): () => void {
   }
 }
 
-/** Subscribe only while there is an overlay or an internal route to go back from. */
+/** The callback owns route, overlay and home exit behavior while subscribed. */
 export function subscribeTossBack(callback: () => void): () => void {
   if (!isTossRuntime()) return noop
 

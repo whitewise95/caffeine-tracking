@@ -1,0 +1,7 @@
+.exit-confirm-dialog { width: min(360px, calc(100% - 40px)); max-height: calc(100dvh - 48px); overflow: auto; margin: auto; padding: 24px; background: var(--surface-elevated); color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 24px; }
+.exit-confirm-dialog::backdrop { background: rgb(0 0 0 / .65); }
+.exit-confirm-dialog h2 { font-size: var(--font-lg); font-weight: 650; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+.exit-confirm-dialog p { margin-top: 10px; font-size: var(--font-sm); line-height: 1.7; color: var(--text-secondary); overflow-wrap: anywhere; }
+.exit-confirm-dialog .error-message { color: var(--danger); }
+.exit-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.exit-confirm-actions button { flex: 1 1 110px; min-width: 0; min-height: 48px; }

@@ -14,8 +14,9 @@ interface DragSession extends DragView {
   kind: 'pointer' | 'keyboard'
   ids: DrinkCategoryId[]
   name: string
-  handle: HTMLButtonElement
+  handle: HTMLElement
   pointerId?: number
+  touchId?: number
   startX: number
   startY: number
   currentY: number
@@ -38,9 +39,11 @@ export function useCategoryDrag({ categories, disabled, scrollRef, onCommit }: C
   const [drag, setDrag] = useState<DragView | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const session = useRef<DragSession | null>(null)
+  const settling = useRef<DragSession | null>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout>>()
   const frame = useRef<number>()
   const mounted = useRef(true)
+  const suppressClick = useRef(false)
   const committing = useRef(false)
   const latest = useRef({ categories, disabled, onCommit })
   latest.current = { categories, disabled, onCommit }
@@ -101,10 +104,10 @@ export function useCategoryDrag({ categories, disabled, scrollRef, onCommit }: C
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories])
 
-  function createSession(id: DrinkCategoryId, handle: HTMLButtonElement, kind: DragSession['kind'], x = 0, y = 0): DragSession | null {
+  function createSession(id: DrinkCategoryId, handle: HTMLElement, kind: DragSession['kind'], x = 0, y = 0): DragSession | null {
     const list = scrollRef.current
     const category = latest.current.categories.find(item => item.id === id)
-    if (!list || !category || latest.current.disabled || committing.current || session.current) return null
+    if (!list || !category || latest.current.categories.length < 2 || latest.current.disabled || committing.current || session.current) return null
     const ids = latest.current.categories.map(item => item.id)
     const sourceIndex = ids.indexOf(id)
     const rows = Array.from(list.querySelectorAll<HTMLElement>('[data-category-row]'))
@@ -140,7 +143,7 @@ export function useCategoryDrag({ categories, disabled, scrollRef, onCommit }: C
     const list = scrollRef.current
     if (!current?.started || current.kind !== 'pointer' || !list) return
     const bounds = list.getBoundingClientRect()
-    const speed = categoryAutoScrollSpeed(current.currentY, bounds.top, bounds.bottom)
+    const speed = Math.abs(current.currentY - current.startY) > 8 ? categoryAutoScrollSpeed(current.currentY, bounds.top, bounds.bottom) : 0
     if (speed !== 0) {
       list.scrollTop = Math.max(0, Math.min(current.maxScrollTop, list.scrollTop + speed))
       updatePointer()
@@ -151,43 +154,55 @@ export function useCategoryDrag({ categories, disabled, scrollRef, onCommit }: C
   async function drop() {
     const current = stopResources()
     if (!current?.started) return
-    if (mounted.current) setDrag(null)
-    if (latest.current.disabled || current.ids.length !== latest.current.categories.length || current.ids.some((id, index) => id !== latest.current.categories[index]?.id)) return
+    if (latest.current.disabled || current.ids.length !== latest.current.categories.length || current.ids.some((id, index) => id !== latest.current.categories[index]?.id)) { if (mounted.current) setDrag(null); return }
     if (current.sourceIndex === current.targetIndex) {
+      if (mounted.current) setDrag(null)
       if (mounted.current) setAnnouncement(`${current.name} 순서를 유지했어요.`)
       return
     }
     committing.current = true
+    // Keep the dropped position visible while native storage confirms the order.
+    settling.current = current
     try {
       const saved = await latest.current.onCommit(moveCategoryToIndex(current.ids, current.id, current.targetIndex))
       if (!mounted.current) return
       setAnnouncement(saved ? `${current.name}을 ${current.targetIndex + 1}번째로 이동했어요.` : '순서를 저장하지 못했어요. 다시 이동해 주세요.')
-      current.handle.focus({ preventScroll: true })
+      const focusTarget = current.handle.matches('button') ? current.handle : current.handle.querySelector<HTMLButtonElement>('.category-manager-reorder')
+      focusTarget?.focus({ preventScroll: true })
       current.handle.scrollIntoView({ block: 'nearest' })
     } catch {
       if (mounted.current) setAnnouncement('순서를 저장하지 못했어요. 다시 이동해 주세요.')
     } finally {
       committing.current = false
+      settling.current = null
+      if (mounted.current) setDrag(null)
     }
   }
 
-  function onPointerDown(id: DrinkCategoryId, event: ReactPointerEvent<HTMLButtonElement>) {
-    if (event.button !== 0 || !event.isPrimary) return
+  function onPointerDown(id: DrinkCategoryId, event: ReactPointerEvent<HTMLDivElement>) {
+    suppressClick.current = false
+    if (event.pointerType === 'touch' || event.button !== 0 || !event.isPrimary || (event.target as Element).closest('[data-category-manage]')) return
     const current = createSession(id, event.currentTarget, 'pointer', event.clientX, event.clientY)
     if (!current) return
     current.pointerId = event.pointerId
     session.current = current
     event.currentTarget.setPointerCapture(event.pointerId)
+    armPress(current)
+  }
+
+  function armPress(current: DragSession) {
+    suppressClick.current = false
     pressTimer.current = setTimeout(() => {
       if (session.current !== current || latest.current.disabled) return
       current.started = true
+      suppressClick.current = true
       renderSession(current)
       setAnnouncement(`${current.name} 순서 이동 시작. 위아래로 끌어서 놓아 주세요.`)
       frame.current = requestAnimationFrame(tick)
     }, 350)
   }
 
-  function onPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+  function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const current = session.current
     if (!current || current.pointerId !== event.pointerId) return
     if (!current.started) {
@@ -224,21 +239,90 @@ export function useCategoryDrag({ categories, disabled, scrollRef, onCommit }: C
     current.handle.scrollIntoView({ block: 'nearest' })
   }
 
+  // A passive React touch listener cannot take over a held gesture. Register a
+  // native listener before contact; leave ordinary swipes entirely to the browser.
+  useEffect(() => {
+    const list = scrollRef.current
+    if (!list) return
+    const start = (event: TouchEvent) => {
+      if (event.touches.length !== 1) { cancel(); return }
+      const target = event.target instanceof Element ? event.target : null
+      if (!target || target.closest('[data-category-manage]')) return
+      const row = target.closest<HTMLElement>('[data-category-row]')
+      const handle = row?.querySelector<HTMLElement>('.category-manager-row')
+      const id = row?.dataset.categoryRow as DrinkCategoryId | undefined
+      if (!id || !handle) return
+      const touch = event.touches[0]
+      const current = createSession(id, handle, 'pointer', touch.clientX, touch.clientY)
+      if (!current) return
+      current.touchId = touch.identifier
+      session.current = current
+      armPress(current)
+    }
+    const move = (event: TouchEvent) => {
+      const current = session.current
+      if (!current || current.touchId === undefined) return
+      if (event.touches.length !== 1) { cancel(); return }
+      const touch = Array.from(event.touches).find(item => item.identifier === current.touchId)
+      if (!touch) return
+      if (!current.started) {
+        if (Math.hypot(touch.clientX - current.startX, touch.clientY - current.startY) > 8) cancel()
+        return
+      }
+      if (!event.cancelable) { cancel(); return }
+      event.preventDefault()
+      current.currentY = touch.clientY
+      updatePointer()
+    }
+    const end = (event: TouchEvent) => {
+      const current = session.current
+      if (!current || current.touchId === undefined || !Array.from(event.changedTouches).some(item => item.identifier === current.touchId)) return
+      if (current.started && event.cancelable) event.preventDefault()
+      void drop()
+    }
+    list.addEventListener('touchstart', start, { passive: true })
+    list.addEventListener('touchmove', move, { passive: false })
+    list.addEventListener('touchend', end, { passive: false })
+    list.addEventListener('touchcancel', cancel)
+    return () => {
+      list.removeEventListener('touchstart', start)
+      list.removeEventListener('touchmove', move)
+      list.removeEventListener('touchend', end)
+      list.removeEventListener('touchcancel', cancel)
+    }
+    // Session operations use latest refs; listeners must stay registered while held.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollRef])
+
   return {
     drag,
     announcement,
     cancel,
-    handleProps: (id: DrinkCategoryId) => ({
-      onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => onPointerDown(id, event),
+    rowStyle: (index: number) => {
+      const current = session.current ?? settling.current
+      if (!drag || !current) return undefined
+      let offset = 0
+      if (index === drag.sourceIndex) offset = drag.offset
+      else if (drag.targetIndex > drag.sourceIndex && index > drag.sourceIndex && index <= drag.targetIndex) offset = current.midpoints[index - 1] - current.midpoints[index]
+      else if (drag.targetIndex < drag.sourceIndex && index >= drag.targetIndex && index < drag.sourceIndex) offset = current.midpoints[index + 1] - current.midpoints[index]
+      return { transform: `translateY(${offset}px)` }
+    },
+    rowProps: (id: DrinkCategoryId) => ({
+      onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => onPointerDown(id, event),
       onPointerMove,
-      onPointerUp: (event: ReactPointerEvent<HTMLButtonElement>) => {
+      onPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => {
         if (session.current?.pointerId === event.pointerId) void drop()
       },
-      onPointerCancel: cancel,
-      onLostPointerCapture: () => { if (session.current?.kind === 'pointer') cancel() },
+      onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => { if (session.current?.pointerId === event.pointerId) cancel() },
+      onLostPointerCapture: () => { if (session.current?.pointerId !== undefined) cancel() },
+      onClickCapture: (event: ReactMouseEvent<HTMLDivElement>) => {
+        if (suppressClick.current) { event.preventDefault(); event.stopPropagation(); suppressClick.current = false }
+      },
+      onContextMenu: (event: ReactMouseEvent<HTMLDivElement>) => event.preventDefault(),
+    }),
+    handleProps: (id: DrinkCategoryId) => ({
       onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => onKeyDown(id, event),
       onBlur: () => { if (session.current?.kind === 'keyboard') cancel() },
-      onContextMenu: (event: ReactMouseEvent<HTMLButtonElement>) => event.preventDefault(),
     }),
   }
 }

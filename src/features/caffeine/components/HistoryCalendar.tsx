@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { localDateKey } from '../model/caffeine';
 
 const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
@@ -15,7 +15,6 @@ export function HistoryCalendar({ selectedDay, today, counts, onSelect }: {
   const monthLabel = firstDay.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' });
   const days = Array.from({ length: lastDay }, (_, i) => new Date(year, month, i + 1, 12));
   const canMoveNext = selectedDay.slice(0, 7) < today.slice(0, 7);
-  const recordedDays = days.filter(day => localDateKey(day) <= today && counts.has(localDateKey(day))).length;
 
   function moveMonth(offset: number) {
     const target = new Date(year, month + offset, 1, 12);
@@ -47,11 +46,9 @@ export function HistoryCalendar({ selectedDay, today, counts, onSelect }: {
         return <button key={key} className="calendar-day" disabled={isFuture} aria-pressed={isSelected} aria-current={key === today ? 'date' : undefined}
           aria-label={`${label}, ${isFuture ? '미래 날짜, 선택 불가' : `${key === today ? '오늘, ' : ''}${count ? `기록 ${count}잔` : '기록 없음'}`}`} onClick={() => { if (!isFuture) onSelect(key) }}>
           <span>{day.getDate()}</span>
-          {isSelected && <Check className="calendar-selected-check" size={10} strokeWidth={2.5} aria-hidden="true" />}
           {count > 0 && <span className="calendar-record-dot" aria-hidden="true" />}
         </button>;
       })}
     </div>
-    <footer className="calendar-footer"><span><i aria-hidden="true" />기록 있는 날</span><span>이달 {recordedDays}일 기록</span></footer>
   </section>;
 }

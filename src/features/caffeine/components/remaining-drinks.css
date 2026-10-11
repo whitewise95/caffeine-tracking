@@ -1,25 +1,30 @@
-.remaining-drinks { margin-top: 28px; min-width: 0; container-type: inline-size; }
-.remaining-drinks > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.remaining-drinks { margin-top: 24px; min-width: 0; container-type: inline-size; }
+.remaining-drinks > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .remaining-drinks h2 { font-size: .9375rem; font-weight: 600; }
-.remaining-drinks-list { padding: 0; margin: 0; list-style: none; }
-.remaining-drinks-list > li { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; column-gap: 12px; row-gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--border); }
-.remaining-drink-icon { width: 40px; height: 40px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text-secondary); }
+.remaining-drinks-list { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.remaining-drinks-list > li { display: grid; min-width: 0; grid-template-columns: 36px minmax(0, 1fr) minmax(0, auto); align-items: center; gap: 10px; padding: 14px; background: linear-gradient(145deg, color-mix(in srgb, var(--text-primary) 5%, var(--surface)), var(--surface) 70%); border: 1px solid var(--border); border-top-color: color-mix(in srgb, var(--text-primary) 13%, transparent); border-radius: 18px; }
+.remaining-drink-icon { width: 36px; height: 36px; display: grid; place-items: center; background: color-mix(in srgb, var(--surface-elevated) 65%, transparent); border: 1px solid var(--border); border-radius: 11px; color: var(--text-secondary); }
 .remaining-drink-copy { min-width: 0; overflow-wrap: anywhere; }
-.remaining-drink-copy h3 { font-size: 1rem; font-weight: 550; line-height: 1.5; }
-.remaining-drink-copy time { display: block; margin-top: 4px; font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
-.remaining-drink-status { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.remaining-drink-copy h3 { font-size: .9375rem; font-weight: 550; line-height: 1.5; }
+.remaining-drink-copy time { display: block; margin-top: 3px; font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
+.remaining-drink-status { display: grid; gap: 5px; margin: 0; text-align: right; }
 .remaining-drink-status > div { min-width: 0; }
-.remaining-drink-status dt { margin-bottom: 6px; color: var(--text-secondary); font-size: .8125rem; line-height: 1.5; }
+.remaining-drink-status dt { margin-bottom: 2px; color: var(--text-secondary); font-size: .75rem; line-height: 1.5; }
 .remaining-drink-status dd { margin: 0; min-width: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.remaining-drink-amount { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; }
-.remaining-drink-amount strong { font-size: 1.5rem; font-weight: 600; line-height: 1.35; }
-.remaining-drink-amount > span { color: var(--text-secondary); font-size: .875rem; }
-.remaining-drink-absorbing { padding-left: 16px; border-left: 1px solid var(--border); }
-.remaining-absorption-time { color: var(--text-primary); font-size: 1.125rem; font-weight: 550; line-height: 1.8; word-break: keep-all; }
+.remaining-drink-amount { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px; }
+.remaining-drink-amount strong { font-size: 1.25rem; font-weight: 600; line-height: 1.35; }
+.remaining-drink-amount > span { color: var(--text-secondary); font-size: .75rem; }
+.remaining-drink-absorbing { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 3px 5px; }
+.remaining-drink-absorbing dt { margin: 0; }
+.remaining-absorption-time { color: var(--text-secondary); font-size: .75rem; font-weight: 400; line-height: 1.5; word-break: keep-all; }
 .remaining-absorption-note, .remaining-drinks-note, .remaining-drinks-empty { font-size: .8125rem; line-height: 1.7; color: var(--text-secondary); overflow-wrap: anywhere; }
 .remaining-absorption-note, .remaining-drinks-note { margin-top: 16px; }
 .remaining-drinks-empty { padding: 20px 0; border-bottom: 1px solid var(--border); }
 @container (width < 20rem) {
-  .remaining-drink-status { grid-template-columns: minmax(0, 1fr); }
-  .remaining-drink-absorbing { padding-left: 0; border-left: 0; }
+  .remaining-drinks-list > li { grid-template-columns: 36px minmax(0, 1fr); }
+  .remaining-drink-status { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); text-align: left; }
+  .remaining-drink-amount, .remaining-drink-absorbing { justify-content: flex-start; }
 }
+
+.remaining-drink-icon { overflow: hidden; }
+.remaining-drink-icon .drink-photo { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
