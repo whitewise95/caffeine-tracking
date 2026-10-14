@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { restoreLegacyCategories } from './helpers/legacyCategories';
 
 for (const theme of ['dark']) {
   test(`category contact stays neutral until the whole row enters drag mode ${theme}`, async ({ page }, testInfo) => {
     await page.goto(`/settings?theme=${theme}`);
-    await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+    await restoreLegacyCategories(page);
     const item = page.locator('[data-category-row="coffee"]');
     const handle = item.getByRole('button', { name: '커피 카테고리 순서 이동', exact: true });
     const bounds = (await handle.boundingBox())!;

@@ -7,7 +7,6 @@ test('time selection stays in the same modal and commits only on done', async ({
   await page.goto('/');
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
-  await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
   const originalDialog = await page.getByRole('dialog').elementHandle();
   await page.getByRole('button', { name: '마시기 시작한 시각', exact: true }).click();
   await expect(page.getByRole('heading', { name: '시작 시간 선택' })).toBeVisible();
@@ -19,15 +18,15 @@ test('time selection stays in the same modal and commits only on done', async ({
   await hour.press('ArrowUp');
   await page.getByRole('button', { name: '취소', exact: true }).click();
   const start = page.getByRole('button', { name: '마시기 시작한 시각', exact: true });
-  await expect(start).toHaveText('오전 9:30');
+  await expect(start).toHaveText('오전 10:00');
   await expect(start).toBeFocused();
   await start.click();
   await hour.focus();
   await hour.press('Home');
   await hour.press('ArrowUp');
   await page.getByRole('button', { name: '완료', exact: true }).click();
-  await expect(start).toHaveText('오전 2:30');
-  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveAttribute('datetime', '2026-10-04');
+  await expect(start).toHaveText('오전 2:00');
+  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveValue('2026-10-04');
   await expect(page.locator('.quick-adjust-amount')).toHaveText('150mg');
 });
 
@@ -37,7 +36,6 @@ async function openPicker(page: import('@playwright/test').Page, theme = '') {
   await page.goto(`/${theme}`);
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
-  await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
   await page.getByRole('button', { name: '마시기 시작한 시각', exact: true }).click();
 }
 
@@ -50,7 +48,7 @@ for (const exit of ['back', 'escape', 'arrow']) {
     if (exit === 'back') await page.goBack();
     else if (exit === 'escape') await page.keyboard.press('Escape');
     else await page.getByRole('button', { name: '기록 화면으로 돌아가기' }).click();
-    await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 9:30');
+    await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 10:00');
     await expect(page.getByRole('heading', { name: '아메리카노', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '음료 목록으로 돌아가기' }).click();
     await expect(page.getByRole('button', { name: /아메리카노\s*150\s*mg/ })).toHaveAttribute('aria-pressed', 'false');
@@ -70,14 +68,14 @@ test('vertical touch swipe changes and snaps the minute wheel', async ({ page })
     await page.waitForTimeout(35);
   }
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect.poll(async () => Number(await wheel.getAttribute('aria-valuenow'))).toBeGreaterThan(30);
+  await expect.poll(async () => Number(await wheel.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
   await expect.poll(() => wheel.evaluate(element => {
     const rowHeight = element.firstElementChild!.getBoundingClientRect().height;
     return Math.abs(element.scrollTop / rowHeight - Math.round(element.scrollTop / rowHeight));
   })).toBeLessThan(.01);
   const minute = await wheel.getAttribute('aria-valuenow');
   await page.getByRole('button', { name: '완료', exact: true }).click();
-  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText(`오전 9:${minute}`);
+  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText(`오전 10:${minute!.padStart(2, '0')}`);
   await session.detach();
 });
 
@@ -124,7 +122,7 @@ for (const theme of ['']) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.screenshot({ path: `test-results/${testInfo.project.name}-time-picker-zoom-${theme ? 'light' : 'dark'}.png` });
     await page.getByRole('button', { name: '완료', exact: true }).click();
-    await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 9:59');
+    await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 10:59');
   });
 }
 

@@ -94,7 +94,7 @@ test('recording gives one orb response without faking immediate absorption or re
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await expect(page.locator('.avatar-wave-front')).toHaveCSS('animation-play-state', 'paused');
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.locator('.liquid-avatar')).toHaveAttribute('data-adding', 'true');
   await expect(page.locator('.liquid-avatar')).toHaveAttribute('data-absorbing-count', '1');

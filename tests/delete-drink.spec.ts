@@ -59,11 +59,10 @@ test('cancel and back leave a custom drink unchanged and preserve the record dra
   await seed(page);
   await page.getByRole('button', { name: /나의 디카페인\s*67\s*mg/ }).click();
   await page.getByRole('button', { name: '카페인량 1mg 늘리기' }).click();
-  await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
   await page.getByRole('button', { name: '음료 삭제', exact: true }).click();
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await expect(page.locator('.quick-adjust-amount')).toHaveText('68mg');
-  await expect(page.getByRole('switch', { name: '천천히 마셨어요' })).toBeChecked();
+  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '음료 삭제', exact: true })).toBeFocused();
   await page.getByRole('button', { name: '음료 삭제', exact: true }).click();
   await page.goBack();
@@ -120,7 +119,7 @@ test('a deletion finishing after the sheet is dismissed does not navigate away f
 test('default drinks can be deleted locally without losing intake, and reset restores the catalog', async ({ page }) => {
   await seed(page);
   await page.getByRole('button', { name: /얼그레이\s*45\s*mg/ }).click();
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /얼그레이\s*45\s*mg/ }).click();
   await page.getByRole('button', { name: '음료 삭제', exact: true }).click();

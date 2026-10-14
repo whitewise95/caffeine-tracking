@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { CaffeineEntry } from '../src/features/caffeine/model/caffeine.types';
+import { pickTime } from './helpers/time-picker';
 
 const entries: CaffeineEntry[] = [
   { id: 'latte', drinkId: 'latte', drinkName: '카페라떼', caffeineMg: 85, consumedAt: '2024-02-29T15:10:00.000Z', icon: 'cup' },
@@ -15,7 +16,25 @@ async function openJournal(page: Page, theme = '', records = entries) {
   await page.goto(`/history${theme}`);
 }
 
+test('journal defaults to today with older records and resets to today on re-entry and reload', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-06T10:00:00+09:00') });
+  await openJournal(page, '', [{ ...entries[0], consumedAt: '2026-10-03T09:00:00+09:00' }]);
+  const today = page.getByRole('button', { name: /^2026년 10월 6일/ });
+  await expect(today).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('daily-count')).toHaveText('0');
+  await page.getByRole('button', { name: /^2026년 10월 3일/ }).click();
+  await expect(page.getByTestId('daily-total')).toHaveText('85');
+  await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
+  await page.getByRole('navigation').getByRole('button', { name: '기록', exact: true }).click();
+  await expect(today).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: /^2026년 10월 3일/ }).click();
+  await page.reload();
+  await expect(today).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('daily-count')).toHaveText('0');
+});
+
 test('journal filters local dates and updates the calendar after moving and deleting a record', async ({ page }, testInfo) => {
+  await page.clock.install({ time: new Date('2024-03-01T12:00:00+09:00') });
   await openJournal(page);
   const marchFirst = page.getByRole('button', { name: /^2024년 3월 1일/ });
   await expect(marchFirst).toHaveAttribute('aria-pressed', 'true');
@@ -32,7 +51,10 @@ test('journal filters local dates and updates the calendar after moving and dele
   await expect(page.getByTestId('daily-count')).toHaveText('1');
   await page.getByRole('button', { name: '녹차 기록 수정' }).click();
   await page.getByLabel('카페인량 (mg)').fill('45');
-  await page.getByLabel('섭취 시각').fill('2024-03-01T09:00');
+  await page.getByLabel('마신 마지막 날짜', { exact: true }).fill('2024-03-01');
+  await pickTime(page, '마신 마지막 시각', '09:00');
+  await page.getByLabel('마시기 시작한 날짜', { exact: true }).fill('2024-03-01');
+  await pickTime(page, '마시기 시작한 시각', '09:00');
   await page.getByRole('button', { name: '수정 저장' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(leapDay).toHaveAttribute('aria-pressed', 'true');
@@ -83,6 +105,7 @@ for (const scenario of [
 }
 
 test('journal crosses year boundaries and supports today, light theme and enlarged text', async ({ page }) => {
+  await page.clock.install({ time: new Date('2024-03-01T12:00:00+09:00') });
   await openJournal(page, '?theme=light');
   await page.getByRole('button', { name: '이전 달', exact: true }).click();
   await page.getByRole('button', { name: '이전 달', exact: true }).click();

@@ -1,5 +1,4 @@
 import { useId } from 'react'
-import { Clock3 } from 'lucide-react'
 import type { IntakeTimeDraft } from './useIntakeTimeFields'
 import { localDateTimeInput, parseLocalDateTime } from './useIntakeTimeFields'
 import type { IntakeTimeTarget } from './IntakeTimePicker'
@@ -7,7 +6,7 @@ import { displayIntakeTime } from './intakeTimeFormat'
 import { localDateKey } from '../model/caffeine'
 import './intake-time.css'
 
-function IntakeTimeCard({ title, dayHint, timeLabel, dateLabel, value, max, disabled, hintId, onChange, onPickTime, lockDate = false }: {
+function IntakeTimeCard({ title, dayHint, timeLabel, dateLabel, value, max, disabled, hintId, onChange, onPickTime }: {
   title: string
   dayHint?: string
   timeLabel: string
@@ -18,27 +17,21 @@ function IntakeTimeCard({ title, dayHint, timeLabel, dateLabel, value, max, disa
   hintId: string
   onPickTime: () => void
   onChange: (value: string) => void
-  lockDate?: boolean
 }) {
   const [date = '', time = ''] = value.split('T')
   const [maxDate] = max.split('T')
   return <div className="intake-time-card">
     <span className="intake-time-label">{title}{dayHint && <span className="intake-time-day-hint">{dayHint}</span>}</span>
     <button className="intake-clock-input" type="button" aria-label={timeLabel} onClick={onPickTime} disabled={disabled} aria-describedby={hintId}>{displayIntakeTime(time)}</button>
-    <div className="intake-date-control">{lockDate
-      ? <time className="intake-fixed-date" aria-label={dateLabel} dateTime={date}>{date.replaceAll('-', '. ')}</time>
-      : <input type="date" aria-label={dateLabel} value={date} max={maxDate} onChange={event => onChange(`${event.target.value}T${time}`)} disabled={disabled} aria-describedby={hintId} required />}</div>
+    <div className="intake-date-control"><input type="date" aria-label={dateLabel} value={date} max={maxDate} onChange={event => onChange(`${event.target.value}T${time}`)} disabled={disabled} aria-describedby={hintId} required /></div>
   </div>
 }
 
-export function IntakeTimeFields({ draft, disabled, showInstantTime = false, lockDates = false, onChange, onToggle, onPickTime }: {
+export function IntakeTimeFields({ draft, disabled, onChange, onPickTime }: {
   draft: IntakeTimeDraft
   disabled: boolean
-  showInstantTime?: boolean
-  lockDates?: boolean
   onChange: (draft: IntakeTimeDraft) => void
   onPickTime: (target: IntakeTimeTarget) => void
-  onToggle: (slow: boolean) => void
 }) {
   const id = useId()
   const maxTime = localDateTimeInput(new Date())
@@ -53,24 +46,13 @@ export function IntakeTimeFields({ draft, disabled, showInstantTime = false, loc
   const durationText = `${hours ? `${hours}시간` : ''}${hours && minutes ? ' ' : ''}${minutes ? `${minutes}분` : ''} 동안`
 
   return <div className="intake-time-fields">
-    <label className="intake-time-toggle">
-      <input type="checkbox" role="switch" checked={draft.slow} onChange={event => onToggle(event.target.checked)} disabled={disabled} aria-controls={`${id}-fields`} />
-      <Clock3 size={17} strokeWidth={1.7} aria-hidden="true" />
-      <span>천천히 마셨어요</span>
-      <span className="intake-toggle-track" aria-hidden="true"><span /></span>
-    </label>
     <div id={`${id}-fields`} className="intake-time-inputs">
-      {draft.slow && <>
         <div className="intake-period-heading"><span>마신 시간</span>{duration > 0 && <span className="intake-duration" role="status" aria-label="마신 기간" aria-atomic="true">{durationText}</span>}</div>
         <div className="intake-time-range">
-          <IntakeTimeCard lockDate={lockDates} onPickTime={() => onPickTime('start')} title="시작" dayHint={lockDates ? '오늘' : undefined} timeLabel="마시기 시작한 시각" dateLabel="마시기 시작한 날짜" value={draft.start} max={draft.end && end ? draft.end : maxTime} disabled={disabled} hintId={`${id}-hint`} onChange={start => onChange({ ...draft, start })} />
-          <IntakeTimeCard lockDate={lockDates} onPickTime={() => onPickTime('end')} title="종료" dayHint={endsNextDay ? '다음 날' : lockDates ? '오늘' : undefined} timeLabel="마신 마지막 시각" dateLabel="마신 마지막 날짜" value={draft.end} max={maxTime} disabled={disabled} hintId={`${id}-hint`} onChange={end => onChange({ ...draft, end })} />
+          <IntakeTimeCard onPickTime={() => onPickTime('start')} title="시작" timeLabel="마시기 시작한 시각" dateLabel="마시기 시작한 날짜" value={draft.start} max={draft.end && end ? draft.end : maxTime} disabled={disabled} hintId={`${id}-hint`} onChange={start => onChange({ ...draft, start })} />
+          <IntakeTimeCard onPickTime={() => onPickTime('end')} title="종료" dayHint={endsNextDay ? '다음 날' : undefined} timeLabel="마신 마지막 시각" dateLabel="마신 마지막 날짜" value={draft.end} max={maxTime} disabled={disabled} hintId={`${id}-hint`} onChange={end => onChange({ ...draft, end })} />
         </div>
-        <p className="intake-time-hint" id={`${id}-hint`}>이 시간 동안 일정하게 나눠 마신 것으로 추정해요.</p>
-      </>}
-      {!draft.slow && showInstantTime && <label className="field intake-instant-field">섭취 시각
-        <input type="datetime-local" value={draft.end} max={maxTime} onChange={event => onChange({ ...draft, end: event.target.value })} disabled={disabled} required />
-      </label>}
+        <p className="intake-time-hint" id={`${id}-hint`}>{duration > 0 ? '이 시간 동안 일정하게 나눠 마신 것으로 추정해요.' : '시작과 종료가 같으면 한 시점에 마신 것으로 기록해요.'}</p>
     </div>
   </div>
 }

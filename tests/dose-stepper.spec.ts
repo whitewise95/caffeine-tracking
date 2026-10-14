@@ -133,9 +133,9 @@ test('record dose uses one milligram taps and a synchronized slider that persist
   await expect(plus).toBeDisabled();
   await slider.press('Home');
   await expect(minus).toBeDisabled();
-  await expect(page.getByRole('button', { name: '지금 기록', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '기록 저장', exact: true })).toBeDisabled();
   await slider.press('ArrowRight');
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   const entries = await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).entries);
   expect(entries[0]).toMatchObject({ drinkName: '얼그레이', caffeineMg: 1 });

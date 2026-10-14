@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { localDateKey } from '../../caffeine/model/caffeine';
+import { RecordCountLegend } from '../../caffeine/components/RecordCountLegend';
 import type { ReportDay } from '../model/report';
 
 export function ReportHeatmap({ days, now, onHistory }: { days: ReportDay[]; now: Date; onHistory: (day?: string) => void }) {
@@ -20,10 +21,10 @@ export function ReportHeatmap({ days, now, onHistory }: { days: ReportDay[]; now
         const number = index + 1;
         const day = days[number - 1];
         const level = Math.min(day?.count ?? 0, 4);
-        return <button key={number} disabled={!day} aria-pressed={selectedKey === day?.key} aria-current={day?.key === today ? 'date' : undefined} aria-label={`${now.getMonth() + 1}월 ${number}일, ${day ? day.count ? `${day.count}잔, ${Math.round(day.total)}mg` : '기록 없음' : '아직 오지 않은 날짜'}`} onClick={() => setSelected(day.key)}><span data-level={level}>{number}</span></button>;
+        return <button key={number} disabled={!day} aria-pressed={selectedKey === day?.key} aria-current={day?.key === today ? 'date' : undefined} aria-label={`${now.getMonth() + 1}월 ${number}일, ${day ? day.count ? `${day.count}잔, ${Math.round(day.total)}mg` : '기록 없음' : '아직 오지 않은 날짜'}`} onClick={() => setSelected(day.key)}><span className="record-calendar-cell" data-level={level}>{number}</span></button>;
       })}
     </div>
-    <div className="report-heatmap-legend" role="group" aria-label="하루 기록 수별 색상">{[0, 1, 2, 3, 4].map(level => <span key={level}><i data-level={level} aria-hidden="true" />{level === 4 ? '4개 이상' : `${level}개`}</span>)}</div>
+    <RecordCountLegend className="report-heatmap-legend" />
     {active && <div className="report-heatmap-detail" aria-live="polite"><p>{active.date.getMonth() + 1}월 {active.date.getDate()}일 · <strong>{Math.round(active.total)}mg</strong> · {active.count}잔</p><button className="button-secondary report-heatmap-history-button" onClick={() => onHistory(active.key)}>이날 기록 보기<ChevronRight size={18} aria-hidden="true" /></button></div>}
   </section>;
 }

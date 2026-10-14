@@ -66,6 +66,9 @@ export function useCatalogDrag(options: CatalogDragOptions) {
   const session = useRef<DragSession | null>(null)
   const frame = useRef<number>()
   const previousFrame = useRef<number>()
+  const previewRef = useRef<HTMLDivElement>(null)
+  const viewportBounds = useRef<DOMRect>()
+  const dirty = useRef(false)
   const mounted = useRef(true)
   const committing = useRef(false)
   const suppressClickUntil = useRef(0)
@@ -74,6 +77,8 @@ export function useCatalogDrag(options: CatalogDragOptions) {
     if (frame.current !== undefined) cancelAnimationFrame(frame.current)
     frame.current = undefined
     previousFrame.current = undefined
+    dirty.current = false
+    viewportBounds.current = undefined
     const current = session.current
     session.current = null
     if (current?.started) suppressClickUntil.current = performance.now() + 600
@@ -150,12 +155,19 @@ export function useCatalogDrag(options: CatalogDragOptions) {
   }
 
   function publishDrag(current: DragSession, settling = false) {
-    const viewport = latest.current.containerRef.current?.getBoundingClientRect()
+    const viewport = viewportBounds.current
     setDrag({
       kind: current.kind, id: current.id, label: current.label, x: current.x, y: current.y,
       width: current.width, height: current.height, offsetX: current.offsetX, offsetY: current.offsetY, settling,
       viewportLeft: viewport?.left ?? 0, viewportRight: viewport?.right ?? window.innerWidth,
     })
+  }
+
+  function positionPreview(current: DragSession, viewport: DOMRect) {
+    const preview = previewRef.current
+    if (!preview) return
+    const left = Math.max(viewport.left + 4, Math.min(viewport.right - current.width - 4, current.x - current.offsetX))
+    preview.style.transform = `translate3d(${left}px, ${current.y - current.offsetY}px, 0)`
   }
 
   function updateView() {
@@ -165,6 +177,7 @@ export function useCatalogDrag(options: CatalogDragOptions) {
     // A projected layout can move underneath a stationary pointer. Only an
     // intentional pointer move or actual scroll is allowed to propose again.
     const viewport = container.getBoundingClientRect()
+    viewportBounds.current = viewport
     const point = catalogDragPoint(current, viewport)
     const outside = point.x < viewport.left || point.x > viewport.right || point.y < viewport.top || point.y > viewport.bottom
     const moved = catalogDragMoved(
@@ -189,26 +202,40 @@ export function useCatalogDrag(options: CatalogDragOptions) {
         setProjection(projectCatalogLayout(current.base.categories, current.base.drinks, current.id, next))
       }
     }
-    publishDrag(current)
+    // Pointer coordinates do not belong to React state. Moving the overlay must
+    // not render every badge or rebuild its content on each input event.
+    positionPreview(current, viewport)
   }
 
   function tick(time: number) {
+    frame.current = undefined
     const current = session.current
     const container = latest.current.containerRef.current
-    if (!current?.started || !container) return
-    const bounds = container.getBoundingClientRect()
+    const bounds = viewportBounds.current
+    if (!current?.started || !container || !bounds) return
     const elapsed = previousFrame.current === undefined ? 16 : Math.min(32, time - previousFrame.current)
     previousFrame.current = time
     const point = catalogDragPoint(current, bounds)
     const speed = point.x >= bounds.left && point.x <= bounds.right
       ? categoryAutoScrollSpeed(current.y, bounds.top, bounds.bottom) : 0
+    let scrolled = false
     if (speed !== 0) {
       const oldScroll = container.scrollTop
       const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight)
       container.scrollTop = Math.max(0, Math.min(maxScroll, oldScroll + speed * elapsed / 16))
-      if (oldScroll !== container.scrollTop) updateView()
+      scrolled = oldScroll !== container.scrollTop
     }
-    frame.current = requestAnimationFrame(tick)
+    if (dirty.current || scrolled) {
+      dirty.current = false
+      updateView()
+    }
+    // A stationary finger away from the edge needs no rAF or layout reads.
+    if (scrolled) scheduleFrame()
+    else previousFrame.current = undefined
+  }
+
+  function scheduleFrame() {
+    if (frame.current === undefined && session.current?.started) frame.current = requestAnimationFrame(tick)
   }
 
   function updatePointer(event: PointerEvent, capture: boolean) {
@@ -230,11 +257,12 @@ export function useCatalogDrag(options: CatalogDragOptions) {
       suppressClickUntil.current = Number.POSITIVE_INFINITY
       setProjection(current.base)
       setTarget(current.target)
-      setAnnouncement(`${current.label} 이동을 시작했어요. 놓으면 저장돼요.`)
-      frame.current = requestAnimationFrame(tick)
+      setAnnouncement(`${current.label} 이동을 시작했어요. 놓으면 편집 내용에 반영돼요.`)
+      publishDrag(current)
     }
     if (event.cancelable) event.preventDefault()
-    updateView()
+    dirty.current = true
+    scheduleFrame()
   }
 
   function onPointerMove(event: PointerEvent) {
@@ -281,9 +309,9 @@ export function useCatalogDrag(options: CatalogDragOptions) {
     publishDrag(current, true)
     try {
       const saved = await save()
-      if (mounted.current) setAnnouncement(saved ? `${current.label} 위치를 저장했어요.` : '위치를 저장하지 못했어요. 다시 시도해 주세요.')
+      if (mounted.current) setAnnouncement(saved ? `${current.label} 위치를 변경했어요. 완료를 누르면 저장돼요.` : '위치를 변경하지 못했어요. 다시 시도해 주세요.')
     } catch {
-      if (mounted.current) setAnnouncement('위치를 저장하지 못했어요. 다시 시도해 주세요.')
+      if (mounted.current) setAnnouncement('위치를 변경하지 못했어요. 다시 시도해 주세요.')
     } finally {
       committing.current = false
       clearView()
@@ -303,6 +331,7 @@ export function useCatalogDrag(options: CatalogDragOptions) {
     const source = event.currentTarget.closest<HTMLElement>(kind === 'category' ? '[data-layout-category]' : '[data-layout-drink]')
     const rect = source?.getBoundingClientRect()
     if (!rect) return
+    viewportBounds.current = containerRef.current.getBoundingClientRect()
     const sourceDrinks = drinks.filter(drink => drink.categoryId === ('categoryId' in item ? item.categoryId : undefined))
     const sourceIndex = kind === 'category' ? categories.findIndex(category => category.id === id) : sourceDrinks.findIndex(drink => drink.id === id)
     const initialTarget: CatalogDropTarget = kind === 'category'
@@ -323,13 +352,17 @@ export function useCatalogDrag(options: CatalogDragOptions) {
   useEffect(() => {
     mounted.current = true
     const container = latest.current.containerRef.current
-    const onScroll = () => updateView()
+    const onScroll = () => { dirty.current = true; scheduleFrame() }
+    const onResize = () => { dirty.current = true; scheduleFrame() }
     const onPointerUp = (event: PointerEvent) => {
       const current = session.current
       if (!current || current.pointerId !== event.pointerId) return
       // A fast release can carry the first substantial movement. Process its
       // final coordinates before saving, without capturing an ended pointer.
       updatePointer(event, false)
+      // Flush the release synchronously even if no frame ran after the last
+      // move. Fast drops must still save the final finger position.
+      if (session.current?.started) updateView()
       void drop()
     }
     const onPointerCancel = (event: PointerEvent) => { if (session.current?.pointerId === event.pointerId) cancel() }
@@ -364,6 +397,7 @@ export function useCatalogDrag(options: CatalogDragOptions) {
     window.addEventListener('lostpointercapture', onLostCapture)
     window.addEventListener('keydown', onEscape, true)
     window.addEventListener('blur', cancel)
+    window.addEventListener('resize', onResize)
     document.addEventListener('visibilitychange', onVisibilityChange)
     container?.addEventListener('scroll', onScroll, { passive: true })
     return () => {
@@ -377,6 +411,7 @@ export function useCatalogDrag(options: CatalogDragOptions) {
       window.removeEventListener('lostpointercapture', onLostCapture)
       window.removeEventListener('keydown', onEscape, true)
       window.removeEventListener('blur', cancel)
+      window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       container?.removeEventListener('scroll', onScroll)
     }
@@ -423,5 +458,5 @@ export function useCatalogDrag(options: CatalogDragOptions) {
     }
   }
 
-  return { drag, target, announcement, getHandleProps, getCardProps, cancel, previewCategories: projection?.categories ?? options.categories, previewDrinks: projection?.drinks ?? options.drinks }
+  return { previewRef, drag, target, announcement, getHandleProps, getCardProps, cancel, previewCategories: projection?.categories ?? options.categories, previewDrinks: projection?.drinks ?? options.drinks }
 }

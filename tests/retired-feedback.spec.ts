@@ -17,7 +17,9 @@ test('old feedback cannot change the fixed calculation or open a survey, while d
   await expect(page.getByTestId('remaining-mg')).toHaveText(String(Math.round(remainingCaffeine([entry], now))));
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
-  await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await page.getByRole('navigation').getByRole('button', { name: '지식', exact: true }).click();
+  await expect(page.getByTestId('half-life-description')).toContainText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
   await expect(page.getByRole('heading', { name: '체감 기록' })).toHaveCount(0);
   await expect(page.getByRole('switch')).toHaveAccessibleName('애니메이션');
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
@@ -31,7 +33,7 @@ test('old feedback cannot change the fixed calculation or open a survey, while d
   }
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /내 차\s*200\s*mg/ }).click();
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key);
   expect(saved.version).toBe(4);

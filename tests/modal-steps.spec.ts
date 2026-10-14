@@ -30,7 +30,6 @@ test('drink and custom creation replace content inside the same modal', async ({
   await expect(page.locator('.sheet-category')).toHaveCount(0);
   await expect(page.locator('dialog[data-original-modal="true"]')).toBeVisible();
   await page.getByRole('button', { name: '카페인량 1mg 늘리기' }).click();
-  await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
   await page.screenshot({ path: `test-results/${testInfo.project.name}-modal-record.png` });
   await page.goBack();
   await expect(page.getByRole('heading', { name: '어떤 카페인을 마셨나요?' })).toBeVisible();
@@ -81,7 +80,7 @@ test('a save finishing after back to the list does not close that screen', async
       });
     };
   });
-  await page.getByRole('button', { name: '지금 기록' }).click();
+  await page.getByRole('button', { name: '기록 저장' }).click();
   await page.goBack();
   await expect(page.getByRole('heading', { name: '어떤 카페인을 마셨나요?' })).toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new Event('finish-test-save')));

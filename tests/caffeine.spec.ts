@@ -5,7 +5,7 @@ async function addAmericano(page: Page) {
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
   for (let i = 0; i < 5; i++) await page.getByRole('button', { name: '카페인량 1mg 늘리기' }).click();
   await expect(page.locator('.quick-adjust-amount')).toHaveText('155mg');
-  await page.getByRole('button', { name: '지금 기록' }).click();
+  await page.getByRole('button', { name: '기록 저장' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 }
 
@@ -49,7 +49,7 @@ test('record, adjust, visualize, create a drink, reload, edit and delete', async
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
   await expect(page.getByRole('heading', { name: '나의 모닝커피', exact: true })).toBeVisible();
   await page.screenshot({ path: `test-results/${testInfo.project.name}-sheet.png` });
-  await page.getByRole('button', { name: '지금 기록' }).click();
+  await page.getByRole('button', { name: '기록 저장' }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('132');
   await page.clock.setSystemTime(new Date('2026-10-04T11:00:00+09:00'));
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
@@ -88,14 +88,18 @@ test('back closes a sheet first, deep routes work, half-life cannot be edited ma
   await page.goto('/settings');
   await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible();
   await expect(page.getByRole('slider')).toHaveCount(0);
-  await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await page.getByRole('navigation').getByRole('button', { name: '지식', exact: true }).click();
+  await expect(page.getByTestId('half-life-description')).toContainText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
   await page.reload();
   await expect(page.getByRole('slider')).toHaveCount(0);
   await page.getByRole('button', { name: '모든 데이터 초기화' }).click();
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await page.getByRole('button', { name: '모든 데이터 초기화' }).click();
   await page.getByRole('button', { name: '초기화하기', exact: true }).click();
-  await expect(page.getByTestId('half-life-description')).toHaveText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await page.getByRole('navigation').getByRole('button', { name: '지식', exact: true }).click();
+  await expect(page.getByTestId('half-life-description')).toContainText('지금 카페인에서는 반감기를 4시간 30분으로 두고 잔존량을 추정해요.');
+  await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('0');
 });
@@ -114,7 +118,7 @@ test('dark appearance and keyboard focus remain usable', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
-  await page.getByRole('button', { name: '지금 기록' }).click();
+  await page.getByRole('button', { name: '기록 저장' }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('0');
   await page.getByRole('button', { name: '아직 남아 있는 카페인 보기' }).click();
   await expect(page.getByRole('region', { name: '아직 남아 있는 카페인' })).toContainText('흡수 중');
@@ -155,7 +159,7 @@ test('storage write failure stays visible and does not create a phantom record',
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); }; });
-  await page.getByRole('button', { name: '지금 기록' }).click();
+  await page.getByRole('button', { name: '기록 저장' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('alert').first()).toContainText('저장');
   await page.getByRole('button', { name: '음료 목록으로 돌아가기' }).click();
@@ -229,7 +233,6 @@ for (const theme of ['']) {
     await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
     const tea = page.getByRole('button', { name: /얼그레이\s*45\s*mg/ });
     await tea.click();
-    await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
     const back = page.getByRole('button', { name: '음료 목록으로 돌아가기', exact: true });
     await expect(back).toBeInViewport();
     await expect(page.locator('.sheet-category')).toHaveCount(0);

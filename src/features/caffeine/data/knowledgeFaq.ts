@@ -28,12 +28,13 @@ export const KNOWLEDGE_FAQ: readonly KnowledgeFaq[] = [
     answer: [
       `몸에 남아 있는 카페인이 절반으로 줄어드는 데 걸리는 시간이에요. 반감기가 ${halfLifeLabel}이라면, 흡수가 끝난 뒤 남아 있던 100mg은 ${halfLifeLabel} 후 약 50mg, 다시 ${halfLifeLabel} 후 약 25mg으로 줄어요. 그동안 더 마시지 않았을 때의 예시예요.`,
       '유럽식품안전청(EFSA)은 성인의 평균 반감기를 약 4시간, 개인차에 따른 범위를 약 2~8시간으로 설명해요.',
+      '성인 남성 59명을 분석한 연구에서는 비흡연자의 평균 반감기가 약 4.3시간으로 보고됐어요. 모든 사람의 반감기가 같은 것은 아니에요.',
       `지금 카페인에서는 반감기를 ${halfLifeLabel}으로 두고 잔존량을 추정해요. 내 반감기를 측정한 값은 아니에요.`,
     ],
     sources: [{
       label: 'EFSA · 카페인 설명 자료 · 2015 (PDF)',
       url: 'https://www.efsa.europa.eu/sites/default/files/corporate_publications/files/efsaexplainscaffeine150527.pdf',
-    }],
+    }, absorptionModelSource],
   },
   {
     id: 'absorption',
@@ -60,7 +61,7 @@ export const KNOWLEDGE_FAQ: readonly KnowledgeFaq[] = [
     id: 'slow-drinking',
     question: '한 잔을 천천히 마시면 계산이 달라지나요?',
     answer: [
-      '카페인이 들어오는 시각이 달라져요. ‘천천히 마셨어요’를 선택하면 시작부터 종료 시각까지 같은 속도로 나눠 마셨다고 가정해 계산해요.',
+      '카페인이 들어오는 시각이 달라져요. 기록의 시작과 종료 시각이 다르면 그 시간 동안 같은 속도로 나눠 마셨다고 가정해 계산해요. 두 시각이 같으면 한 시점에 마신 것으로 계산해요.',
       '몇 모금씩 언제 마셨는지는 알 수 없어서 이렇게 단순화했어요. 논문의 흡수·감소 모델에 앱의 섭취 방식 가정을 더한 것으로, 실제 마시는 속도를 측정한 결과는 아니에요.',
     ],
     sources: [absorptionModelSource],

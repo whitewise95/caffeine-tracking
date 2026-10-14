@@ -92,18 +92,8 @@
 .report-heatmap-weekdays, .report-heatmap { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-inline: -6px; }
 .report-heatmap-weekdays span { text-align: center; font-size: var(--font-xs); color: var(--text-tertiary); padding-bottom: 8px; }
 .report-heatmap button { height: 46px; min-width: 0; padding: 5px; border: 0; background: transparent; display: grid; place-items: center; }
-.report-heatmap button > span { display: grid; place-items: center; min-height: 32px; width: 100%; max-width: 34px; font-size: .7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-elevated); }
-.report-heatmap button[aria-pressed='true'] > span { outline: 2px solid var(--accent-pink); outline-offset: 2px; }
-.report-heatmap [data-level='1'], .report-heatmap-legend [data-level='1'] { background: color-mix(in srgb, var(--accent-pink) 20%, var(--surface)); }
-.report-heatmap [data-level='2'], .report-heatmap-legend [data-level='2'] { background: color-mix(in srgb, var(--accent-pink) 32%, var(--surface)); }
-.report-heatmap [data-level='3'], .report-heatmap-legend [data-level='3'] { background: color-mix(in srgb, var(--accent-pink) 48%, var(--surface)); }
-.report-heatmap [data-level='4'], .report-heatmap-legend [data-level='4'] { background: var(--accent-pink); color: var(--bg); }
-.report-heatmap-legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; color: var(--text-secondary); font-size: .75rem; margin-top: 14px; }
-.report-heatmap-legend > span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.report-heatmap-legend i { flex-shrink: 0; width: 12px; height: 12px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface-elevated); }
 .report-heatmap-detail { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 14px; font-size: var(--font-sm); }
 .report-heatmap-history-button, .report-intake-history-button { width: 100%; margin-top: 14px; }
-.report-footer { text-align: center; color: var(--text-tertiary); font-size: var(--font-xs); line-height: 1.8; padding: 8px 0 16px; }
 @media (prefers-reduced-motion: reduce) { .report-bar-track > span { transition: none; } }
 
 .report-evening-axis { fill: var(--text-secondary); font-size: 10px; }

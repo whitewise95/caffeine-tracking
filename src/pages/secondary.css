@@ -1,8 +1,4 @@
 .settings-section { background: var(--surface); padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 14px; }
-.settings-category-entry { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; text-align: left; }
-.settings-category-entry > span { flex: 1; min-width: 0; font-size: .9375rem; overflow-wrap: anywhere; }
-.settings-category-entry small { display: block; margin-top: 4px; font-size: .75rem; color: var(--text-secondary); }
-.settings-category-entry > svg { color: var(--text-secondary); }
 .section-heading { display: flex; align-items: center; gap: 9px; }
 .section-heading svg { color: var(--text-secondary); }
 .section-heading h2 { font-size: 0.9375rem; font-weight: 600; }
@@ -18,10 +14,6 @@
 .settings-accordion[open] .settings-accordion-chevron { color: var(--accent-pink); transform: rotate(180deg); }
 .settings-accordion-content { padding: 0 22px 22px; }
 .settings-accordion-content > .settings-description:first-child { margin-top: 0; }
-.half-life-sources { margin-top: 8px; color: var(--text-secondary); font-size: .75rem; line-height: 1.8; }
-.half-life-sources summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
-.half-life-source-links { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: 6px; }
-.half-life-source-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--text-primary); text-underline-offset: 3px; }
 .range-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-tertiary); margin-top: -5px; margin-bottom: 22px; }
 .formula { background: var(--surface-elevated); border-radius: var(--radius-sm); padding: 22px 12px 16px; text-align: center; margin: 18px 0 8px; }
 .formula-expression { display: flex; flex-direction: column; align-items: center; gap: 16px; font-size: 1rem; line-height: 1.5; }

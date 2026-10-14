@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installTossHost } from './helpers/tossHost';
+import { restoreLegacyCategories } from './helpers/legacyCategories';
 import { createInitialState } from '../src/features/caffeine/model/caffeine';
 import type { CaffeineState } from '../src/features/caffeine/model/caffeine.types';
 
@@ -20,7 +21,7 @@ async function stored(page: Page): Promise<CaffeineState> {
 
 async function openSettingsManager(page: Page) {
   await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
-  await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+  await restoreLegacyCategories(page);
   await expect(page.getByRole('dialog', { name: '카테고리 관리', exact: true })).toBeVisible();
 }
 
@@ -90,11 +91,12 @@ async function photoFixture(page: Page) {
   return { name: 'category-draft.png', mimeType: 'image/png', buffer: Buffer.from(dataUrl.split(',')[1], 'base64') };
 }
 
-test('category management opens from settings without leaving the current page', async ({ page }, testInfo) => {
+test('settings omits category management and legacy history still dismisses to settings', async ({ page }, testInfo) => {
   await seed(page);
   await page.getByRole('navigation').getByRole('button', { name: '설정', exact: true }).click();
   const settingsUrl = page.url();
-  await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+  await expect(page.getByRole('button', { name: '카테고리 관리', exact: true })).toHaveCount(0);
+  await restoreLegacyCategories(page);
   await expect(page.getByRole('dialog', { name: '카테고리 관리', exact: true })).toBeVisible();
   expect(page.url()).toBe(settingsUrl);
   await expect(page.locator('.sheet-header .sheet-back')).toHaveCount(0);
@@ -102,7 +104,7 @@ test('category management opens from settings without leaving the current page',
   await page.screenshot({ path: `test-results/${testInfo.project.name}-category-manager.png`, animations: 'disabled' });
   await page.goBack();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  await expect(page.getByRole('button', { name: '카테고리 관리', exact: true })).toBeFocused();
+  await expect(page.getByRole('heading', { name: '설정', exact: true })).toBeVisible();
 });
 
 test('renaming a built-in category validates names and preserves its ID and drinks after reload', async ({ page }) => {
@@ -463,7 +465,7 @@ test('whole-row touch hold reorders and category actions open a separate modal w
 test('Toss back closes only the child category modal and preserves the parent then returns to settings', async ({ page }) => {
   await installTossHost(page);
   await page.goto('/settings');
-  await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+  await restoreLegacyCategories(page);
   await page.getByRole('button', { name: '카테고리 추가', exact: true }).click();
   await page.getByLabel('카테고리 이름', { exact: true }).fill('취소할 이름');
   await page.evaluate(() => (Reflect.get(window, 'testNativeBack') as () => void)());

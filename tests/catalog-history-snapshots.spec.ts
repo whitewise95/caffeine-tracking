@@ -22,7 +22,7 @@ async function editDrink(page: Page, name: string) {
 async function recordEditedDrink(page: Page, name: string, dose: number) {
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await page.getByRole('button', { name: new RegExp(`${name}\\s*${dose}\\s*mg`) }).click();
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
 }
 
@@ -49,9 +49,10 @@ test('catalog edits preserve historical name dose icon and photo while new recor
     };
   }, storageKey);
   await editor.getByRole('button', { name: '변경 저장', exact: true }).click();
-  await expect(editor.getByRole('alert')).toContainText('저장하지 못');
+  await expect(editor).toHaveCount(0);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert').first()).toBeVisible();
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), storageKey)).toEqual(state);
-  await editor.getByRole('button', { name: '변경 저장', exact: true }).click();
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).entries, storageKey)).toEqual(state.entries);
   await recordEditedDrink(page, '새 커피', 80);
   editor = await editDrink(page, '새 커피');

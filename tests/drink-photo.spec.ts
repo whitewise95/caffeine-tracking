@@ -83,7 +83,7 @@ test('compressed album photo and exact slider dose persist across reload and app
   expect(src).toMatch(/^data:image\/jpeg;base64,/);
   expect(src.length).toBeLessThan(48_000);
   expect(await photo.evaluate((image: HTMLImageElement) => Math.max(image.naturalWidth, image.naturalHeight))).toBeLessThanOrEqual(160);
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!));
   expect(state.customDrinks[0]).toMatchObject({ categoryId: 'coffee', caffeineMg: 67, photoDataUrl: src });

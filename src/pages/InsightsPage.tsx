@@ -51,6 +51,5 @@ export function InsightsPage({ entries, now, halfLifeHours, onHistory }: { entri
     </dl><button className="text-button" onClick={() => { setPeriod('month'); periodSection.current?.scrollIntoView({ block: 'start' }); }}>월간 그래프 보기 <ArrowUpRight size={15} aria-hidden="true" /></button></section>
     <ReportHeatmap days={monthly.days} now={now} onHistory={onHistory} />
     </section>
-    <p className="report-footer">기록을 바탕으로 계산한 추정치예요.<br />실제 체내 카페인량이나 신체 상태를 측정하지 않으며, 개인차가 있을 수 있어요.</p>
   </main>;
 }

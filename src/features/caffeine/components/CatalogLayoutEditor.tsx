@@ -23,10 +23,14 @@ interface CatalogLayoutEditorProps extends CatalogOperations {
   editing: boolean
   description: string
   onToggleEdit: () => void
+  onReset?: () => void
+  changed?: boolean
+  introActive?: boolean
+  onStopIntro?: () => void
   onSelectDrink: (drink: Drink) => void
 }
 
-export function CatalogLayoutEditor({ categories, drinks, entryCounts, busy, error, onClearError, onAddDrink, initialScrollTop, onScrollPositionChange, focusDrinkId, editing, description, onToggleEdit, onSelectDrink, ...operations }: CatalogLayoutEditorProps) {
+export function CatalogLayoutEditor({ categories, drinks, entryCounts, busy, error, onClearError, onAddDrink, initialScrollTop, onScrollPositionChange, focusDrinkId, editing, description, onToggleEdit, onReset, changed, introActive, onStopIntro, onSelectDrink, ...operations }: CatalogLayoutEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [panel, setPanel] = useState<CatalogPanel | null>(null)
   const [working, setWorking] = useState(false)
@@ -88,7 +92,7 @@ export function CatalogLayoutEditor({ categories, drinks, entryCounts, busy, err
     try {
       const saved = await operation()
       if (mounted.current) {
-        if (saved) setAnnouncement('변경 내용을 저장했어요.')
+        if (saved) setAnnouncement('편집 내용에 반영했어요. 완료를 누르면 저장돼요.')
         else setActionError(message)
       }
       return saved
@@ -139,7 +143,7 @@ export function CatalogLayoutEditor({ categories, drinks, entryCounts, busy, err
     } else { panelKey.current = null; setPanel(null) }
   }
 
-  return <div className={`catalog-editor${editing ? ' is-editing' : ''}${panel?.kind === 'category' ? ' is-renaming' : ''}${drag.drag ? ' is-arranging' : ''}${drag.drag?.settling ? ' is-settling' : ''}`} aria-busy={disabled}>
+  return <div className={`catalog-editor${editing ? ' is-editing' : ''}${editing && introActive ? ' is-edit-intro' : ''}${panel?.kind === 'category' ? ' is-renaming' : ''}${drag.drag ? ' is-arranging' : ''}${drag.drag?.settling ? ' is-settling' : ''}`} aria-busy={disabled} onPointerDownCapture={onStopIntro} onKeyDownCapture={onStopIntro}>
     <div ref={containerRef} className="sheet-scroll catalog-editor-scroll" onScroll={event => onScrollPositionChange(event.currentTarget.scrollTop)}>
       <div className="sheet-list-toolbar">
         <p className="sheet-description">{description}</p>
@@ -147,6 +151,11 @@ export function CatalogLayoutEditor({ categories, drinks, entryCounts, busy, err
           {editing ? <Check size={15} aria-hidden="true" /> : <SlidersHorizontal size={15} aria-hidden="true" />}{editing ? '완료' : '편집'}
         </button>
       </div>
+      {editing && <div className="catalog-top-actions">
+        <button type="button" className="text-button" data-catalog-control="add" disabled={controlsDisabled} onClick={() => openPanel({ kind: 'add-category' }, 'add')}><Plus size={17} aria-hidden="true" />카테고리 추가</button>
+        {onReset && <button type="button" className="text-button catalog-reset-button" disabled={controlsDisabled || !changed} onClick={() => { setActionError(''); onClearError(); onReset(); setAnnouncement('이번 편집을 초기화했어요.') }}>초기화</button>}
+        <span className="sr-only">완료를 누르면 편집 내용이 저장돼요. 초기화는 이번 편집을 취소해요.</span>
+      </div>}
       {(error || actionError) && !panel && <p className="field-error" role="alert">{error || actionError}</p>}
       {categories.length === 0 && <div className="empty-state"><p>음료를 담을 카테고리를 먼저 만들어 주세요.</p>{!editing && <button type="button" className="button-secondary" onClick={onToggleEdit}>카테고리 추가</button>}</div>}
       {drag.previewCategories.map(category => {
@@ -182,10 +191,8 @@ export function CatalogLayoutEditor({ categories, drinks, entryCounts, busy, err
         </section>
       })}
     </div>
-    <div className={`sheet-empty-footer${editing ? ' catalog-editor-footer' : ''}`}>
-      {editing ? <><button type="button" className="text-button" data-catalog-control="add" disabled={controlsDisabled} onClick={() => openPanel({ kind: 'add-category' }, 'add')}><Plus size={17} aria-hidden="true" />카테고리 추가</button><button type="button" className="text-button" data-catalog-control="arrange" disabled={controlsDisabled || categories.length === 0} onClick={() => openPanel({ kind: 'arrange' }, 'arrange')}>배치 변경</button></> : '마신 음료를 선택해 주세요'}
-    </div>
-    {drag.drag && <CatalogDragPreview drag={drag.drag} categories={categories} drinks={drinks} />}
+    {!editing && <div className="sheet-empty-footer">마신 음료를 선택해 주세요</div>}
+    {drag.drag && <CatalogDragPreview previewRef={drag.previewRef} drag={drag.drag} categories={categories} drinks={drinks} />}
     {panel && panel.kind !== 'category' && <CatalogEditorActions panel={panel} categories={categories} drinks={drinks} entryCounts={entryCounts} busy={disabled} error={error || actionError} onClose={closePanel} {...actions} />}
     {editing && <><span role="status" className="sr-only" aria-live="polite">{announcement}</span>
     <span role="status" className="sr-only" aria-live="polite">{drag.announcement}</span></>}

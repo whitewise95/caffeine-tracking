@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { restoreLegacyCategories } from './helpers/legacyCategories';
 import { createInitialState } from '../src/features/caffeine/model/caffeine';
 import { deleteDrinkCategory } from '../src/features/caffeine/model/drinkCategories';
 import type { CaffeineState } from '../src/features/caffeine/model/caffeine.types';
@@ -20,7 +21,7 @@ async function seed(page: Page, state = fixture()) {
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(state));
   }, { key, state });
   await page.goto('/settings');
-  await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+  await restoreLegacyCategories(page);
 }
 async function openDelete(page: Page, name = '커피') {
   await page.getByRole('button', { name: `${name} 카테고리 관리`, exact: true }).click();
@@ -58,7 +59,7 @@ test('force delete removes only the chosen category and its linked history throu
   expect(state.customDrinks).toEqual([]);
   expect(state.deletedDefaultDrinkIds).toEqual(['americano', 'cold-brew', 'caffe-latte']);
   await page.reload();
-  await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+  await restoreLegacyCategories(page);
   await expect(page.getByRole('button', { name: '커피 카테고리 관리', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '차 카테고리 관리', exact: true })).toBeVisible();
   expect((await stored(page)).entries.map(entry => entry.id)).toEqual(['tea']);
@@ -99,6 +100,6 @@ test('the last populated category can be force deleted without creating a destin
   await expect(page.locator('.category-manager-empty')).toBeVisible();
   expect((await stored(page)).entries).toEqual([]);
   await page.reload();
-  await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+  await restoreLegacyCategories(page);
   await expect(page.locator('.category-manager-empty')).toBeVisible();
 });

@@ -7,6 +7,7 @@ import { normalizeIntakeNote } from '../model/intakeNote';
 import { DEFAULT_BEDTIME, isBedtime } from '../model/bedtime';
 import { deleteCaffeineEntry, snapshotEntryDrinkPhotos } from '../model/drinkPhoto';
 import type { CaffeineRepository } from '../repository/CaffeineRepository';
+import type { CatalogChange } from '../model/catalogDraft';
 
 export function useCaffeine(repository: CaffeineRepository) {
   const [state, setState] = useState<CaffeineState>(createInitialState);
@@ -91,6 +92,7 @@ export function useCaffeine(repository: CaffeineRepository) {
   }
   async function deleteEntry(id: string) { return commit(previous => deleteCaffeineEntry(previous, id)); }
   async function updateDrink(id: string, draft: DrinkEditDraft) { return commit(previous => updateDrinkInCatalog(previous, id, draft)); }
+  async function commitCatalog(change: CatalogChange) { return commit(change); }
   async function deleteDrink(id: string) { return commit(previous => deleteDrinkFromCatalog(previous, id)); }
   async function moveDrink(id: string, categoryId: DrinkCategoryId, beforeDrinkId?: string): Promise<boolean> { return commit(previous => moveDrinkInCatalog(previous, id, categoryId, beforeDrinkId)); }
   async function createCategory(name: string): Promise<boolean> { return commit(previous => createDrinkCategory(previous, name, `custom:${crypto.randomUUID()}`)); }
@@ -120,5 +122,5 @@ export function useCaffeine(repository: CaffeineRepository) {
     const ids = categoryDrinkIds(state, category.id);
     return [category.id, state.entries.filter(entry => ids.has(entry.drinkId)).length];
   }));
-  return { state, categoryEntryCounts, forceDeleteCategory, bedtime: state.settings.bedtime ?? DEFAULT_BEDTIME, setBedtime, setTiltAnimation, halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS, now, loading, loaded, busy, error, clearError: () => setError(''), reload, categories: drinkCategories(state), drinks: availableDrinks(state), record, createDrink, updateDrink, deleteDrink, moveDrink, createCategory, renameCategory, deleteCategory, reorderCategories, updateEntry, deleteEntry, reset };
+  return { state, commitCatalog, categoryEntryCounts, forceDeleteCategory, bedtime: state.settings.bedtime ?? DEFAULT_BEDTIME, setBedtime, setTiltAnimation, halfLifeHours: DEFAULT_CAFFEINE_HALF_LIFE_HOURS, now, loading, loaded, busy, error, clearError: () => setError(''), reload, categories: drinkCategories(state), drinks: availableDrinks(state), record, createDrink, updateDrink, deleteDrink, moveDrink, createCategory, renameCategory, deleteCategory, reorderCategories, updateEntry, deleteEntry, reset };
 }

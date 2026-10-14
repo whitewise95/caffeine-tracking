@@ -10,11 +10,7 @@ export function HistoryPage({ initialDay, entries, drinks, photoHistory, now, on
   const today = localDateKey(now);
   const [requestedDay, setSelectedDay] = useState(() => {
     if (initialDay && /^\d{4}-\d{2}-\d{2}$/.test(initialDay)) return initialDay;
-    const latest = entries.reduce<CaffeineEntry | undefined>((last, entry) => {
-      if (localDateKey(new Date(entry.consumedAt)) > today) return last;
-      return !last || Date.parse(entry.consumedAt) > Date.parse(last.consumedAt) ? entry : last;
-    }, undefined);
-    return localDateKey(latest ? new Date(latest.consumedAt) : now);
+    return today;
   });
   const selectedDay = requestedDay > today ? today : requestedDay;
   const { grouped, counts } = useMemo(() => {
@@ -41,7 +37,7 @@ export function HistoryPage({ initialDay, entries, drinks, photoHistory, now, on
       {items.length > 0 ? <HistoryTimeline drinks={drinks} photoHistory={photoHistory} entries={items} onEdit={onEdit} onDelete={onDelete} /> : <div className="empty-state history-empty">
         <CalendarDays size={28} strokeWidth={1.3} aria-hidden="true" />
         <h3>{entries.length === 0 ? '아직 기록이 없어요' : '이날은 기록이 없어요'}</h3>
-        <p>{entries.length === 0 ? '첫 한 잔을 기록하면 여기에 모아드릴게요.' : '점이 표시된 날짜에서 다른 기록을 찾아보세요.'}</p>
+        <p>{entries.length === 0 ? '첫 한 잔을 기록하면 여기에 모아드릴게요.' : '날짜를 선택해 다른 기록을 찾아보세요.'}</p>
       </div>}
     </section>
     {entries.length > 0 && <p className="history-note">날짜별 기록은 마신 마지막 시각을 기준으로 모아요.</p>}

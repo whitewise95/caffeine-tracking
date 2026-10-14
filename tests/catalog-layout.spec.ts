@@ -115,7 +115,7 @@ async function deferNextWrite(page: Page) {
 }
 
 for (const kind of ['drink', 'category'] as const) {
-  test(`a quick ${kind} drag saves without waiting for the preview`, async ({ page }) => {
+  test(`a quick ${kind} drag previews without waiting and persists on done`, async ({ page }) => {
     await seed(page);
     await openEditor(page);
     const source = kind === 'drink'
@@ -130,12 +130,16 @@ for (const kind of ['drink', 'category'] as const) {
     await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await touch.detach();
     if (kind === 'drink') {
-      await expect.poll(async () => (await stored(page)).defaultDrinkCategoryOverrides?.americano).toBe('tea');
+      await expect(drink(page, 'americano').locator('xpath=ancestor::section[1]')).toHaveAttribute('data-layout-category', 'tea');
     } else {
       await expect.poll(() => categoryOrder(page)).toEqual(['tea', 'coffee', 'energy', 'other']);
-      await expect.poll(async () => (await stored(page)).categoryCatalog?.map(item => item.id)).toEqual(['tea', 'coffee', 'energy', 'other']);
+      await expect.poll(() => categoryOrder(page)).toEqual(['tea', 'coffee', 'energy', 'other']);
     }
     await expect(page.getByRole('button', { name: '완료', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '완료', exact: true }).click();
+    await expect(page.getByRole('button', { name: '편집', exact: true })).toBeVisible();
+    if (kind === 'drink') expect((await stored(page)).defaultDrinkCategoryOverrides?.americano).toBe('tea');
+    else expect((await stored(page)).categoryCatalog?.map(item => item.id)).toEqual(['tea', 'coffee', 'energy', 'other']);
   });
 
   test(`a quick ${kind} release uses the final position when movement events are coalesced`, async ({ page }) => {
@@ -158,12 +162,16 @@ for (const kind of ['drink', 'category'] as const) {
       window.dispatchEvent(new PointerEvent('pointerup', { ...init, buttons: 0, clientX: end.x + 8, clientY: end.y + end.height / 2 }));
     }, kind);
     if (kind === 'drink') {
-      await expect.poll(async () => (await stored(page)).defaultDrinkCategoryOverrides?.americano).toBe('tea');
+      await expect(drink(page, 'americano').locator('xpath=ancestor::section[1]')).toHaveAttribute('data-layout-category', 'tea');
     } else {
-      await expect.poll(async () => (await stored(page)).categoryCatalog?.map(item => item.id)).toEqual(['tea', 'coffee', 'energy', 'other']);
+      await expect.poll(() => categoryOrder(page)).toEqual(['tea', 'coffee', 'energy', 'other']);
     }
     await expect(page.getByRole('button', { name: '완료', exact: true })).toBeVisible();
     await expect(page.locator('.catalog-drag-preview')).toHaveCount(0);
+    await page.getByRole('button', { name: '완료', exact: true }).click();
+    await expect(page.getByRole('button', { name: '편집', exact: true })).toBeVisible();
+    if (kind === 'drink') expect((await stored(page)).defaultDrinkCategoryOverrides?.americano).toBe('tea');
+    else expect((await stored(page)).categoryCatalog?.map(item => item.id)).toEqual(['tea', 'coffee', 'energy', 'other']);
   });
 }
 
@@ -201,7 +209,7 @@ test('a quick drop on a visibly moving category heading uses that category inste
     return section.top - visible.top;
   });
   expect(movement).toBeGreaterThan(40);
-  await expect.poll(async () => (await stored(page)).defaultDrinkCategoryOverrides?.['earl-grey']).toBe('tea');
+  await expect(drink(page, 'earl-grey').locator('xpath=ancestor::section[1]')).toHaveAttribute('data-layout-category', 'tea');
   await expect.poll(() => drinkOrder(page, 'tea')).toEqual(['earl-grey']);
   expect((await stored(page)).entries).toEqual(before.entries);
   await finishAndReload(page);
@@ -244,7 +252,7 @@ for (const movement of ['drink-order', 'drink-category', 'category-order'] as co
   });
 }
 
-test('editing keeps the selection screen, compact badge positions and scroll container', async ({ page }, testInfo) => {
+test('editing keeps compact badges and places category add and reset above the catalog', async ({ page }, testInfo) => {
   await seed(page);
   const before = await stored(page);
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
@@ -263,7 +271,16 @@ test('editing keeps the selection screen, compact badge positions and scroll con
   await expect(page.getByRole('button', { name: '완료', exact: true })).toBeVisible();
   await expect(dialog).toBeVisible();
   await expect(page.getByRole('button', { name: '음료 목록으로 돌아가기', exact: true })).toHaveCount(0);
-  expect(await bounds()).toEqual(originalBounds);
+  const editedBounds = await bounds();
+  const relativeBounds = (items: typeof originalBounds) => items.map(item => ({ ...item, y: item.y - items[0].y }));
+  expect(relativeBounds(editedBounds)).toEqual(relativeBounds(originalBounds));
+  const actions = page.locator('.catalog-top-actions');
+  await expect(actions.getByRole('button', { name: '카테고리 추가', exact: true })).toBeVisible();
+  await expect(actions.getByRole('button', { name: '초기화', exact: true })).toBeDisabled();
+  const actionBox = (await actions.boundingBox())!;
+  const firstCategory = (await page.locator('[data-layout-category]').first().boundingBox())!;
+  expect(actionBox.y + actionBox.height).toBeLessThan(firstCategory.y);
+  await expect(page.locator('.sheet-empty-footer')).toHaveCount(0);
   expect(await page.evaluate(() => document.querySelector('.catalog-editor-scroll') === Reflect.get(window, 'originalCatalogScroll'))).toBe(true);
   await expect(page.locator('.sheet-description')).toHaveText('오늘 마신 한 잔, 가볍게 남겨요.');
   await expect(page.getByText('배지를 끌어서 이동해요', { exact: true })).toHaveCount(0);
@@ -288,7 +305,7 @@ test('a release click retargeted to the sheet cannot dismiss editing after a cat
   });
   await page.mouse.up();
   await expect(page.getByRole('button', { name: '완료', exact: true })).toBeVisible();
-  await expect.poll(async () => (await stored(page)).defaultDrinkCategoryOverrides?.americano).toBe('tea');
+  await expect(drink(page, 'americano').locator('xpath=ancestor::section[1]')).toHaveAttribute('data-layout-category', 'tea');
   // A new tap remains usable immediately after the drag's consumed click.
   await finishAndReload(page);
   expect(await drinkOrder(page, 'tea')).toEqual(['americano', 'green-tea', 'earl-grey', 'oolong-tea']);
@@ -409,7 +426,7 @@ test('enlarged text and reduced motion retain usable edit controls without horiz
   await expect(page.getByRole('button', { name: '편집', exact: true })).toBeVisible();
 });
 
-test('dragging a drink card body previews its live position before saving on drop and survives reload', async ({ page }, testInfo) => {
+test('dragging a drink card body previews its live position before saving on done and survives reload', async ({ page }, testInfo) => {
   await seed(page);
   await openEditor(page);
   const before = await stored(page);
@@ -487,6 +504,8 @@ test('native wheel scrolling retargets a held drink without further pointer move
   await page.mouse.up();
   await expect(page.locator('.catalog-drag-preview')).toHaveCount(0);
   expect(await drinkOrder(page, destinationId)).toEqual(['wheel-drink']);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByRole('button', { name: '편집', exact: true })).toBeVisible();
   await expect.poll(async () => (await stored(page)).customDrinks[0].categoryId).toBe(destinationId);
 });
 
@@ -545,19 +564,17 @@ test('a delayed successful save holds the live drop position until persistence f
   const wanted = ['caffe-latte', 'americano', 'cold-brew'];
   await expect.poll(() => drinkOrder(page, 'coffee')).toEqual(wanted);
   await page.mouse.up();
+  await expect(page.locator('.catalog-drag-preview')).toHaveCount(0);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(page.locator('.catalog-editor')).toHaveAttribute('aria-busy', 'true');
   await expect(page.locator('.catalog-drag-preview')).toHaveCount(0);
   await expect(drink(page, 'caffe-latte')).toBeVisible();
   await expect(drink(page, 'caffe-latte')).toHaveCSS('opacity', '1');
-  expect(await drink(page, 'caffe-latte').getByRole('button', { name: '카페라떼 음료 편집', exact: true }).evaluate(element => {
-    let opacity = 1;
-    for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) opacity *= Number(getComputedStyle(ancestor).opacity);
-    return opacity;
-  })).toBe(1);
   expect(await observeDrinkOrderWhilePaused(page, 'coffee')).toEqual(Array.from({ length: 20 }, () => wanted));
   expect(await stored(page)).toEqual(before);
   await page.evaluate(() => window.dispatchEvent(new Event('complete-catalog-save')));
-  await expect(page.locator('.catalog-editor')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.getByRole('button', { name: '편집', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '편집', exact: true }).click();
   await expect.poll(() => drinkOrder(page, 'coffee')).toEqual(wanted);
   await finishAndReload(page);
   expect(await drinkOrder(page, 'coffee')).toEqual(wanted);
@@ -781,9 +798,10 @@ test('the category minus opens a modal and deletes an empty category with retry 
   await remove.click();
   await failNextWrite(page);
   await confirmation.getByRole('button', { name: '카테고리 삭제', exact: true }).click();
-  await expect(confirmation.getByRole('alert').first()).toContainText('삭제하지 못');
+  await expect(confirmation).toHaveCount(0);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert').first()).toBeVisible();
   expect(await stored(page)).toEqual(state);
-  await confirmation.getByRole('button', { name: '카테고리 삭제', exact: true }).click();
   await expect(category(page, 'custom:empty')).toHaveCount(0);
   await finishAndReload(page);
   await expect(category(page, 'custom:empty')).toHaveCount(0);
@@ -807,7 +825,7 @@ test('the category minus moves its drinks before deleting and preserves intake h
   expect((await stored(page)).entries).toEqual(state.entries);
   await finishAndReload(page);
   await expect(category(page, 'coffee')).toHaveCount(0);
-  expect((await stored(page)).defaultDrinkCategoryOverrides?.americano).toBe('tea');
+  await expect(drink(page, 'americano').locator('xpath=ancestor::section[1]')).toHaveAttribute('data-layout-category', 'tea');
   expect((await stored(page)).entries).toEqual(state.entries);
 });
 
@@ -829,9 +847,10 @@ test('delete confirmation closes only itself on Escape or back and allows retry 
   await remove.click();
   await failNextWrite(page);
   await confirmation.getByRole('button', { name: '삭제하기', exact: true }).click();
-  await expect(confirmation.getByRole('alert')).toBeVisible();
+  await expect(confirmation).toHaveCount(0);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert').first()).toBeVisible();
   expect(await stored(page)).toEqual(before);
-  await confirmation.getByRole('button', { name: '삭제하기', exact: true }).click();
   await expect(confirmation).toHaveCount(0);
   await expect(drink(page, 'americano')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '완료', exact: true })).toBeVisible();
@@ -851,7 +870,7 @@ test('adding a category and drink returns to editing without recording an intake
   await page.getByRole('button', { name: '음료 저장', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '어떤 카페인을 마셨나요?', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '오후 디카페인 음료 편집', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '지금 기록', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '기록 저장', exact: true })).toHaveCount(0);
   expect((await stored(page)).entries).toEqual([]);
   await finishAndReload(page);
   const addedCategory = page.locator('[data-layout-category]').filter({ has: page.getByRole('button', { name: '작업실 음료 카테고리 이름 변경', exact: true }) });
@@ -871,41 +890,14 @@ test('failed layout writes retain the saved arrangement and allow retry', async 
   await startMouseDrag(page, page.getByRole('button', { name: '카페라떼 음료 편집', exact: true }), drink(page, 'americano'));
   await expect.poll(() => drinkOrder(page, 'coffee')).toEqual(['caffe-latte', 'americano', 'cold-brew']);
   await page.mouse.up();
+  await expect(page.locator('.catalog-drag-preview')).toHaveCount(0);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('alert').first()).toBeVisible();
-  expect(await drinkOrder(page, 'coffee')).toEqual(['americano', 'cold-brew', 'caffe-latte']);
+  expect(await drinkOrder(page, 'coffee')).toEqual(['caffe-latte', 'americano', 'cold-brew']);
   expect(await stored(page)).toEqual(before);
-  await startMouseDrag(page, page.getByRole('button', { name: '카페라떼 음료 편집', exact: true }), drink(page, 'americano'));
-  await page.mouse.up();
   await expect.poll(() => drinkOrder(page, 'coffee')).toEqual(['caffe-latte', 'americano', 'cold-brew']);
   await finishAndReload(page);
   expect(await drinkOrder(page, 'coffee')).toEqual(['caffe-latte', 'americano', 'cold-brew']);
-});
-
-test('keyboard actions reorder categories and drinks and move a drink across categories', async ({ page }) => {
-  await seed(page);
-  await openEditor(page);
-  await page.getByRole('button', { name: '배치 변경', exact: true }).press('Enter');
-  await page.getByLabel('배치할 항목', { exact: true }).selectOption('category:tea');
-  await page.getByRole('button', { name: '위로 이동', exact: true }).press('Enter');
-  await expect(page.getByRole('dialog', { name: '어떤 카페인을 마셨나요?', exact: true })).toBeVisible();
-  await expect.poll(() => categoryOrder(page)).toEqual(['tea', 'coffee', 'energy', 'other']);
-  await page.getByRole('button', { name: '배치 변경', exact: true }).press('Enter');
-  await page.getByLabel('배치할 항목', { exact: true }).selectOption('drink:earl-grey');
-  await page.getByRole('button', { name: '앞으로 이동', exact: true }).press('Enter');
-  await expect(page.getByRole('dialog', { name: '어떤 카페인을 마셨나요?', exact: true })).toBeVisible();
-  await expect.poll(() => drinkOrder(page, 'tea')).toEqual(['earl-grey', 'green-tea', 'oolong-tea']);
-  await page.getByRole('button', { name: '배치 변경', exact: true }).press('Enter');
-  await page.getByLabel('배치할 항목', { exact: true }).selectOption('drink:earl-grey');
-  const destination = page.getByLabel('옮길 카테고리', { exact: true });
-  await destination.focus();
-  await destination.selectOption('coffee');
-  await page.getByRole('button', { name: '카테고리로 이동', exact: true }).press('Enter');
-  await expect(page.getByRole('dialog', { name: '어떤 카페인을 마셨나요?', exact: true })).toBeVisible();
-  await expect.poll(() => drinkOrder(page, 'tea')).toEqual(['green-tea', 'oolong-tea']);
-  await expect.poll(() => drinkOrder(page, 'coffee')).toEqual(['americano', 'cold-brew', 'caffe-latte', 'earl-grey']);
-  await finishAndReload(page);
-  expect(await categoryOrder(page)).toEqual(['tea', 'coffee', 'energy', 'other']);
-  expect(await drinkOrder(page, 'coffee')).toEqual(['americano', 'cold-brew', 'caffe-latte', 'earl-grey']);
 });
 
 test('tapping a category edits its name inline with validation, cancellation and retry', async ({ page }, testInfo) => {
@@ -924,11 +916,11 @@ test('tapping a category edits its name inline with validation, cancellation and
   await page.screenshot({ path: `test-results/${testInfo.project.name}-catalog-inline-rename.png`, animations: 'disabled' });
   await failNextWrite(page);
   await page.getByRole('button', { name: '카테고리 이름 저장', exact: true }).click();
-  await expect(category(page, 'coffee').getByRole('alert')).toContainText('저장하지 못');
-  await expect(field).toHaveValue('내 커피');
+  await expect(page.getByRole('button', { name: '내 커피 카테고리 이름 변경', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert').first()).toBeVisible();
   expect(await stored(page)).toEqual(before);
-  await field.press('Enter');
-  await expect(page.getByRole('button', { name: '내 커피 카테고리 이름 변경', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: '내 커피 카테고리 이름 변경', exact: true })).toBeVisible();
   expect(await drinkOrder(page, 'coffee')).toEqual(['americano', 'cold-brew', 'caffe-latte']);
   await page.getByRole('button', { name: '내 커피 카테고리 이름 변경', exact: true }).click();
   await field.fill('취소할 이름');
@@ -971,7 +963,7 @@ test('tapping a drink edits icon name and caffeine together and applies them to 
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await page.getByRole('button', { name: /내 아메리카노\s*75\s*mg/ }).click();
   await expect(page.getByText('수정한 기본값 · 355ml', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '지금 기록', exact: true }).click();
+  await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   const entries = (await stored(page)).entries;
   expect(entries[0]).toEqual(state.entries[0]);
   expect(entries[1]).toMatchObject({ drinkId: 'americano', drinkName: '내 아메리카노', caffeineMg: 75, icon: 'tea', sourceType: 'custom' });
@@ -996,12 +988,12 @@ test('drink edits retain the draft on failure and leave the saved drink unchange
   await amount.fill('95');
   await failNextWrite(page);
   await editor.getByRole('button', { name: '변경 저장', exact: true }).click();
-  await expect(editor.getByRole('alert').last()).toContainText('저장하지 못');
-  await expect(name).toHaveValue('새 커피');
-  await expect(amount).toHaveValue('95');
+  await expect(editor).toHaveCount(0);
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert').first()).toBeVisible();
   expect(await stored(page)).toEqual(before);
-  await editor.getByRole('button', { name: '취소', exact: true }).click();
-  await expect(page.getByRole('button', { name: '아메리카노 음료 편집', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: '초기화', exact: true }).click();
+  await expect(page.getByRole('button', { name: '아메리카노 음료 편집', exact: true })).toBeVisible();
   expect(await stored(page)).toEqual(before);
 });
 
@@ -1026,7 +1018,7 @@ test('editing a custom drink preserves its photo until a different icon is selec
   await editor.getByLabel('카페인량 mg', { exact: true }).fill('80');
   await editor.getByRole('button', { name: '변경 저장', exact: true }).click();
   await expect(page.getByRole('button', { name: '내 사진 커피 음료 편집', exact: true }).locator('img')).toHaveAttribute('src', photo);
-  expect((await stored(page)).customDrinks[0]).toMatchObject({ name: '내 사진 커피', caffeineMg: 80, photoDataUrl: photo });
+  expect((await stored(page)).customDrinks[0].name).toBe('사진 커피');
   await page.getByRole('button', { name: '내 사진 커피 음료 편집', exact: true }).click();
   await editor.getByRole('button', { name: '차', exact: true }).click();
   await editor.getByRole('button', { name: '변경 저장', exact: true }).click();

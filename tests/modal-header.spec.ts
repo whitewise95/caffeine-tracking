@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { installTossHost } from './helpers/tossHost';
+import { restoreLegacyCategories } from './helpers/legacyCategories';
 
 async function expectHeader(dialog: Locator, backLabel?: string) {
   const header = dialog.locator(':scope > .sheet-header');
@@ -24,7 +25,6 @@ test('root sheets show close while every drink and time step shows only back', a
   await expectHeader(sheet);
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
   await expectHeader(sheet, '음료 목록으로 돌아가기');
-  await page.getByRole('switch', { name: '천천히 마셨어요' }).check();
   await page.getByRole('button', { name: '마시기 시작한 시각', exact: true }).click();
   await expectHeader(sheet, '기록 화면으로 돌아가기');
   await page.keyboard.press('Escape');
@@ -52,7 +52,7 @@ for (const back of ['header', 'browser', 'native', 'escape', 'backdrop'] as cons
   test(`category child steps return one level and preserve the draft with ${back}`, async ({ page }) => {
     if (back === 'native') await installTossHost(page);
     await page.goto('/settings');
-    await page.getByRole('button', { name: '카테고리 관리', exact: true }).click();
+    await restoreLegacyCategories(page);
     const parent = page.locator('.sheet-dialog--add');
     await expectHeader(parent);
     await page.getByRole('button', { name: '커피 카테고리 관리', exact: true }).click();

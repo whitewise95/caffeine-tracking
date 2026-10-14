@@ -10,9 +10,14 @@ import { QuickAdjustBar } from './QuickAdjustBar'
 import { IntakeTimePicker } from './IntakeTimePicker'
 import { useIntakeTimeFields } from './useIntakeTimeFields'
 import { normalizeIntakeNote } from '../model/intakeNote'
+import type { CaffeineState } from '../model/caffeine.types'
+import type { CatalogChange } from '../model/catalogDraft'
+import { useCatalogDraft } from '../hooks/useCatalogDraft'
 import './sheet.css'
 
 interface AddCaffeineSheetProps {
+  catalogState: CaffeineState
+  onCommitCatalog: (change: CatalogChange) => Promise<boolean>
   drinks: Drink[]
   categoryEntryCounts: Readonly<Record<string, number>>
   categories: readonly DrinkCategory[]
@@ -36,7 +41,18 @@ interface AddCaffeineSheetProps {
   onClearError: () => void
 }
 
-export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy, error, step, initialConsumedAt, onStepChange, onBack, onClose, onRecord, onCreateDrink, onUpdateDrink, onDeleteDrink, onCreateCategory, onRenameCategory, onDeleteCategory, onForceDeleteCategory, onReorderCategories, onMoveDrink, onClearError }: AddCaffeineSheetProps) {
+export function AddCaffeineSheet({ catalogState, onCommitCatalog, drinks, categories, categoryEntryCounts, busy, error, step, initialConsumedAt, onStepChange, onBack, onClose, onRecord, onCreateDrink, onUpdateDrink, onDeleteDrink, onCreateCategory, onRenameCategory, onDeleteCategory, onForceDeleteCategory, onReorderCategories, onMoveDrink, onClearError }: AddCaffeineSheetProps) {
+  const catalogDraft = useCatalogDraft(onCommitCatalog)
+  const { active: editingSession, begin: beginEditing, discard: discardEditing } = catalogDraft
+  const catalogDrinks = editingSession ? catalogDraft.drinks! : drinks
+  const catalogCategories = editingSession ? catalogDraft.categories! : categories
+  const [editIntro, setEditIntro] = useState(false)
+  useEffect(() => {
+    setEditIntro(editingSession)
+    if (!editingSession) return
+    const timer = window.setTimeout(() => setEditIntro(false), 2000)
+    return () => window.clearTimeout(timer)
+  }, [editingSession])
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null)
   const [caffeineMg, setCaffeineMg] = useState(0)
   const [note, setNote] = useState('')
@@ -46,7 +62,7 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
   const intakeTime = useIntakeTimeFields(initialConsumedAt ? { consumedAt: initialConsumedAt } : undefined)
   const selectedDateLabel = initialConsumedAt ? new Date(initialConsumedAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) : null
   const writeInProgress = useRef(false)
-  const isBusy = busy || working
+  const isBusy = busy || working || catalogDraft.busy
   const focusDrinkId = useRef<string | null>(null)
   const listScroll = useRef(0)
   const previousStep = useRef(step)
@@ -91,6 +107,23 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
     }
   }, [step, visibleStep, onStepChange, onBack])
 
+  useLayoutEffect(() => {
+    if (step === 'layout' && !editingSession) beginEditing(catalogState)
+    else if (step === 'select' && editingSession) discardEditing()
+  }, [step, editingSession, beginEditing, discardEditing, catalogState])
+
+  async function toggleEditing() {
+    onClearError()
+    if (visibleStep === 'layout') {
+      const saved = await catalogDraft.finish()
+      if (saved && mounted.current && previousStep.current === 'layout') onBack()
+    } else {
+      layoutFocusDrink.current = null
+      beginEditing(catalogState)
+      onStepChange('layout')
+    }
+  }
+
   function openComposer(categoryId: DrinkCategoryId, origin: 'select' | 'layout') {
     composerOrigin.current = origin
     layoutFocusDrink.current = null
@@ -106,6 +139,7 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
     setNote('')
     setCaffeineMg(Math.min(drink.caffeineMg, MAX_CAFFEINE_MG))
     setRecordError('')
+    intakeTime.refreshDefault()
     onStepChange('record')
   }
 
@@ -115,13 +149,13 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
       setRecordError(`카페인량을 0mg보다 크고 ${MAX_CAFFEINE_MG}mg 이하로 조절해 주세요.`)
       return
     }
-    const timing = initialConsumedAt || intakeTime.draft.slow ? intakeTime.resolveTiming() : undefined
-    if (timing && !timing.timing) { setRecordError(timing.error); return }
+    const timing = intakeTime.resolveTiming()
+    if (!timing.timing) { setRecordError(timing.error); return }
     writeInProgress.current = true
     setWorking(true)
     setRecordError('')
     try {
-      const saved = await onRecord(selectedDrink, caffeineMg, timing?.timing, normalizeIntakeNote(note))
+      const saved = await onRecord(selectedDrink, caffeineMg, timing.timing, normalizeIntakeNote(note))
       if (!saved) setRecordError('기록을 저장하지 못했어요. 다시 시도해 주세요.')
     } catch {
       setRecordError('기록을 저장하지 못했어요. 다시 시도해 주세요.')
@@ -136,7 +170,7 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
     writeInProgress.current = true
     setWorking(true)
     try {
-      const drink = await onCreateDrink(draft)
+      const drink = await (editingSession ? catalogDraft.createDrink(draft) : onCreateDrink(draft))
       if (!drink) return false
       // A drink can finish saving after back; keep the returned list unselected.
       if (!mounted.current || previousStep.current !== 'compose-dose') return true
@@ -145,6 +179,7 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
       focusDrinkId.current = drink.id
       setCaffeineMg(Math.min(drink.caffeineMg, MAX_CAFFEINE_MG))
       setRecordError('')
+      intakeTime.refreshDefault()
       if (composerOrigin.current === 'layout') layoutFocusDrink.current = drink.id
       createdDrink.current = drink
       onBack()
@@ -183,11 +218,11 @@ export function AddCaffeineSheet({ drinks, categories, categoryEntryCounts, busy
     <BottomSheet backLabel={isPicker ? '기록 화면으로 돌아가기' : visibleStep === 'compose-dose' ? '아이콘과 메뉴명으로 돌아가기' : visibleStep === 'compose' && composerOrigin.current === 'layout' ? '음료 선택 화면으로 돌아가기' : undefined} onCancel={isPicker || visibleStep === 'layout' || visibleStep === 'categories' || visibleStep === 'compose-dose' ? onBack : undefined} title={title} onClose={onClose} onBack={isCatalog ? undefined : onBack} className={`sheet-dialog--add${isCatalog ? ' sheet-dialog--catalog' : ''}${visibleStep === 'layout' ? ' sheet-dialog--layout' : ''}`}>
       {error && visibleStep !== 'categories' && visibleStep !== 'layout' && <div className="error-message" role="alert">{error}</div>}
       <div ref={recordRef} className={`sheet-step sheet-step--${isCatalog ? 'select' : visibleStep}`}>
-        {isCatalog && <CatalogLayoutEditor categories={categories} drinks={drinks} entryCounts={categoryEntryCounts} busy={isBusy} error={error} onClearError={onClearError} onCreateCategory={onCreateCategory} onRenameCategory={onRenameCategory} onDeleteCategory={onDeleteCategory} onForceDeleteCategory={onForceDeleteCategory} onReorderCategories={onReorderCategories} onMoveDrink={onMoveDrink} onDeleteDrink={onDeleteDrink} onUpdateDrink={onUpdateDrink} onAddDrink={categoryId => openComposer(categoryId, visibleStep === 'layout' ? 'layout' : 'select')} initialScrollTop={listScroll.current} onScrollPositionChange={top => { listScroll.current = top }} focusDrinkId={visibleStep === 'layout' ? layoutFocusDrink.current : focusDrinkId.current} editing={visibleStep === 'layout'} description={selectedDateLabel ? `${selectedDateLabel}에 마신 한 잔을 기록해요.` : '오늘 마신 한 잔, 가볍게 남겨요.'} onSelectDrink={selectDrink} onToggleEdit={() => { onClearError(); if (visibleStep === 'layout') onBack(); else { layoutFocusDrink.current = null; onStepChange('layout') } }} />}
-        {visibleStep === 'record' && selectedDrink && <QuickAdjustBar note={note} onNoteChange={value => { setNote(value); setRecordError('') }} showInstantTime={Boolean(initialConsumedAt)} onDelete={() => void deleteDrink()} onPickTime={target => { returnFocus.current = target === 'start' ? '마시기 시작한 시각' : '마신 마지막 시각'; onStepChange(target === 'start' ? 'time-start' : 'time-end') }} drink={selectedDrink} caffeineMg={caffeineMg} busy={isBusy} error={recordError} onChange={value => { setCaffeineMg(value); setRecordError('') }} onRecord={() => void recordDrink()} timingDraft={intakeTime.draft} onTimingChange={draft => { intakeTime.setDraft(draft); setRecordError('') }} onTimingToggle={slow => { intakeTime.toggleSlow(slow); setRecordError('') }} />}
-        {isPicker && <IntakeTimePicker value={intakeTime.draft[target].split('T')[1] ?? ''} onCancel={onBack} onDone={time => { intakeTime.pickTime(target, time, !initialConsumedAt); setRecordError(''); onBack() }} />}
+        {isCatalog && <CatalogLayoutEditor categories={catalogCategories} drinks={catalogDrinks} entryCounts={catalogDraft.entryCounts ?? categoryEntryCounts} busy={isBusy} error={catalogDraft.error || error} onClearError={() => { catalogDraft.clearError(); onClearError() }} onCreateCategory={editingSession ? catalogDraft.onCreateCategory : onCreateCategory} onRenameCategory={editingSession ? catalogDraft.onRenameCategory : onRenameCategory} onDeleteCategory={editingSession ? catalogDraft.onDeleteCategory : onDeleteCategory} onForceDeleteCategory={editingSession ? catalogDraft.onForceDeleteCategory : onForceDeleteCategory} onReorderCategories={editingSession ? catalogDraft.onReorderCategories : onReorderCategories} onMoveDrink={editingSession ? catalogDraft.onMoveDrink : onMoveDrink} onDeleteDrink={editingSession ? catalogDraft.onDeleteDrink : onDeleteDrink} onUpdateDrink={editingSession ? catalogDraft.onUpdateDrink : onUpdateDrink} onAddDrink={categoryId => openComposer(categoryId, visibleStep === 'layout' ? 'layout' : 'select')} initialScrollTop={listScroll.current} onScrollPositionChange={top => { listScroll.current = top }} focusDrinkId={visibleStep === 'layout' ? layoutFocusDrink.current : focusDrinkId.current} editing={visibleStep === 'layout'} description={selectedDateLabel ? `${selectedDateLabel}에 마신 한 잔을 기록해요.` : '오늘 마신 한 잔, 가볍게 남겨요.'} onSelectDrink={selectDrink} introActive={editIntro} onStopIntro={() => setEditIntro(false)} onReset={catalogDraft.reset} changed={catalogDraft.changed} onToggleEdit={() => void toggleEditing()} />}
+        {visibleStep === 'record' && selectedDrink && <QuickAdjustBar note={note} onNoteChange={value => { setNote(value); setRecordError('') }} onDelete={() => void deleteDrink()} onPickTime={target => { returnFocus.current = target === 'start' ? '마시기 시작한 시각' : '마신 마지막 시각'; onStepChange(target === 'start' ? 'time-start' : 'time-end') }} drink={selectedDrink} caffeineMg={caffeineMg} busy={isBusy} error={recordError} onChange={value => { setCaffeineMg(value); setRecordError('') }} onRecord={() => void recordDrink()} timingDraft={intakeTime.draft} onTimingChange={draft => { intakeTime.setDraft(draft); setRecordError('') }} />}
+        {isPicker && <IntakeTimePicker value={intakeTime.draft[target].split('T')[1] ?? ''} onCancel={onBack} onDone={time => { intakeTime.pickTime(target, time); setRecordError(''); onBack() }} />}
         {(visibleStep === 'compose' || visibleStep === 'compose-dose') && composerCategory && <div ref={composerRef} className="sheet-scroll sheet-composer-scroll">
-          <CustomDrinkComposer key={composerCategory} categoryId={composerCategory} categories={categories} stage={visibleStep === 'compose-dose' ? 'dose' : 'details'} busy={isBusy} onSave={createDrink} onNext={() => onStepChange('compose-dose')} />
+          <CustomDrinkComposer key={composerCategory} categoryId={composerCategory} categories={catalogCategories} stage={visibleStep === 'compose-dose' ? 'dose' : 'details'} busy={isBusy} onSave={createDrink} onNext={() => onStepChange('compose-dose')} />
         </div>}
         {visibleStep === 'categories' && <CategoryManager categories={[...categories]} drinks={drinks} entryCounts={categoryEntryCounts} busy={isBusy} error={error} onCreate={onCreateCategory} onRename={onRenameCategory} onDelete={onDeleteCategory} onForceDelete={onForceDeleteCategory} onReorder={onReorderCategories} onClearError={onClearError} />}
       </div>

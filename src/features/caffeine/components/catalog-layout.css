@@ -34,22 +34,16 @@
 .catalog-category-remove { left: auto; right: -22px; top: -32px; }
 .catalog-editor .catalog-remove:not(:disabled):active { background: transparent; }
 .catalog-add-slot { display: inline-flex; max-width: 100%; }
-.catalog-editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; padding: 10px 24px 11px; }
-.catalog-editor-footer > button { font-size: .8125rem; color: var(--text-primary); }
+.catalog-top-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin: -14px 0 22px; }
+.catalog-top-actions > button { min-height: 44px; font-size: .8125rem; color: var(--text-primary); }
 .catalog-editor.is-arranging:not(.is-settling) .is-dragging { visibility: hidden; }
-.catalog-drag-preview { position: fixed; z-index: 10; color: var(--text-primary); pointer-events: none; }
+.catalog-drag-preview { position: fixed; left: 0; top: 0; z-index: 10; color: var(--text-primary); pointer-events: none; will-change: transform; }
 .catalog-drag-preview--drink > .catalog-drink { width: 100%; }
 .catalog-drag-preview--drink .catalog-drink-details { border-color: var(--accent-pink); box-shadow: 0 5px 0 rgb(0 0 0 / .4), 0 12px 20px rgb(0 0 0 / .35); }
 .catalog-drag-preview--category .catalog-category-surface::before { border-color: var(--accent-pink); background-color: color-mix(in srgb, var(--surface-elevated) 92%, transparent); box-shadow: 0 5px 0 rgb(0 0 0 / .4), 0 12px 24px rgb(0 0 0 / .3); }
 .catalog-drag-preview .catalog-category-heading h3 { font-size: .875rem; }
 .catalog-action-sheet { max-height: calc(94dvh - var(--safe-top)); }
 .catalog-action-hint { margin: 0 0 20px; color: var(--text-secondary); font-size: .875rem; line-height: 1.7; }
-.catalog-action-order { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-.catalog-action-order > button { display: flex; align-items: center; justify-content: center; flex: 1 1 110px; gap: 6px; min-width: 0; min-height: 48px; padding: 10px 8px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface-elevated); color: var(--text-primary); font-size: .8125rem; }
-.catalog-action-order svg { flex: 0 0 auto; }
-.catalog-action-destination { margin-bottom: 24px; }
-.catalog-action-destination label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: .8125rem; }
-.catalog-action-destination > button { width: 100%; margin-top: 12px; min-height: 48px; font-size: .875rem; }
 :is(.catalog-editor, .catalog-action-sheet) button:disabled { opacity: .4; cursor: default; }
 .catalog-editor.is-arranging button:disabled { opacity: 1; }
 :is(.catalog-editor, .catalog-action-sheet) button:not(:disabled):active { background: var(--surface-pressed); }
@@ -75,6 +69,16 @@
 .drink-edit-form .catalog-action-hint { margin: 16px 0 24px; font-size: .8125rem; }
 .drink-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .drink-edit-actions button { flex: 1 1 110px; min-width: 0; min-height: 48px; }
-.catalog-placement-form > label { display: block; margin-bottom: 8px; font-size: .8125rem; color: var(--text-secondary); }
-.catalog-placement-form > .catalog-action-order { margin-top: 16px; }
 .catalog-editor .catalog-category-name-form input:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 2px; }
+
+.catalog-reset-button { flex-shrink: 0; min-height: 44px; font-size: var(--font-xs); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .catalog-editor.is-edit-intro .catalog-drink-details { animation: catalog-edit-wiggle 250ms ease-in-out 8; transform-origin: center; }
+  .catalog-editor.is-edit-intro .catalog-drink:nth-child(even) .catalog-drink-details { animation-direction: reverse; }
+}
+@keyframes catalog-edit-wiggle {
+  0%, 100% { transform: translateY(-2px) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(-.8deg); }
+  75% { transform: translateY(-2px) rotate(.8deg); }
+}

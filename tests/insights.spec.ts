@@ -64,10 +64,29 @@ for (const theme of ['dark']) {
     await expect(calendar.getByRole('button', { name: '10월 5일, 5잔, 5mg', exact: true }).locator('span')).toHaveAttribute('data-level', '4');
     await expect(calendar.getByRole('button', { name: '10월 6일, 기록 없음', exact: true }).locator('span')).toHaveAttribute('data-level', '0');
     await expect(calendar.getByRole('group', { name: '하루 기록 수별 색상' }).locator(':scope > span')).toHaveText(['0개', '1개', '2개', '3개', '4개 이상']);
+    const reportColors = await calendar.locator('.report-heatmap button:not(:disabled) > span').evaluateAll(elements => elements.map(element => getComputedStyle(element).backgroundColor));
     await calendar.scrollIntoViewIfNeeded();
     await page.screenshot({ path: info.outputPath(`calendar-counts-${theme}.png`), fullPage: true });
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
     expect(await calendar.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.evaluate(() => { document.documentElement.style.fontSize = '16px'; });
+    await page.getByRole('navigation').getByRole('button', { name: '기록', exact: true }).click();
+    const journal = page.getByRole('region', { name: '월간 기록 캘린더' });
+    await expect(journal.getByRole('group', { name: '하루 기록 수별 색상' }).locator(':scope > span')).toHaveText(['0개', '1개', '2개', '3개', '4개 이상']);
+    for (const [index, level] of [1, 2, 3, 4, 4, 0].entries()) {
+      await expect(journal.getByRole('button', { name: new RegExp(`^2026년 10월 ${index + 1}일`) }).locator('span')).toHaveAttribute('data-level', String(level));
+    }
+    await expect(journal.getByRole('button', { name: /^2026년 10월 6일/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(await journal.locator('.calendar-day:not(:disabled) > span').evaluateAll(elements => elements.map(element => getComputedStyle(element).backgroundColor))).toEqual(reportColors);
+    await journal.getByRole('button', { name: /^2026년 10월 1일/ }).click();
+    await expect(page.getByTestId('daily-total')).toHaveText('600');
+    expect(await journal.getByRole('button', { name: /^2026년 10월 1일/ }).locator('span').evaluate(element => getComputedStyle(element).backgroundColor)).toBe(reportColors[0]);
+    const targets = await journal.locator('.calendar-day').evaluateAll(elements => elements.map(element => ({ width: element.getBoundingClientRect().width, height: element.getBoundingClientRect().height })));
+    expect(targets.every(target => target.width >= 44 && target.height >= 44)).toBe(true);
+    await page.screenshot({ path: info.outputPath('history-calendar-counts.png'), fullPage: true });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+    expect(await journal.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
   test(`report predicts, switches periods, selects charts and opens dated history ${theme}`, async ({ page }, info) => {
@@ -136,11 +155,11 @@ for (const theme of ['dark']) {
     await page.screenshot({ path: info.outputPath(`report-${theme}.png`), fullPage: true });
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    const last = page.locator('.report-footer');
+    const last = page.locator('.report-heatmap-history-button');
     await last.scrollIntoViewIfNeeded();
-    const footer = await last.boundingBox();
+    const lastAction = await last.boundingBox();
     const nav = await page.getByRole('navigation', { name: '주요 메뉴' }).boundingBox();
-    expect(footer!.y + footer!.height).toBeLessThan(nav!.y);
+    expect(lastAction!.y + lastAction!.height).toBeLessThan(nav!.y);
   });
   test(`empty report makes missing data explicit and supports direct route ${theme}`, async ({ page }) => {
     await page.clock.install({ time: now });

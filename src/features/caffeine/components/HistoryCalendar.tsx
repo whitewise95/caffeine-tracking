@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { localDateKey } from '../model/caffeine';
+import { RecordCountLegend } from './RecordCountLegend';
 
 const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -34,6 +35,7 @@ export function HistoryCalendar({ selectedDay, today, counts, onSelect }: {
         {canMoveNext && <button className="icon-button" aria-label="다음 달" onClick={() => moveMonth(1)}><ChevronRight size={18} aria-hidden="true" /></button>}
       </div>
     </header>
+    <p className="calendar-copy">하루에 기록한 음료 개수를 색으로 보여줘요.</p>
     <div className="calendar-weekdays" aria-hidden="true">{weekdays.map(day => <span key={day}>{day}</span>)}</div>
     <div className="calendar-dates" role="group" aria-label={`${monthLabel} 날짜 선택`}>
       {Array.from({ length: leading }, (_, i) => <span key={`blank-${i}`} aria-hidden="true" />)}
@@ -45,10 +47,10 @@ export function HistoryCalendar({ selectedDay, today, counts, onSelect }: {
         const label = day.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
         return <button key={key} className="calendar-day" disabled={isFuture} aria-pressed={isSelected} aria-current={key === today ? 'date' : undefined}
           aria-label={`${label}, ${isFuture ? '미래 날짜, 선택 불가' : `${key === today ? '오늘, ' : ''}${count ? `기록 ${count}잔` : '기록 없음'}`}`} onClick={() => { if (!isFuture) onSelect(key) }}>
-          <span>{day.getDate()}</span>
-          {count > 0 && <span className="calendar-record-dot" aria-hidden="true" />}
+          <span className="record-calendar-cell" data-level={Math.min(count, 4)}>{day.getDate()}</span>
         </button>;
       })}
     </div>
+    <RecordCountLegend />
   </section>;
 }
