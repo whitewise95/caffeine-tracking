@@ -1,7 +1,9 @@
 import { Device, Environment, NavigationBar, SafeArea, Screen, Storage, graniteEvent } from '@apps-in-toss/web-framework'
 import type { AppTheme } from '../../features/caffeine/model/caffeine.types'
-import type { CaffeineRepository } from '../../features/caffeine/repository/CaffeineRepository'
+import type { CaffeineRepository, CaffeineStorage } from '../../features/caffeine/repository/CaffeineRepository'
 import { LocalCaffeineRepository } from '../../features/caffeine/repository/LocalCaffeineRepository'
+import type { AvatarRepository } from '../../features/avatar/repository/AvatarRepository'
+import { LocalAvatarRepository } from '../../features/avatar/repository/LocalAvatarRepository'
 
 const noop = () => {}
 
@@ -25,15 +27,23 @@ export function isTossRuntime(): boolean {
   }
 }
 
-export function createRepository(): CaffeineRepository {
-  if (!isTossRuntime()) return new LocalCaffeineRepository()
+function platformStorage(): CaffeineStorage | undefined {
+  if (!isTossRuntime()) return undefined
 
   // A native failure must stay visible instead of silently switching data stores.
-  return new LocalCaffeineRepository({
+  return {
     getItem: (key) => Storage.getItem(key),
     setItem: (key, value) => Storage.setItem(key, value),
     removeItem: (key) => Storage.removeItem(key),
-  })
+  }
+}
+
+export function createRepository(): CaffeineRepository {
+  return new LocalCaffeineRepository(platformStorage())
+}
+
+export function createAvatarRepository(): AvatarRepository {
+  return new LocalAvatarRepository(platformStorage())
 }
 
 /** Open research sources outside the mini-app; failures are handled by the link UI. */

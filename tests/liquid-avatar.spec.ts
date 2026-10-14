@@ -21,7 +21,12 @@ test('each character tap immediately lights the liquid without restarting absorp
   // Advance the first response to its faded tail, then tap again immediately.
   await manual.evaluate(element => element.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 700; }));
   expect(await manual.evaluate(element => Number(getComputedStyle(element).opacity))).toBeLessThan(.2);
+  await manual.evaluate(element => Reflect.set(window, 'previousTapLayer', element));
   await character.click();
+  // CSS animation time is independent of page.clock. Verify the layer restarted,
+  // then sample its first frame deterministically even on a busy browser worker.
+  expect(await manual.evaluate(element => element !== Reflect.get(window, 'previousTapLayer'))).toBe(true);
+  await manual.evaluate(element => element.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 0; }));
   expect(await manual.evaluate(element => Number(getComputedStyle(element).opacity))).toBeGreaterThan(.7);
   await expect(automatic).toHaveCSS('opacity', '0.85');
   await expect(page.getByTestId('remaining-mg')).toHaveText(remaining!);

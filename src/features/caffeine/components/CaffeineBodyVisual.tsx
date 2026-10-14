@@ -6,6 +6,8 @@ import { AvatarDrinking } from './AvatarDrinking';
 import { useAvatarLiquidMotion } from '../hooks/useAvatarLiquidMotion';
 import { deviceTiltPermissionStatus, requestDeviceTiltPermission } from '../hooks/deviceTiltPermission';
 import { closeLiquidSurface, liquidSurfacePath, liquidWaveAmplitude } from '../model/liquidWaves';
+import { AvatarOutfitLayers } from '../../avatar/components/AvatarOutfitLayers';
+import type { AvatarOutfit } from '../../avatar/model/avatar.types';
 import './liquid-avatar.css';
 
 // A single connected, asymmetric jelly shape: rounded crown, soft shoulders,
@@ -14,13 +16,13 @@ const silhouette = 'M160 53 C194 51 219 75 220 106 C220 121 215 132 215 140 C216
 // The lifted forearm is part of the body outline, with a broad shoulder join.
 const drinkingSilhouette = silhouette.replace('C216 151 240 161 250 182 C260 203 254 219 243 220 C233 221 227 211 222 204', 'C222 143 227 140 239 146 C254 154 265 172 262 187 C260 201 247 207 234 201 C228 199 224 196 222 192 C222 197 222 201 222 204');
 
-interface CaffeineBodyVisualProps { caffeineMg: number; maxCaffeineMg?: number; intakePulse?: number; absorbingCount?: number; tiltEnabled?: boolean }
+interface CaffeineBodyVisualProps { caffeineMg: number; maxCaffeineMg?: number; intakePulse?: number; absorbingCount?: number; tiltEnabled?: boolean; outfit?: AvatarOutfit }
 
 export function CaffeineBodyVisual(props: CaffeineBodyVisualProps) {
   return <LiquidAvatar {...props} />;
 }
 
-export function LiquidAvatar({ caffeineMg, maxCaffeineMg, intakePulse = 0, absorbingCount = 0, tiltEnabled = false }: CaffeineBodyVisualProps) {
+export function LiquidAvatar({ caffeineMg, maxCaffeineMg, intakePulse = 0, absorbingCount = 0, tiltEnabled = false, outfit }: CaffeineBodyVisualProps) {
   const id = useId().replace(/:/g, '');
   const drinking = absorbingCount > 0;
   const body = drinking ? drinkingSilhouette : silhouette;
@@ -128,6 +130,7 @@ export function LiquidAvatar({ caffeineMg, maxCaffeineMg, intakePulse = 0, absor
       <g className="avatar-idle">
         <g className="avatar-tension">
           <g className="avatar-shape">
+            <AvatarOutfitLayers outfit={outfit} layer="back" drinking={drinking} />
             <path className="avatar-outer-bloom" d={body} clipPath={`url(#${id}-filled)`} fill="none" stroke="var(--avatar-tint)" strokeWidth="4" filter={`url(#${id}-bloom)`} />
             <path className={drinking ? 'avatar-drinking-body' : undefined} d={body} fill={`url(#${id}-glass)`} stroke={`url(#${id}-rim)`} strokeWidth="1.4" />
             <g clipPath={`url(#${id}-body)`}>
@@ -144,6 +147,7 @@ export function LiquidAvatar({ caffeineMg, maxCaffeineMg, intakePulse = 0, absor
               </g>
               {adding && <circle key={intakePulse} className="avatar-ripple" cx="160" cy="213" r="22" fill="none" stroke="var(--avatar-liquid-light)" strokeWidth="2" />}
             </g>
+            <AvatarOutfitLayers outfit={outfit} layer="body" drinking={drinking} />
             <g className="avatar-eye-glow" filter={`url(#${id}-bloom)`} fill="none" stroke="var(--avatar-tint)" strokeWidth="6" strokeLinecap="round">
               <g className="avatar-eyes-open"><path d="M136 117 Q140 111 144 117 M176 117 Q180 111 184 117" /></g>
               <g className="avatar-eyes-full"><path d="M133 121 Q139 113 145 121 M174 121 Q180 113 186 121" /></g>
@@ -154,7 +158,9 @@ export function LiquidAvatar({ caffeineMg, maxCaffeineMg, intakePulse = 0, absor
               <g className="avatar-eyes-full"><path d="M133 121 Q139 113 145 121 M174 121 Q180 113 186 121" /></g>
               <path className="avatar-mouth" d="M154 139 Q160 142 166 139" strokeWidth="2" />
             </g>
+            <AvatarOutfitLayers outfit={outfit} layer="front" drinking={drinking} />
             {drinking && <AvatarDrinking id={id} />}
+            <AvatarOutfitLayers outfit={outfit} layer="sleeve" drinking={drinking} />
           </g>
         </g>
       </g>

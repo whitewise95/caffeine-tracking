@@ -27,17 +27,22 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
       };
       if (message.type !== 'bridge' || !message.body) return;
       const { method, eventId, args } = message.body;
+      // Native Storage is keyed. Avatar and caffeine repositories share the SDK,
+      // but must never read or overwrite each other's documents.
+      const storageKey = args[0]?.key === 'caffeine-tracker:avatar:v1' ? 'test-toss-native-avatar' : nativeKey;
       let result: unknown;
       if (method === '__subscribeAppEvent') subscriptions.set(args[0].subscriptionId!, { method: args[0].method!, bridgeId: message.bridgeId });
       if (method === '__unsubscribeAppEvent') subscriptions.delete(args[0].subscriptionId!);
-      if (method === 'getStorageItem') result = localStorage.getItem(nativeKey);
+      if (method === 'getStorageItem') result = localStorage.getItem(storageKey);
+      if (method === 'getStorageItem' && storageKey === 'test-toss-native-avatar' && Reflect.get(window, 'testFailAvatarRead')) result = { __instanceof: 'Error', name: 'Error', message: 'Native avatar read failed' };
       if (method === 'setStorageItem') {
+        if (storageKey === 'test-toss-native-avatar') Reflect.set(window, 'testAvatarWrites', Number(Reflect.get(window, 'testAvatarWrites') ?? 0) + 1);
         if (Reflect.get(window, 'testFailNextStorage')) {
           Reflect.set(window, 'testFailNextStorage', false);
           result = { __instanceof: 'Error', name: 'Error', message: 'Native storage failed' };
-        } else localStorage.setItem(nativeKey, args[0].value!);
+        } else localStorage.setItem(storageKey, args[0].value!);
       }
-      if (method === 'removeStorageItem') localStorage.removeItem(nativeKey);
+      if (method === 'removeStorageItem') localStorage.removeItem(storageKey);
       if (method === 'closeView') {
         Reflect.set(window, 'testCloseRequests', Number(Reflect.get(window, 'testCloseRequests')) + 1);
         if (Reflect.get(window, 'testFailNextClose')) {
@@ -56,7 +61,9 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
         }
       }
       const emitters = Reflect.get(window, 'nativeEmitterMap') as Record<string, { emit: (event: string, value: unknown, failed: boolean) => void }>;
-      queueMicrotask(() => emitters[message.bridgeId].emit(`${method}-${eventId}`, result, false));
+      const respond = () => emitters[message.bridgeId].emit(`${method}-${eventId}`, result, false);
+      if (method === 'setStorageItem' && storageKey === 'test-toss-native-avatar' && Reflect.get(window, 'testDelayAvatarSave')) Reflect.set(window, 'testResolveAvatarSave', respond);
+      else queueMicrotask(respond);
     } });
   }, { state: createInitialState(), platformOS });
 }

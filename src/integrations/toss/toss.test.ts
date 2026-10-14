@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Device, NavigationBar, SafeArea, Screen, Storage } from '@apps-in-toss/web-framework'
 import { createInitialState } from '../../features/caffeine/model/caffeine'
-import { createRepository, initializeTossSafeArea, isTossRuntime, openTossExternalURL, setOverlaySwipeBack, subscribeTossBack, syncTossNavigationTheme } from './toss'
+import { emptyOutfit } from '../../features/avatar/model/avatar'
+import { AVATAR_STORAGE_KEY } from '../../features/avatar/repository/LocalAvatarRepository'
+import { createAvatarRepository, createRepository, initializeTossSafeArea, isTossRuntime, openTossExternalURL, setOverlaySwipeBack, subscribeTossBack, syncTossNavigationTheme } from './toss'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -17,6 +19,51 @@ function tossWindow() {
 }
 
 describe('Toss runtime boundary', () => {
+  it('persists avatars in the same browser storage using an independent key', async () => {
+    const values = new Map<string, string>()
+    vi.stubGlobal('window', { localStorage: {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, value) },
+      removeItem: (key: string) => { values.delete(key) },
+    } })
+    const nativeSet = vi.spyOn(Storage, 'setItem')
+    await createRepository().save(createInitialState())
+    const caffeineBytes = values.get('caffeine-tracker:state:v1')
+    const outfit = { ...emptyOutfit(), hat: 'hat-crown' }
+    await createAvatarRepository().save(outfit)
+    expect(await createAvatarRepository().load()).toEqual(outfit)
+    await createAvatarRepository().reset()
+    expect(values.has(AVATAR_STORAGE_KEY)).toBe(false)
+    expect(values.get('caffeine-tracker:state:v1')).toBe(caffeineBytes)
+    expect(nativeSet).not.toHaveBeenCalled()
+  })
+
+  it('keeps avatars in native Storage and never falls back after native failures', async () => {
+    const values = new Map<string, string>([['caffeine-tracker:state:v1', 'existing caffeine']])
+    const browserGet = vi.fn()
+    const browserSet = vi.fn()
+    const browserRemove = vi.fn()
+    vi.stubGlobal('window', { ...tossWindow(), localStorage: { getItem: browserGet, setItem: browserSet, removeItem: browserRemove } })
+    const get = vi.spyOn(Storage, 'getItem').mockImplementation(async key => values.get(key) ?? null)
+    const set = vi.spyOn(Storage, 'setItem').mockImplementation(async (key, value) => { values.set(key, value) })
+    const remove = vi.spyOn(Storage, 'removeItem').mockImplementation(async key => { values.delete(key) })
+    const outfit = { ...emptyOutfit(), top: 'top-tee' }
+    const avatar = createAvatarRepository()
+    await avatar.save(outfit)
+    expect(await avatar.load()).toEqual(outfit)
+    expect(set).toHaveBeenCalledExactlyOnceWith(AVATAR_STORAGE_KEY, JSON.stringify({ version: 1, outfit }))
+    await avatar.reset()
+    expect(remove).toHaveBeenCalledExactlyOnceWith(AVATAR_STORAGE_KEY)
+    expect(values.get('caffeine-tracker:state:v1')).toBe('existing caffeine')
+    get.mockRejectedValue(new Error('native read'))
+    set.mockRejectedValue(new Error('native write'))
+    await expect(avatar.load()).rejects.toThrow('꾸미기 정보를 불러오지 못했어요')
+    await expect(avatar.save(outfit)).rejects.toThrow('꾸미기를 저장하지 못했어요')
+    expect(browserGet).not.toHaveBeenCalled()
+    expect(browserSet).not.toHaveBeenCalled()
+    expect(browserRemove).not.toHaveBeenCalled()
+  })
+
   it('opens external research with the native URL API only in Toss', async () => {
     const open = vi.spyOn(Device, 'openURL').mockResolvedValue(undefined)
     const url = 'https://pubmed.ncbi.nlm.nih.gov/19125908/'

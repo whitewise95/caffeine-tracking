@@ -6,7 +6,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: 'http://127.0.0.1:5174',
     locale: 'ko-KR', timezoneId: 'Asia/Seoul',
     trace: 'retain-on-failure',
     channel: process.env.PLAYWRIGHT_BROWSER === 'chromium' ? undefined : 'chrome',
@@ -15,5 +15,5 @@ export default defineConfig({
     { name: 'mobile-375', use: { viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true } },
     { name: 'mobile-390', use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
   ],
-  webServer: { command: 'npm run dev', url: 'http://127.0.0.1:5173', reuseExistingServer: true },
+  webServer: { command: 'npm run dev', url: 'http://127.0.0.1:5174', reuseExistingServer: true },
 });

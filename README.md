@@ -2,7 +2,7 @@
 
 **최근 GitHub 릴리즈: v1.1.0**
 
-현재 브랜치에는 이후 개선 사항도 포함되어 있습니다. 2026년 10월 14일 토스 테스트 버전 `20261014-15`로 등록했으며, 새 GitHub Release나 토스 정식 출시는 아직 진행하지 않았습니다. [테스트 빌드 정보](docs/toss-test-build.md)
+기존 코드의 토스 테스트 버전은 `20261014-15`(2026년 10월 14일 등록)입니다. 이 독립 브랜치에 추가한 젤리 캐릭터 꾸미기는 해당 테스트 버전에 포함되지 않았으며, GitHub Release와 토스 배포를 하지 않았습니다. [기존 테스트 빌드 정보](docs/toss-test-build.md)
 
 마신 음료를 기록하고, 몸에 남아 있을 것으로 추정되는 카페인량을 확인하는 앱입니다.
 
@@ -13,6 +13,14 @@
 현재 추정 잔존량을 액체가 채워지는 캐릭터로 확인해요. 오늘 섭취량, 마지막 섭취 시각과 설정한 취침 시각의 예상 잔존량도 함께 볼 수 있어요.
 
 <img src="docs/screenshots/v1.1.0/home.jpg" alt="현재 추정 잔존 카페인과 오늘의 기록" width="280">
+
+## 젤리 캐릭터 꾸미기
+
+현재 개발 브랜치에서 홈의 옷걸이 ‘꾸미기’ 버튼으로 들어가 모자·안경·상의·하의·신발·소품을 고를 수 있어요. 각 부위에 10종, 총 60종을 처음부터 사용할 수 있으며, 기존 젤리의 유리 질감·액체·표정과 컵을 든 자세 위에 SVG 의상을 합성해요. 썸네일도 실제 착용 그래픽을 사용해요.
+
+선택은 미리보기에 바로 반영하고 ‘적용하기’가 성공하면 홈으로 돌아가요. 부위별 ‘착용 안 함’과 ‘모두 벗기기’도 적용 전까지는 미리보기이며, 뒤로가기는 저장하지 않은 선택을 버려요. 실패하면 미리보기를 유지한 채 재시도할 수 있어요. 착용 상태는 기기에 저장하고 새로고침 후 복원해요. 상점·계정 동기화·사용자 이미지 업로드는 없어요.
+
+이 기능은 아직 GitHub Release나 토스 테스트 버전에 포함하지 않았어요. [구현·검증 기록](docs/jelly-wardrobe.md)
 
 ## 한 잔 기록하기
 
@@ -113,7 +121,7 @@ G(t) = D × exp(−ka × t)
 
 ## 아키텍처
 
-화면, 계산, 저장소, 토스 연동을 나눠 관리합니다. UI는 저장소에 직접 접근하지 않고 `useCaffeine`과 Repository를 통해 기록을 읽고 저장합니다. 음료 편집은 `useCatalogDraft`와 `CatalogDraft`에서 변경을 임시 보관하고, 완료 시 최신 저장 상태에 적용해 편집 중 추가된 기록·설정을 보존합니다. AI 채팅·Supabase 연동은 아직 구현하지 않았습니다.
+화면, 계산, 저장소, 토스 연동을 나눠 관리합니다. UI는 저장소에 직접 접근하지 않고 `useCaffeine`과 Repository를 통해 기록을 읽고 저장합니다. 음료 편집은 `useCatalogDraft`와 `CatalogDraft`에서 변경을 임시 보관하고, 완료 시 최신 저장 상태에 적용해 편집 중 추가된 기록·설정을 보존합니다. 꾸미기는 `useAvatar`와 `AvatarRepository`를 사용하며 같은 플랫폼 저장소의 별도 키에 부위별 아이템 ID만 저장합니다. 카페인 기록·사진·설정 문서는 꾸미기 저장에서 수정하지 않습니다. AI 채팅·Supabase 연동은 아직 구현하지 않았습니다.
 
 ```mermaid
 flowchart TD
@@ -123,6 +131,9 @@ flowchart TD
     Hook --> Repo[CaffeineRepository]
     Repo --> Local[LocalCaffeineRepository · 검증과 데이터 호환]
     Local --> Storage[저장소 어댑터]
+    UI --> Avatar[useAvatar · 저장된 착용 상태]
+    Avatar --> AvatarRepo[LocalAvatarRepository · 독립 키]
+    AvatarRepo --> Storage
     Storage --> Toss[토스 SDK Storage]
     Storage --> Browser[브라우저 localStorage]
 ```
@@ -132,6 +143,7 @@ flowchart TD
 | [src/app/](src/app/) | 앱 구성, 화면 이동과 오버레이 관리 |
 | [src/pages/](src/pages/) | 홈·기록·리포트·카페인 지식·설정 등 화면 |
 | [src/features/insights/](src/features/insights/) | 기간별 리포트, 예상량 그래프와 월간 요약 |
+| [src/features/avatar/](src/features/avatar/) | 60개 아이템 정보·SVG 레이어, 착용 검증·저장·복원 |
 | [src/features/caffeine/components/](src/features/caffeine/components/) | 카페인 시각화와 음료 기록 UI |
 | [src/features/caffeine/model/](src/features/caffeine/model/) | 흡수·제거 계산, 시간·입력 검증과 음료 데이터 처리 |
 | [src/features/caffeine/hooks/](src/features/caffeine/hooks/) | 상태 갱신과 기록 작업, 저장 실패 처리 |

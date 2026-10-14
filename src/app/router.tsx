@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type Page = 'home' | 'remaining' | 'history' | 'insights' | 'knowledge' | 'settings';
+export type Page = 'home' | 'remaining' | 'history' | 'insights' | 'knowledge' | 'settings' | 'wardrobe';
 export type AddCaffeineStep = 'select' | 'layout' | 'record' | 'compose' | 'compose-dose' | 'categories' | 'time-start' | 'time-end';
 export type Overlay = { type: 'add' | 'reset' | 'edit' | 'delete' | 'categories' | 'exit' | 'bedtime'; entryId?: string; initialConsumedAt?: string; key: string; step?: AddCaffeineStep; originDepth?: number } | null;
-interface Route { page: Page; overlay: Overlay; depth: number }
-const paths: Record<Page, string> = { home: '/', remaining: '/remaining', history: '/history', insights: '/insights', knowledge: '/knowledge', settings: '/settings' };
+interface Route { page: Page; overlay: Overlay; depth: number; visit?: string }
+const paths: Record<Page, string> = { home: '/', remaining: '/remaining', history: '/history', insights: '/insights', knowledge: '/knowledge', settings: '/settings', wardrobe: '/wardrobe' };
 
 // Browser history may still contain overlays from an earlier app version.
 function supportedOverlay(value: unknown): Overlay {
@@ -15,6 +15,7 @@ function supportedOverlay(value: unknown): Overlay {
 }
 
 function pageAtLocation(): Page {
+  if (location.pathname.replace(/\/$/, '') === '/wardrobe') return 'wardrobe';
   if (location.pathname.replace(/\/$/, '') === '/remaining') return 'remaining';
   if (location.pathname.replace(/\/$/, '') === '/history') return 'history';
   if (location.pathname.replace(/\/$/, '') === '/insights') return 'insights';
@@ -25,7 +26,7 @@ function pageAtLocation(): Page {
 
 export function useRouter() {
   const [route, setRoute] = useState<Route>(() => {
-    const initial = { page: pageAtLocation(), overlay: null, depth: 0 };
+    const initial = { page: pageAtLocation(), overlay: null, depth: 0, visit: crypto.randomUUID() };
     window.history.replaceState(initial, '', location.href);
     return initial;
   });
@@ -35,7 +36,7 @@ export function useRouter() {
     const sync = () => {
       traversing.current = false;
       const saved = window.history.state as Route | null;
-      const next = { page: pageAtLocation(), overlay: supportedOverlay(saved?.overlay), depth: saved?.depth ?? 0 };
+      const next = { page: pageAtLocation(), overlay: supportedOverlay(saved?.overlay), depth: saved?.depth ?? 0, visit: saved?.visit ?? crypto.randomUUID() };
       current.current = next;
       setRoute(next);
     };
@@ -44,7 +45,7 @@ export function useRouter() {
   }, []);
 
   const push = useCallback((next: Route) => { window.history.pushState(next, '', `${paths[next.page]}${location.search}`); current.current = next; setRoute(next); }, []);
-  function navigate(page: Page) { if (page !== route.page) { push({ page, overlay: null, depth: route.depth + 1 }); window.scrollTo(0, 0); } }
+  function navigate(page: Page) { if (page !== route.page) { push({ page, overlay: null, depth: route.depth + 1, visit: crypto.randomUUID() }); window.scrollTo(0, 0); } }
   function openOverlay(overlay: Omit<NonNullable<Overlay>, 'key'>) {
     push({ ...route, overlay: { ...overlay, key: crypto.randomUUID(), originDepth: route.depth, ...(overlay.type === 'add' ? { step: 'select' as const } : {}) }, depth: route.depth + 1 });
   }
@@ -93,5 +94,11 @@ export function useRouter() {
       setRoute(next);
     }
   }, [push]);
-  return { ...route, navigate, openOverlay, closeOverlay, discardOverlay, changeOverlayStep, back };
+  function finishWardrobe() {
+    // The request belongs to a single visit, including back + immediate re-entry.
+    if (traversing.current || current.current.page !== 'wardrobe' || pageAtLocation() !== 'wardrobe' || current.current.visit !== route.visit) return false;
+    back();
+    return true;
+  }
+  return { ...route, navigate, openOverlay, closeOverlay, discardOverlay, changeOverlayStep, back, finishWardrobe };
 }

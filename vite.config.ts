@@ -4,6 +4,7 @@ import aitDevtools from '@apps-in-toss/devtools/unplugin';
 
 export default defineConfig(({ mode }) => ({
   plugins: [...(mode === 'toss' ? [aitDevtools.vite()] : []), react()],
-  server: { host: '0.0.0.0', port: 5173, strictPort: true },
+  server: { host: '0.0.0.0', port: 5174, strictPort: true },
+  preview: { host: '0.0.0.0', port: 5174, strictPort: true },
   test: { include: ['src/**/*.test.ts'], environment: 'node' },
 }));
