@@ -3,7 +3,7 @@
 .intake-note-heading label { color: var(--text-secondary); font-size: .8125rem; }
 .intake-note-heading label span { margin-left: 6px; color: var(--text-tertiary); font-size: .75rem; }
 .intake-note-count { color: var(--text-secondary); font-size: .75rem; font-variant-numeric: tabular-nums; }
-.intake-note-field textarea { display: block; width: 100%; min-width: 0; min-height: 80px; padding: 12px 14px; resize: vertical; border: 0; border-radius: var(--radius-sm); background: var(--surface-elevated); color: var(--text-primary); font: inherit; font-size: 1rem; line-height: 1.5; scroll-margin-block: 16px; }
+.intake-note-field textarea { display: block; width: 100%; min-width: 0; min-height: 80px; padding: 12px 14px; resize: none; appearance: none; border: 0; border-radius: var(--radius-sm); box-shadow: none; background: var(--surface-elevated); color: var(--text-primary); font: inherit; font-size: 1rem; line-height: 1.5; scroll-margin-block: 16px; }
 .intake-note-field textarea::placeholder { color: var(--text-secondary); }
 .intake-note-field textarea:focus-visible { outline: none; }
 .intake-note-field:has(textarea:focus-visible) .intake-note-heading label { color: var(--text-primary); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }

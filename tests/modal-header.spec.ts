@@ -25,7 +25,7 @@ test('root sheets show close while every drink and time step shows only back', a
   await expectHeader(sheet);
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
   await expectHeader(sheet, '음료 목록으로 돌아가기');
-  await page.getByRole('button', { name: '마시기 시작한 시각', exact: true }).click();
+  await page.getByRole('button', { name: '마신 시각', exact: true }).click();
   await expectHeader(sheet, '기록 화면으로 돌아가기');
   await page.keyboard.press('Escape');
   await expectHeader(sheet, '음료 목록으로 돌아가기');
@@ -35,7 +35,7 @@ test('root sheets show close while every drink and time step shows only back', a
   await page.getByRole('button', { name: '아메리카노 기록 수정', exact: true }).click();
   const edit = page.locator('.sheet-dialog--edit');
   await expectHeader(edit);
-  await page.getByRole('button', { name: '마신 마지막 시각', exact: true }).click();
+  await page.getByRole('button', { name: '마신 시각', exact: true }).click();
   await expectHeader(edit, '기록 화면으로 돌아가기');
   await page.keyboard.press('Escape');
   await expectHeader(edit);

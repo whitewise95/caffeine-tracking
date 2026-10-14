@@ -41,7 +41,6 @@ export function CaffeineDoseControl({ value, disabled, onChange, inputId, inputR
     </div>
     <div className="sheet-dose-slider">
       <input type="range" style={{ '--dose-progress': `${numericValue / MAX_CAFFEINE_MG * 100}%` } as CSSProperties} aria-label="카페인량 조절" aria-valuetext={`${numericValue}mg`} min={0} max={MAX_CAFFEINE_MG} step={1} value={numericValue} disabled={disabled} onChange={event => onChange(event.target.value)} />
-      <div className="sheet-dose-limits" aria-hidden="true"><span>0 mg</span><span>{MAX_CAFFEINE_MG} mg</span></div>
     </div>
   </div>
 }

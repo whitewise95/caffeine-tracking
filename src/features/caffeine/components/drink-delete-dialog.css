@@ -7,4 +7,4 @@
 .drink-delete-dialog-actions button { flex: 1 1 110px; min-width: 0; min-height: 48px; }
 .drink-delete-dialog-actions .button-primary { background: var(--danger); color: var(--bg); }
 .drink-delete-dialog button:disabled { opacity: .4; cursor: default; }
-.drink-delete-dialog button:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 3px; }
+.drink-delete-dialog button:focus-visible { outline: 2px solid var(--accent-pink); outline-offset: var(--focus-ring-offset); }

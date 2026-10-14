@@ -1,16 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { pickTime } from './helpers/time-picker';
 
-test('recording and editing share visible start and end dates, time pickers and dose controls', async ({ page }, info) => {
+test('recording and editing share intake modes, time pickers and dose controls', async ({ page }, info) => {
   await page.clock.install({ time: new Date('2026-10-12T10:15:00+09:00') });
   await page.goto('/');
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
   await expect(page.getByRole('switch', { name: '천천히 마셨어요' })).toHaveCount(0);
-  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveValue('2026-10-12');
-  await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveValue('2026-10-12');
-  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 10:15');
-  await expect(page.getByRole('button', { name: '마신 마지막 시각', exact: true })).toHaveText('오전 10:15');
+  await expect(page.getByLabel('마신 날짜', { exact: true })).toHaveValue('2026-10-12');
+  await expect(page.getByRole('button', { name: '마신 시각', exact: true })).toContainText('오전 10:15');
   await page.screenshot({ path: info.outputPath('record-range-defaults.png') });
   await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -18,9 +16,7 @@ test('recording and editing share visible start and end dates, time pickers and 
   expect(original.startedAt).toBeUndefined();
   await page.getByRole('navigation').getByRole('button', { name: '기록', exact: true }).click();
   await page.getByRole('button', { name: '아메리카노 기록 수정', exact: true }).click();
-  await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveValue('2026-10-12');
-  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toHaveText('오전 10:15');
-  await expect(page.getByRole('button', { name: '마신 마지막 시각', exact: true })).toHaveText('오전 10:15');
+  await expect(page.getByRole('button', { name: '마신 시각', exact: true })).toContainText('오전 10:15');
   await page.getByRole('button', { name: '카페인량 1mg 늘리기', exact: true }).click();
   await page.getByRole('button', { name: '수정 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -28,8 +24,9 @@ test('recording and editing share visible start and end dates, time pickers and 
   expect(edited).toMatchObject({ caffeineMg: 151, consumedAt: original.consumedAt });
   expect(edited.startedAt).toBeUndefined();
   await page.getByRole('button', { name: '아메리카노 기록 수정', exact: true }).click();
+  await page.getByRole('button', { name: '천천히 마시기', exact: true }).click();
   await pickTime(page, '마시기 시작한 시각', '09:15');
-  await expect(page.getByRole('status', { name: '마신 기간' })).toHaveText('1시간 동안');
+  await expect(page.getByRole('status', { name: '마신 기간' })).toHaveText('30분 동안');
   await page.screenshot({ path: info.outputPath('edit-range.png') });
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
   const save = page.getByRole('button', { name: '수정 저장', exact: true });
@@ -38,5 +35,5 @@ test('recording and editing share visible start and end dates, time pickers and 
   expect(await page.getByRole('dialog').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
   await save.click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  await expect(page.locator('.entry-intake-period')).toHaveText('09:15 – 10:15');
+  await expect(page.locator('.entry-intake-period')).toHaveText('09:15 – 09:45');
 });

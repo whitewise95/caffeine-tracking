@@ -51,10 +51,8 @@ test('journal filters local dates and updates the calendar after moving and dele
   await expect(page.getByTestId('daily-count')).toHaveText('1');
   await page.getByRole('button', { name: '녹차 기록 수정' }).click();
   await page.getByLabel('카페인량 (mg)').fill('45');
-  await page.getByLabel('마신 마지막 날짜', { exact: true }).fill('2024-03-01');
-  await pickTime(page, '마신 마지막 시각', '09:00');
-  await page.getByLabel('마시기 시작한 날짜', { exact: true }).fill('2024-03-01');
-  await pickTime(page, '마시기 시작한 시각', '09:00');
+  await page.getByLabel('마신 날짜', { exact: true }).fill('2024-03-01');
+  await pickTime(page, '마신 시각', '09:00');
   await page.getByRole('button', { name: '수정 저장' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(leapDay).toHaveAttribute('aria-pressed', 'true');

@@ -62,7 +62,7 @@ test('cancel and back leave a custom drink unchanged and preserve the record dra
   await page.getByRole('button', { name: '음료 삭제', exact: true }).click();
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await expect(page.locator('.quick-adjust-amount')).toHaveText('68mg');
-  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '마신 시각', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '음료 삭제', exact: true })).toBeFocused();
   await page.getByRole('button', { name: '음료 삭제', exact: true }).click();
   await page.goBack();

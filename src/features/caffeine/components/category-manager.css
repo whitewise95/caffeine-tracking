@@ -53,7 +53,7 @@
 .category-manager .category-manager-reorder { transition: none; }
 .category-manager .category-manager-reorder:active:not(:disabled) { transform: none; background: transparent; }
 .category-manager .button-primary:not(:disabled):active { opacity: .8; background: var(--text-primary); }
-:is(.category-manager, .category-action-sheet) :is(button, input, select):focus-visible { outline: 2px solid var(--accent-pink); outline-offset: 3px; }
+:is(.category-manager, .category-action-sheet) :is(button, input, select):focus-visible { outline: 2px solid var(--accent-pink); outline-offset: var(--focus-ring-offset); }
 .category-manager-item.is-dragging .category-manager-reorder:focus-visible { outline: none; }
 @media (max-width: 375px) {
   .category-manager-scroll { padding-inline: 20px; }

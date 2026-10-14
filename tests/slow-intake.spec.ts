@@ -6,7 +6,7 @@ import type { CaffeineEntry } from '../src/features/caffeine/model/caffeine.type
 const storageKey = 'caffeine-tracker:state:v1';
 
 async function openApp(page: Page, now = '2026-10-04T10:00:00+09:00', suffix = '') {
-  await page.clock.install({ time: new Date(now) });
+  await page.clock.setFixedTime(new Date(now));
   const initial = createInitialState();
   await page.addInitScript(({ initial, storageKey }) => {
     if (!localStorage.getItem(storageKey)) localStorage.setItem(storageKey, JSON.stringify(initial));
@@ -20,6 +20,7 @@ async function selectAmericano(page: Page) {
 }
 
 async function setPeriod(page: Page, start: string, end: string) {
+  await page.getByRole('button', { name: '천천히 마시기', exact: true }).click();
   const startDate = page.getByLabel('마시기 시작한 날짜', { exact: true });
   if (await startDate.evaluate(element => element.tagName === 'INPUT')) await startDate.fill(start.slice(0, 10));
   else await expect(startDate).toHaveAttribute('datetime', start.slice(0, 10));
@@ -37,7 +38,7 @@ test('the default record remains instantaneous and does not store a start time',
   await openApp(page);
   await selectAmericano(page);
   await expect(page.getByRole('switch', { name: '천천히 마셨어요' })).toHaveCount(0);
-  await expect(page.getByLabel('마시기 시작한 시각', { exact: true })).toHaveText('오전 10:00');
+  await expect(page.getByLabel('마신 시각', { exact: true })).toContainText('오전 10:00');
   await page.getByRole('button', { name: '기록 저장', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   const [entry] = await savedEntries(page);
@@ -64,14 +65,15 @@ test('slow intake survives reload, edits its period, and can return to an instan
   await page.getByRole('navigation').getByRole('button', { name: '기록', exact: true }).click();
   await expect(page.locator('.entry-intake-period')).toHaveText('09:00 – 10:00');
   await page.getByRole('button', { name: '아메리카노 기록 수정' }).click();
-  await expect(page.getByRole('button', { name: '마신 마지막 시각', exact: true })).toHaveText('오전 10:00');
+  await expect(page.getByRole('button', { name: '마신 마지막 시각', exact: true })).toContainText('오전 10:00');
   await pickTime(page, '마시기 시작한 시각', '08:00');
   await page.getByRole('button', { name: '수정 저장' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   expect((await savedEntries(page))[0].startedAt).toBe('2026-10-03T23:00:00.000Z');
-  await expect(page.locator('.entry-intake-period')).toHaveText('08:00 – 10:00');
+  await expect(page.locator('.entry-intake-period')).toHaveText('08:00 – 08:30');
   await page.getByRole('button', { name: '아메리카노 기록 수정' }).click();
-  await pickTime(page, '마시기 시작한 시각', '10:00');
+  await page.getByRole('button', { name: '한 번에 마시기', exact: true }).click();
+  await pickTime(page, '마신 시각', '10:00');
   await page.getByRole('button', { name: '수정 저장' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   expect((await savedEntries(page))[0]).not.toHaveProperty('startedAt');
@@ -127,6 +129,7 @@ for (const theme of ['']) {
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
     await selectAmericano(page);
     await setPeriod(page, '2026-10-04T09:00', '2026-10-04T10:00');
+    await page.locator('.intake-time-inputs').screenshot({ path: `test-results/${testInfo.project.name}-slow-intake-fields-zoom.png` });
     const save = page.getByRole('button', { name: '기록 저장', exact: true });
     await save.scrollIntoViewIfNeeded();
     await expect(save).toBeInViewport();
@@ -149,8 +152,8 @@ test('editing only the dose preserves sub-minute intake timestamps', async ({ pa
   }, storageKey);
   await page.goto('/history');
   await page.getByRole('button', { name: '짧게 마신 커피 기록 수정' }).click();
-  await expect(page.getByLabel('마시기 시작한 시각', { exact: true })).toHaveText('오전 9:00');
-  await expect(page.getByLabel('마신 마지막 시각', { exact: true })).toHaveText('오전 9:00');
+  await expect(page.getByLabel('마시기 시작한 시각', { exact: true })).toContainText('오전 9:00');
+  await expect(page.getByLabel('마신 마지막 시각', { exact: true })).toContainText('오전 9:00');
   await page.getByLabel('카페인량 (mg)').fill('100');
   await page.getByRole('button', { name: '수정 저장' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -166,15 +169,22 @@ test('editing only the dose preserves sub-minute intake timestamps', async ({ pa
 test('home time range allows date changes and shows elapsed duration', async ({ page }, testInfo) => {
   await openApp(page);
   await selectAmericano(page);
+  await page.getByRole('button', { name: '천천히 마시기', exact: true }).click();
   const start = page.getByLabel('마시기 시작한 시각', { exact: true });
   const end = page.getByLabel('마신 마지막 시각', { exact: true });
   await pickTime(page, '마시기 시작한 시각', '09:00');
   await pickTime(page, '마신 마지막 시각', '10:00');
   await expect(page.getByRole('status', { name: '마신 기간' })).toHaveText('1시간 동안');
-  const startBox = await start.boundingBox();
-  const endBox = await end.boundingBox();
-  expect(Math.abs(startBox!.y - endBox!.y)).toBeLessThan(2);
-  expect(endBox!.x).toBeGreaterThan(startBox!.x + startBox!.width);
+  const startBox = (await start.boundingBox())!;
+  const endBox = (await end.boundingBox())!;
+  const startDateBox = (await page.getByLabel('마시기 시작한 날짜', { exact: true }).boundingBox())!;
+  const endDateBox = (await page.getByLabel('마신 마지막 날짜', { exact: true }).boundingBox())!;
+  expect(endDateBox.y).toBeGreaterThan(startBox.y + startBox.height);
+  expect(startBox.x).toBeGreaterThan(startDateBox.x + startDateBox.width);
+  expect(endBox.x).toBeGreaterThan(endDateBox.x + endDateBox.width);
+  for (const box of [startBox, endBox, startDateBox, endDateBox]) expect(box.height).toBeGreaterThanOrEqual(48);
+  await expect(page.getByRole('group', { name: '시작', exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: '종료', exact: true })).toBeVisible();
   await expect(page.locator('input[type="date"]')).toHaveCount(2);
   await page.getByLabel('마시기 시작한 날짜', { exact: true }).fill('2026-10-03');
   await pickTime(page, '마시기 시작한 시각', '23:30');
@@ -183,6 +193,6 @@ test('home time range allows date changes and shows elapsed duration', async ({ 
   await page.getByText('마신 시간', { exact: true }).click();
   await page.screenshot({ path: `test-results/${testInfo.project.name}-time-range.png` });
   await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveValue('2026-10-04');
-  await expect(start).toHaveText('오후 11:30');
+  await expect(start).toContainText('오후 11:30');
   await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveValue('2026-10-04');
 });

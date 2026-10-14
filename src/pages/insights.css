@@ -57,7 +57,7 @@
 .report-intake-frame { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 12px; row-gap: 12px; }
 .report-intake-y-axis { height: 164px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; color: var(--text-tertiary); font-size: .6875rem; font-variant-numeric: tabular-nums; line-height: 1; }
 .report-chart-window { grid-column: 2; min-width: 0; }
-.report-chart-viewport { overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-x pan-y; cursor: grab; outline-offset: -2px; scrollbar-width: none; }
+.report-chart-viewport { overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-x pan-y; cursor: grab; outline-offset: var(--focus-ring-offset); scrollbar-width: none; }
 .report-chart-viewport::-webkit-scrollbar { display: none; }
 .report-chart-viewport:focus-visible { outline-color: var(--accent-pink); }
 .report-chart-viewport:active { cursor: grabbing; }

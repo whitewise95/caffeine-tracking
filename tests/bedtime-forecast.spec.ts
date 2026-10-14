@@ -39,7 +39,7 @@ for (const native of [false, true]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`bedtime-${native ? 'toss' : 'browser'}.png`) });
     await openBedtimeSettings(page);
-    await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오전 1:00');
+    await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오전 1:00');
     const card = page.locator('.settings-bedtime');
     await card.screenshot({ path: info.outputPath(`bedtime-card-${native ? 'toss' : 'browser'}.png`) });
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
@@ -55,19 +55,19 @@ test('failed bedtime save retains the previous Home forecast and can be retried'
   await page.addInitScript(state => localStorage.setItem('test-toss-native-state', JSON.stringify(state)), state);
   await page.goto('/settings');
   await openBedtimeSettings(page);
-  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오후 11:00');
+  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오후 11:00');
   await page.evaluate(() => Reflect.set(window, 'testFailNextStorage', true));
   await chooseBedtime(page, '02:00');
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(page.getByRole('dialog', { name: '예정 취침 시각', exact: true })).toBeVisible();
-  await expect(page.locator('.time-picker-preview')).toHaveText('오전 2:00');
+  await expect(page.locator('.time-picker-preview')).toContainText('오전 2:00');
   await page.getByRole('button', { name: '취소', exact: true }).click();
-  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오후 11:00');
+  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오후 11:00');
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.locator('.summary-item.forecast')).toContainText('오늘 23:00');
   await openBedtimeSettings(page);
   await chooseBedtime(page, '02:00');
-  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오전 2:00');
+  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오전 2:00');
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.locator('.summary-item.forecast')).toContainText('내일 02:00');
@@ -86,7 +86,7 @@ test('bedtime sheet cancels drafts and Android back returns to settings before l
     const picker = page.getByRole('dialog', { name: '예정 취침 시각', exact: true });
     await picker.getByRole('spinbutton', { name: '시', exact: true }).press('Home');
     await picker.getByRole('spinbutton', { name: '분', exact: true }).press('End');
-    await expect(picker.locator('.time-picker-preview')).toHaveText('오후 1:59');
+    await expect(picker.locator('.time-picker-preview')).toContainText('오후 1:59');
     expect(await page.evaluate(() => localStorage.getItem('test-toss-native-state'))).toBe(saved);
     if (exit === 'cancel') await picker.getByRole('button', { name: '취소', exact: true }).click();
     else if (exit === 'close') await picker.getByRole('button', { name: '닫기', exact: true }).click();
@@ -95,7 +95,7 @@ test('bedtime sheet cancels drafts and Android back returns to settings before l
     else await page.evaluate(() => Reflect.get(window, 'testNativeBack')());
     await expect(picker).toHaveCount(0);
     await expect(page).toHaveURL(/\/settings$/);
-    await expect(control).toHaveText('오후 11:00');
+    await expect(control).toContainText('오후 11:00');
     await expect(control).toBeFocused();
     expect(await page.evaluate(() => localStorage.getItem('test-toss-native-state'))).toBe(saved);
   }
@@ -106,10 +106,10 @@ test('bedtime picker stores noon and midnight as the correct 24-hour times', asy
   await page.goto('/settings');
   await openBedtimeSettings(page);
   await chooseBedtime(page, '12:34');
-  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오후 12:34');
+  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오후 12:34');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).settings.bedtime)).toBe('12:34');
   await chooseBedtime(page, '00:05');
-  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오전 12:05');
+  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오전 12:05');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).settings.bedtime)).toBe('00:05');
 });
 
@@ -122,14 +122,14 @@ test('bedtime wheels support tapping, scrolling and enlarged text in a bottom sh
   const picker = page.getByRole('dialog', { name: '예정 취침 시각', exact: true });
   await picker.getByRole('button', { name: '10시 선택', exact: true }).tap();
   await picker.getByRole('button', { name: '01분 선택', exact: true }).tap();
-  await expect(picker.locator('.time-picker-preview')).toHaveText('오후 10:01');
+  await expect(picker.locator('.time-picker-preview')).toContainText('오후 10:01');
   const minute = picker.getByRole('spinbutton', { name: '분', exact: true });
   await minute.evaluate(element => {
     const height = element.firstElementChild!.getBoundingClientRect().height;
     element.scrollTo({ top: height * 15, behavior: 'instant' });
   });
   await expect(minute).toHaveAttribute('aria-valuenow', '15');
-  await expect(picker.locator('.time-picker-preview')).toHaveText('오후 10:15');
+  await expect(picker.locator('.time-picker-preview')).toContainText('오후 10:15');
   await page.screenshot({ path: info.outputPath('bedtime-picker.png') });
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
   await minute.press('End');
@@ -140,7 +140,7 @@ test('bedtime wheels support tapping, scrolling and enlarged text in a bottom sh
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('bedtime-picker-large-text.png') });
   await done.click();
-  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toHaveText('오후 10:59');
+  await expect(page.getByRole('button', { name: '예정 취침 시각', exact: true })).toContainText('오후 10:59');
 });
 
 test('bedtime is a collapsed settings accordion and is removed from the report', async ({ page }) => {

@@ -55,7 +55,7 @@ export function EditEntryForm({ entry, photoDataUrl, busy, step, onStepChange, o
     }
   }
 
-  return <BottomSheet className="sheet-dialog--add sheet-dialog--edit" title={isPicker ? (target === 'start' ? '시작 시간 선택' : '종료 시간 선택') : '기록 수정'} onClose={onClose} onBack={isPicker ? onBack : undefined} backLabel="기록 화면으로 돌아가기" onCancel={isPicker ? onBack : undefined}>
+  return <BottomSheet className="sheet-dialog--add sheet-dialog--edit" title={isPicker ? (target === 'start' ? '시작 시간 선택' : intakeTime.draft.slow ? '종료 시간 선택' : '마신 시간 선택') : '기록 수정'} onClose={onClose} onBack={isPicker ? onBack : undefined} backLabel="기록 화면으로 돌아가기" onCancel={isPicker ? onBack : undefined}>
     {storageError && <div className="error-message" role="alert">{storageError}</div>}
     <div className={`sheet-step sheet-step--${step}`}>
     {isPicker ? <IntakeTimePicker key={step} value={intakeTime.draft[target].split('T')[1] ?? ''} onCancel={onBack} onDone={time => { intakeTime.pickTime(target, time); setError(''); onBack(); }} /> : <form ref={formRef} className="quick-adjust" noValidate onSubmit={event => { event.preventDefault(); void save(); }}>
@@ -63,7 +63,7 @@ export function EditEntryForm({ entry, photoDataUrl, busy, step, onStepChange, o
     <div className="quick-adjust-content">
     <label className="sr-only" htmlFor={doseId}>카페인량 (mg)</label>
     <CaffeineDoseControl inputId={doseId} value={mg} disabled={disabled} onChange={value => { setMg(value); setError(''); }} />
-    <IntakeTimeFields onPickTime={target => { returnFocus.current = target === 'start' ? '마시기 시작한 시각' : '마신 마지막 시각'; onStepChange(target === 'start' ? 'time-start' : 'time-end'); }} draft={intakeTime.draft} disabled={disabled} onChange={draft => { intakeTime.setDraft(draft); setError(''); }} />
+    <IntakeTimeFields onPickTime={target => { returnFocus.current = target === 'start' ? '마시기 시작한 시각' : intakeTime.draft.slow ? '마신 마지막 시각' : '마신 시각'; onStepChange(target === 'start' ? 'time-start' : 'time-end'); }} draft={intakeTime.draft} disabled={disabled} onChange={draft => { intakeTime.setDraft(draft); setError(''); }} />
     <IntakeNoteField value={note} disabled={disabled} onChange={value => { setNote(value); setError(''); }} />
     {error && <p className="field-error" role="alert">{error}</p>}
     <button className="button-primary quick-adjust-record" disabled={disabled}>{disabled ? '저장하는 중…' : '수정 저장'}</button>

@@ -11,8 +11,9 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 button:disabled { opacity: .4; cursor: not-allowed; }
 button { color: inherit; }
 a { color: inherit; }
-button, input, select { outline-offset: 4px; }
-:focus-visible { outline: 2px solid var(--text-primary); }
+/* Also contain the browser's native outline before :focus-visible is painted. */
+button, input, select, textarea, a, summary, [tabindex] { outline-offset: var(--focus-ring-offset); }
+:focus-visible { outline: 2px solid var(--text-primary); outline-offset: var(--focus-ring-offset); }
 .external-link-error { display: block; flex-basis: 100%; margin-top: 8px; color: var(--danger); font-size: var(--font-xs); line-height: 1.7; overflow-wrap: anywhere; }
 /* Route/sheet headings receive announcement focus, but are not input controls. */
 .page-title[tabindex='-1']:focus, .sheet-header h2[tabindex='-1']:focus { outline: none; }

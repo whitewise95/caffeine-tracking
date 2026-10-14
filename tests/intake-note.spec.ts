@@ -63,6 +63,7 @@ test('a past-date slow intake preserves its memo through the time picker', async
   await page.getByRole('button', { name: /^2026년 10월 3일/ }).click()
   await openRecord(page)
   await page.getByRole('textbox', { name: '메모', exact: true }).fill('이동하면서 천천히 마셨어요')
+  await page.getByRole('button', { name: '천천히 마시기', exact: true }).click()
   await page.getByRole('button', { name: '마시기 시작한 시각', exact: true }).click()
   await page.goBack()
   await expect(page.getByRole('textbox', { name: '메모', exact: true })).toHaveValue('이동하면서 천천히 마셨어요')

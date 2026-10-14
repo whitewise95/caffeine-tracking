@@ -7,9 +7,13 @@ export function localDateTimeInput(date: Date) {
   return `${localDateKey(date)}T${formatTime(date)}`
 }
 
+const DEFAULT_DURATION_MS = 30 * 60_000
+
 export interface IntakeTimeDraft {
+  slow: boolean
   start: string
   end: string
+  endManuallyChanged: boolean
 }
 
 export function parseLocalDateTime(value: string) {
@@ -21,26 +25,53 @@ export function parseLocalDateTime(value: string) {
 export function useIntakeTimeFields(initial?: CaffeineIntakeTiming) {
   const original = useRef<CaffeineIntakeTiming>(initial ?? { consumedAt: new Date().toISOString() })
   const picked = useRef(new Set<IntakeTimeTarget>())
-  const [draft, setDraft] = useState<IntakeTimeDraft>(() => {
+  const [draft, updateDraft] = useState<IntakeTimeDraft>(() => {
     const end = new Date(original.current.consumedAt)
     return {
+      slow: Boolean(initial?.startedAt),
       start: localDateTimeInput(original.current.startedAt ? new Date(original.current.startedAt) : end),
       end: localDateTimeInput(end),
+      endManuallyChanged: false,
     }
   })
 
+  function setDraft(next: IntakeTimeDraft) {
+    // This flag belongs to the current form session, not the stored record.
+    // Keep it sticky even if the user later restores the original finish.
+    next = { ...next, endManuallyChanged: draft.endManuallyChanged || (draft.slow && next.slow && next.end !== draft.end) }
+    if (next.slow && !draft.slow) {
+      const end = parseLocalDateTime(next.end)
+      updateDraft(end ? { ...next, start: localDateTimeInput(new Date(end.getTime() - DEFAULT_DURATION_MS)) } : next)
+      return
+    }
+    if (next.slow && next.start !== draft.start) {
+      picked.current.add('start')
+      const start = parseLocalDateTime(next.start)
+      if (start && !next.endManuallyChanged) {
+        const now = new Date()
+        const suggestedEnd = start.getTime() + DEFAULT_DURATION_MS
+        const end = start.getTime() <= now.getTime() ? Math.min(suggestedEnd, now.getTime()) : suggestedEnd
+        picked.current.add('end')
+        updateDraft({ ...next, end: localDateTimeInput(new Date(end)) })
+        return
+      }
+    }
+    if (next.end !== draft.end) picked.current.add('end')
+    updateDraft(next.slow ? next : { ...next, start: next.end })
+  }
+
   function pickTime(target: IntakeTimeTarget, time: string) {
+    setDraft({ ...draft, [target]: `${draft[target].split('T')[0]}T${time}` })
     picked.current.add(target)
-    setDraft(previous => ({ ...previous, [target]: `${previous[target].split('T')[0]}T${time}` }))
   }
 
   function refreshDefault() {
-    if (initial || picked.current.size > 0) return
+    if (initial || draft.slow || picked.current.size > 0) return
     const previous = localDateTimeInput(new Date(original.current.consumedAt))
     if (draft.start !== previous || draft.end !== previous) return
     const now = new Date()
     original.current = { consumedAt: now.toISOString() }
-    setDraft({ start: localDateTimeInput(now), end: localDateTimeInput(now) })
+    updateDraft({ slow: false, start: localDateTimeInput(now), end: localDateTimeInput(now), endManuallyChanged: false })
   }
 
   function resolveTiming(now = new Date()): { timing: CaffeineIntakeTiming; error?: never } | { error: string; timing?: never } {
@@ -48,8 +79,9 @@ export function useIntakeTimeFields(initial?: CaffeineIntakeTiming) {
     const originalEnd = new Date(original.current.consumedAt)
     const end = draft.end === localDateTimeInput(originalEnd) && !picked.current.has('end') ? originalEnd : parseLocalDateTime(draft.end)
     if (!end || end.getTime() > now.getTime()) {
-      return { error: '마신 마지막 시각을 현재 또는 과거로 입력해 주세요.' }
+      return { error: draft.slow ? '마신 마지막 시각을 현재 또는 과거로 입력해 주세요.' : '현재 또는 과거의 섭취 시각을 입력해 주세요.' }
     }
+    if (!draft.slow) return { timing: { consumedAt: end.toISOString(), startedAt: undefined } }
     const originalStart = original.current.startedAt ? new Date(original.current.startedAt) : originalEnd
     const start = draft.start === localDateTimeInput(originalStart) && !picked.current.has('start') ? originalStart : parseLocalDateTime(draft.start)
     if (!start) return { error: '마시기 시작한 시각을 입력해 주세요.' }

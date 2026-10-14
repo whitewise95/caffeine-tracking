@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { displayIntakeTime } from './intakeTimeFormat'
+import { useTimeWheelGesture } from './useTimeWheelGesture'
 import './time-picker.css'
 
 export type IntakeTimeTarget = 'start' | 'end'
@@ -19,8 +20,16 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
   const latest = useRef(selected)
   const fromScroll = useRef<number | null>(null)
   latest.current = selected
+  function updateFromScroll(index: number) {
+    if (disabled || index === latest.current) return
+    fromScroll.current = index
+    latest.current = index
+    onChange(index)
+  }
+  const { stop, ...gestures } = useTimeWheelGesture(ref, options.length, disabled, updateFromScroll)
   function rowHeight() { return ref.current?.firstElementChild?.getBoundingClientRect().height || 48 }
   function select(index: number) {
+    stop()
     const next = Math.max(0, Math.min(options.length - 1, index))
     latest.current = next
     fromScroll.current = null
@@ -35,11 +44,12 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
     const row = ref.current?.firstElementChild
     if (!row) return
     const observer = new ResizeObserver(() => {
+      stop()
       ref.current?.scrollTo({ top: latest.current * rowHeight(), behavior: 'instant' })
     })
     observer.observe(row)
     return () => observer.disconnect()
-  }, [])
+  }, [stop])
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (disabled) return
     const delta: Record<string, number> = { ArrowUp: 1, ArrowDown: -1, PageUp: 10, PageDown: -10 }
@@ -54,15 +64,13 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
     <div className="time-wheel-frame">
       <div className="time-wheel-selection" aria-hidden="true" />
       <div ref={ref} className="time-wheel" role="spinbutton" tabIndex={disabled ? -1 : 0} aria-label={label} aria-disabled={disabled}
+        {...gestures}
         aria-valuemin={label === '시' ? 1 : 0} aria-valuemax={label === '시' ? 12 : options.length - 1}
         aria-valuenow={label === '시' ? selected + 1 : selected} aria-valuetext={`${options[selected]}${label === '오전·오후' ? '' : label}`}
         onKeyDown={onKeyDown} onScroll={event => {
           if (disabled) return
           const index = Math.max(0, Math.min(options.length - 1, Math.round(event.currentTarget.scrollTop / rowHeight())))
-          if (index === latest.current) return
-          fromScroll.current = index
-          latest.current = index
-          onChange(index)
+          updateFromScroll(index)
         }}>
         {options.map((option, index) => <button type="button" key={option} tabIndex={-1} disabled={disabled}
           className={`time-wheel-option${index === selected ? ' is-selected' : ''}`}
