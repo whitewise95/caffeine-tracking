@@ -18,12 +18,13 @@ async function openHomeWithLastIntake(page: import('@playwright/test').Page, con
   await page.goto('/');
 }
 
-test('last intake hides its date when it was recorded today', async ({ page }) => {
+test('last intake hides its date when it was recorded today', async ({ page }, testInfo) => {
   await openHomeWithLastIntake(page, '2026-10-15T00:05:00+09:00');
 
   const summary = page.getByRole('region', { name: '카페인 기록 요약' });
   await expect(summary.getByText('00:05', { exact: true })).toBeVisible();
   await expect(summary.locator('.summary-date')).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('today-without-date.png'), animations: 'disabled' });
 });
 
 test('last intake shows its date when it was recorded on a previous day', async ({ page }) => {
