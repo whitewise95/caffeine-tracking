@@ -28,7 +28,6 @@
 .wardrobe-error { color: var(--danger); font-size: var(--font-sm); margin-bottom: 10px; }
 .wardrobe-load { padding: 24px; display: grid; gap: 16px; justify-items: start; }
 .wardrobe-home-button { align-self: flex-end; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-secondary); font-size: var(--font-xs); }
-.caffeine-hero > .wardrobe-home-button { margin-block: 2px 0; z-index: 1; }
 @media (hover: hover) { .wardrobe-item:hover, .wardrobe-home-button:hover { background: var(--surface-pressed); } }
 @media (max-height: 600px) {
   .wardrobe-page { height: auto; min-height: calc(100dvh - var(--safe-top)); }

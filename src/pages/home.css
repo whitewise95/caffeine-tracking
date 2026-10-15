@@ -7,6 +7,11 @@
 .home-heading .brand-mark { flex-shrink: 0; }
 .home-heading .header-date { padding-left: 38px; }
 .caffeine-hero { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.avatar-home-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin-block: 2px 0; z-index: 1; }
+.avatar-home-controls .wardrobe-home-button { margin-left: auto; align-self: center; flex-shrink: 0; }
+.avatar-outfit-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; max-width: 100%; padding: 8px 4px; color: var(--text-secondary); font-size: var(--font-xs); line-height: 1.5; text-align: left; cursor: pointer; }
+.avatar-outfit-toggle input { width: 18px; height: 18px; min-height: 18px; flex: 0 0 18px; margin: 0; padding: 0; accent-color: var(--accent-pink); cursor: pointer; }
+.avatar-outfit-toggle input:checked + span { color: var(--accent-pink-strong); }
 .hero-reading { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; max-width: 100%; min-height: 48px; padding: 8px 12px; }
 .hero-amount { display: inline-flex; align-items: baseline; gap: 4px; line-height: 1.2; font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
 .hero-unit { color: var(--text-secondary); font-size: 0.75rem; font-weight: 400; letter-spacing: 0; }

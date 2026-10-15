@@ -35,6 +35,8 @@ export function App() {
   const router = useRouter();
   const [toast, setToast] = useState('');
   const [intakePulse, setIntakePulse] = useState(0);
+  // A temporary home preference; the saved outfit remains available to edit.
+  const [outfitHidden, setOutfitHidden] = useState(false);
   const [reportHistoryDay, setReportHistoryDay] = useState<string | undefined>();
   const [pendingTab, setPendingTab] = useState<Page | null>(null);
   const tabNavigationLocked = useRef(false);
@@ -108,7 +110,7 @@ export function App() {
   return <div className="app-shell">
     {caffeine.error && !overlay && <div className="error-message" role="alert">{caffeine.error}</div>}
     {caffeine.loading ? <main className="loading-state" role="status">나의 기록을 불러오고 있어요…</main> : !caffeine.loaded ? <main className="page"><div className="empty-state"><AlertCircle size={36} /><h1 className="page-title">기록을 열지 못했어요</h1><p>기존 데이터는 변경하지 않았어요.<br />다시 시도하거나 저장 데이터를 초기화할 수 있어요.</p><button className="button-primary" onClick={() => void caffeine.reload()}>다시 불러오기</button><button className="text-button" onClick={() => router.openOverlay({ type: 'reset' })}>데이터 초기화</button></div></main> : <>
-      {page === 'home' && <HomePage intakePulse={intakePulse} state={caffeine.state} halfLifeHours={caffeine.halfLifeHours} now={caffeine.now} onAdd={openAdd} onRemaining={() => navigate('remaining')} outfit={avatar.outfit} onWardrobe={() => navigate('wardrobe')} />}
+      {page === 'home' && <HomePage intakePulse={intakePulse} state={caffeine.state} halfLifeHours={caffeine.halfLifeHours} now={caffeine.now} onAdd={openAdd} onRemaining={() => navigate('remaining')} outfit={avatar.outfit} outfitHidden={outfitHidden} onOutfitHiddenChange={setOutfitHidden} onWardrobe={() => navigate('wardrobe')} />}
       {page === 'wardrobe' && (avatar.loaded && !avatar.loading ? <WardrobePage key={router.visit} outfit={avatar.outfit} caffeineMg={caffeineEstimate(caffeine.state.entries, caffeine.now, caffeine.halfLifeHours).remainingMg} absorbingCount={remainingIntakes(caffeine.state.entries, caffeine.now, caffeine.halfLifeHours).filter(item => item.absorbingMg >= MIN_VISIBLE_REMAINING_MG).length} tiltEnabled={caffeine.state.settings.tiltAnimation ?? false} busy={avatar.busy} onSave={avatar.save} onBack={router.back} onApplied={() => { if (router.finishWardrobe()) setToast('캐릭터 꾸미기를 적용했어요'); }} /> : <main className="wardrobe-load"><button className="text-button" onClick={router.back}>홈으로 돌아가기</button><h1 className="page-title">캐릭터 꾸미기</h1>{avatar.loading ? <p role="status">저장한 모습을 불러오고 있어요…</p> : <><p role="alert">{avatar.error}</p><button className="button-primary" onClick={() => void avatar.reload()}>다시 불러오기</button></>}</main>)}
       {page === 'remaining' && <RemainingCaffeinePage drinks={caffeine.drinks} photoHistory={caffeine.state} entries={caffeine.state.entries} halfLifeHours={caffeine.halfLifeHours} now={caffeine.now} onBack={router.back} />}
       {page === 'history' && <HistoryPage initialDay={reportHistoryDay} drinks={caffeine.drinks} photoHistory={caffeine.state} entries={caffeine.state.entries} now={caffeine.now} onAdd={openHistoryAdd} onEdit={entry => router.openOverlay({ type: 'edit', entryId: entry.id })} onDelete={entry => router.openOverlay({ type: 'delete', entryId: entry.id })} />}
@@ -129,7 +131,7 @@ export function App() {
       {caffeine.error && <div className="error-message" role="alert">{caffeine.error}</div>}
 
       {overlay.type === 'delete' && selectedEntry && <div className="dialog-content"><p className="muted">{selectedEntry.drinkName} {selectedEntry.caffeineMg}mg 기록이 삭제돼요.</p><div className="dialog-actions"><button className="button-secondary" onClick={closeSheet}>취소</button><button className="button-primary" disabled={caffeine.busy} onClick={async () => { if (await caffeine.deleteEntry(selectedEntry.id)) { router.closeOverlay(); setToast('기록을 삭제했어요'); } }}>삭제하기</button></div></div>}
-      {overlay.type === 'reset' && <div className="dialog-content"><p className="muted">섭취 기록과 직접 만든 음료, 캐릭터 꾸미기 등 앱에 저장한 데이터가 모두 삭제돼요. 삭제한 데이터는 복구할 수 없어요.</p>{avatar.error && <p className="field-error" role="alert">{avatar.error}</p>}<div className="dialog-actions"><button className="button-secondary" onClick={closeSheet}>취소</button><button className="button-primary" disabled={caffeine.busy || avatar.busy} onClick={async () => { if (await avatar.reset() && await caffeine.reset()) { router.closeOverlay(); setToast('모든 데이터를 초기화했어요'); } }}>초기화하기</button></div></div>}
+      {overlay.type === 'reset' && <div className="dialog-content"><p className="muted">섭취 기록과 직접 만든 음료, 캐릭터 꾸미기 등 앱에 저장한 데이터가 모두 삭제돼요. 삭제한 데이터는 복구할 수 없어요.</p>{avatar.error && <p className="field-error" role="alert">{avatar.error}</p>}<div className="dialog-actions"><button className="button-secondary" onClick={closeSheet}>취소</button><button className="button-primary" disabled={caffeine.busy || avatar.busy} onClick={async () => { if (await avatar.reset() && await caffeine.reset()) { setOutfitHidden(false); router.closeOverlay(); setToast('모든 데이터를 초기화했어요'); } }}>초기화하기</button></div></div>}
     </BottomSheet>}
     {toast && <div className="toast" role="status"><Check size={17} />{toast}</div>}
   </div>;

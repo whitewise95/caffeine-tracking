@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { ClothingLayer } from '../ClothingItems';
 import { GarmentSurface } from './GarmentSurface';
 import { garmentPalettes, type GarmentPalette } from './garmentPalette';
+import { RaisedSleeve } from './RaisedSleeve';
 
 // These curves follow the jelly's shoulders, short fins and rounded waist.
 // The bowed hem overlaps the bottoms' waistband, including at its outer edges.
@@ -30,20 +31,7 @@ function Sleeves({ palette, cuff, drinking, style = 'long', raised = false, stri
 }) {
   if (raised) {
     if (!drinking) return null;
-    // The sleeve reaches the outer shoulder and bends around the elbow. Its
-    // diagonal cuff opens toward the visible glass hand, beside the cup.
-    const raisedPath = style === 'short'
-      ? 'M235 145 Q247 151 254 162 Q247 175 232 183 L222 175 Q232 163 235 145 Z'
-      : 'M235 144 C250 151 263 171 264 185 C265 196 256 205 245 205 C232 205 221 198 216 187 Q213 179 217 171 Q230 165 235 144 Z';
-    return <g stroke={palette.edge} strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round">
-      <GarmentSurface d={raisedPath} palette={palette} opacity={opacity} />
-      <path d={style === 'short'
-        ? 'M249 157 Q244 168 229 178 L233 184 Q248 176 255 163 Z'
-        : 'M235 144 Q231 162 217 171 L222 178 Q238 167 242 149 Z'} fill={cuff} fillOpacity={opacity} />
-      <path d={style === 'short' ? 'M240 157 Q238 168 230 175' : 'M222 186 Q232 199 247 199 Q255 197 258 189'} fill="none" stroke={palette.shade} strokeOpacity=".45" strokeWidth="2" />
-      <path d={style === 'short' ? 'M239 151 Q246 156 249 162' : 'M243 154 Q256 167 258 181'} fill="none" stroke={palette.light} strokeOpacity=".6" strokeWidth="1.3" />
-      {striped && <path d="M241 162 Q252 165 257 175 M232 179 Q246 182 262 183 M228 191 Q241 198 255 195" fill="none" stroke="#637184" strokeWidth="3.5" strokeOpacity=".8" />}
-    </g>;
+    return <RaisedSleeve palette={palette} cuff={cuff} style={style} striped={striped} opacity={opacity} />;
   }
   const sleeve = <g>
     <GarmentSurface d={style === 'short' ? leftShortSleeve : leftSleeve} palette={palette} opacity={opacity} />
@@ -56,9 +44,7 @@ function Sleeves({ palette, cuff, drinking, style = 'long', raised = false, stri
   </g>;
   return <g stroke={palette.edge} strokeWidth="1.15" strokeLinejoin="round" strokeLinecap="round">
     {sleeve}
-    {drinking
-      ? <GarmentSurface d="M212 142 Q224 138 239 147 L235 153 Q225 147 219 150 L219 162 Q220 170 224 174 L218 180 Q212 165 212 142 Z" palette={palette} opacity={opacity} />
-      : <g transform="translate(320 0) scale(-1 1)">{sleeve}</g>}
+    {!drinking && <g transform="translate(320 0) scale(-1 1)">{sleeve}</g>}
   </g>;
 }
 

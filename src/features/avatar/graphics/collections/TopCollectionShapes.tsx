@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { GarmentSurface } from '../clothing/GarmentSurface';
 import { garmentPalettes, type GarmentPalette } from '../clothing/garmentPalette';
+import { RaisedSleeve } from '../clothing/RaisedSleeve';
 
 export type TopSleeve = 'long' | 'short' | 'puff' | 'bell' | 'none';
 export type TopCut = 'round' | 'vneck' | 'vest' | 'blouse' | 'coat' | 'open' | 'bolero' | 'petal' | 'tunic';
@@ -52,14 +53,7 @@ export function TopSleeves({ material, drinking, raised = false }: { material: T
   const short = sleeve === 'short' || sleeve === 'puff';
   if (raised) {
     if (!drinking) return null;
-    return <g stroke={palette.edge} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
-      <GarmentSurface d={short
-        ? 'M235 145 Q251 148 257 163 Q250 178 233 184 L222 175 Q232 162 235 145 Z'
-        : 'M235 144 C250 151 263 171 264 185 C265 196 256 205 245 205 C232 205 221 198 216 187 Q213 179 217 171 Q230 165 235 144 Z'} palette={palette} />
-      <path d={short ? 'M251 160 Q246 171 230 179 L234 185 Q250 177 257 164 Z' : 'M235 144 Q231 162 217 171 L222 178 Q238 167 242 149 Z'} fill={palette.shade} />
-      <path d={short ? 'M241 151 Q247 156 251 163' : 'M243 154 Q256 167 258 181 M224 189 Q236 202 248 198'} fill="none" stroke={palette.light} strokeOpacity=".65" />
-      {sleeve === 'puff' && <path d="M238 151 Q240 163 233 172 M248 155 Q249 166 242 175" fill="none" stroke={palette.shade} strokeOpacity=".55" />}
-    </g>;
+    return <RaisedSleeve palette={palette} style={sleeve} />;
   }
   const side = <g>
     <GarmentSurface d={sleevePaths[sleeve]} palette={palette} />
@@ -70,9 +64,7 @@ export function TopSleeves({ material, drinking, raised = false }: { material: T
   </g>;
   return <g stroke={palette.edge} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
     {side}
-    {drinking
-      ? <GarmentSurface d="M212 142 Q224 138 239 147 L235 153 Q225 147 219 150 L219 163 L224 175 L218 180 Q212 165 212 142 Z" palette={palette} />
-      : <g transform="translate(320 0) scale(-1 1)">{side}</g>}
+    {!drinking && <g transform="translate(320 0) scale(-1 1)">{side}</g>}
   </g>;
 }
 
