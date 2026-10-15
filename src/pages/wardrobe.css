@@ -24,6 +24,8 @@
 .wardrobe-footer { flex: 0 0 auto; padding-block: 12px max(12px, var(--safe-bottom)); background: var(--bg); border-top: 1px solid var(--border); }
 .wardrobe-actions { display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; }
 .wardrobe-actions button { padding: 12px 8px; min-width: 0; font-size: var(--font-sm); word-break: keep-all; overflow-wrap: anywhere; }
+.wardrobe-actions .button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.wardrobe-ad-badge { padding: 2px 4px; border: 1px solid currentColor; border-radius: 4px; font-size: .6rem; font-weight: 700; line-height: 1; letter-spacing: .06em; opacity: .72; }
 .wardrobe-actions .button-secondary { background: var(--surface); color: var(--text-secondary); }
 .wardrobe-error { color: var(--danger); font-size: var(--font-sm); margin-bottom: 10px; }
 .wardrobe-load { padding: 24px; display: grid; gap: 16px; justify-items: start; }

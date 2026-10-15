@@ -5,6 +5,7 @@ import { AvatarItemThumbnail } from '../features/avatar/components/AvatarItemThu
 import { AVATAR_CATEGORIES, AVATAR_ITEMS } from '../features/avatar/data/avatarCatalog';
 import { emptyOutfit, outfitsEqual } from '../features/avatar/model/avatar';
 import type { AvatarOutfit, AvatarSlot } from '../features/avatar/model/avatar.types';
+import { createWardrobeApplyAdSession } from '../integrations/toss/wardrobeAd';
 import './wardrobe.css';
 
 interface WardrobePageProps {
@@ -22,6 +23,7 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
   const [draft, setDraft] = useState<AvatarOutfit>(() => ({ ...outfit }));
   const [slot, setSlot] = useState<AvatarSlot>('hat');
   const [failed, setFailed] = useState(false);
+  const [applyAd] = useState(createWardrobeApplyAdSession);
   const heading = useRef<HTMLHeadingElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const mounted = useRef(true);
@@ -35,6 +37,10 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
     heading.current?.focus({ preventScroll: true });
     return () => { mounted.current = false; };
   }, []);
+  useEffect(() => {
+    applyAd.preload();
+    return applyAd.dispose;
+  }, [applyAd]);
   useEffect(() => {
     // A new visit may start while the previous visit's write is still pending.
     // Inputs stay disabled then, so adopt its result once before this visit edits.
@@ -59,7 +65,10 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
     try {
       const success = await onSave({ ...draft });
       if (!mounted.current) return;
-      if (success) onApplied();
+      if (success) {
+        applyAd.showIfReady();
+        onApplied();
+      }
       else setFailed(true);
     } catch {
       if (mounted.current) setFailed(true);
@@ -108,7 +117,7 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
       {failed && <p className="wardrobe-error" role="alert">꾸미기를 저장하지 못했어요. 선택한 모습은 유지돼요. 다시 시도해 주세요.</p>}
       <div className="wardrobe-actions">
         <button className="button-secondary" disabled={busy || !hasItems} onClick={() => { setDraft(emptyOutfit()); setFailed(false); }}><RotateCcw size={17} aria-hidden="true" /><span>모두 벗기기</span></button>
-        <button className="button-primary" disabled={busy || !changed} aria-busy={busy} onClick={() => void apply()}>{busy ? '저장 중…' : failed ? '다시 적용하기' : '적용하기'}</button>
+        <button className="button-primary" disabled={busy || !changed} aria-busy={busy} onClick={() => void apply()}><span>{busy ? '저장 중…' : failed ? '다시 적용하기' : '적용하기'}</span><span className="wardrobe-ad-badge" aria-hidden="true">AD</span></button>
       </div>
     </footer>
   </main>;

@@ -11,6 +11,7 @@ test('outfit previews stay separate until applying and survive reload', async ({
   await page.getByRole('button', { name: '캐릭터 꾸미기', exact: true }).click();
   await expect(page.getByRole('heading', { name: '캐릭터 꾸미기' })).toBeVisible();
   await expect(page.getByRole('button', { name: '적용하기', exact: true })).toBeDisabled();
+  await expect(page.locator('.wardrobe-ad-badge')).toHaveText('AD');
   await page.getByRole('button', { name: '비니', exact: true }).click();
   await expect(page.locator('.wardrobe-preview [data-avatar-item="hat-beanie"]').first()).toBeAttached();
   await page.getByRole('button', { name: '홈으로 돌아가기' }).click();
