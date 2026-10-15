@@ -253,18 +253,24 @@ test('number taps and keyboard input do not change a drag-only time wheel', asyn
   await session.detach();
 });
 
-test('time-wheel labels stay visually centered after removing option buttons', async ({ page }) => {
+test('time-wheel labels stay visually centered on both axes after removing option buttons', async ({ page }) => {
   await openPicker(page);
   const centerOffsets = await page.locator('.time-wheel-option.is-selected').evaluateAll(options => options.map(option => {
     const optionBox = option.getBoundingClientRect();
     const text = document.createRange();
     text.selectNodeContents(option);
     const textBox = text.getBoundingClientRect();
-    return Math.abs((optionBox.left + optionBox.width / 2) - (textBox.left + textBox.width / 2));
+    return {
+      x: Math.abs((optionBox.left + optionBox.width / 2) - (textBox.left + textBox.width / 2)),
+      y: Math.abs((optionBox.top + optionBox.height / 2) - (textBox.top + textBox.height / 2)),
+    };
   }));
 
   expect(centerOffsets).toHaveLength(3);
-  for (const offset of centerOffsets) expect(offset).toBeLessThan(1);
+  for (const offset of centerOffsets) {
+    expect(offset.x).toBeLessThan(1);
+    expect(offset.y).toBeLessThan(1);
+  }
 });
 
 test('edit picker returns to its form before the root close button dismisses editing', async ({ page }) => {
