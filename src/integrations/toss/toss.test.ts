@@ -30,13 +30,6 @@ describe('Toss runtime boundary', () => {
     expect(haptic).toHaveBeenCalledExactlyOnceWith({ type: 'tickWeak' })
   })
 
-  it('keeps time selection usable when the native haptic bridge fails', async () => {
-    vi.stubGlobal('window', tossWindow())
-    vi.spyOn(Device, 'triggerHaptic').mockRejectedValue(new Error('native haptic failed'))
-
-    await expect(triggerTimeWheelHaptic()).resolves.toBeUndefined()
-  })
-
   it('persists avatars in the same browser storage using an independent key', async () => {
     const values = new Map<string, string>()
     vi.stubGlobal('window', { localStorage: {

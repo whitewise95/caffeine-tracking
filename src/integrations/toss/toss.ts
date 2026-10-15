@@ -4,6 +4,7 @@ import type { CaffeineRepository, CaffeineStorage } from '../../features/caffein
 import { LocalCaffeineRepository } from '../../features/caffeine/repository/LocalCaffeineRepository'
 import type { AvatarRepository } from '../../features/avatar/repository/AvatarRepository'
 import { LocalAvatarRepository } from '../../features/avatar/repository/LocalAvatarRepository'
+import { createTimeWheelHaptic } from './timeWheelHaptic'
 
 const noop = () => {}
 
@@ -46,14 +47,12 @@ export function createAvatarRepository(): AvatarRepository {
   return new LocalAvatarRepository(platformStorage())
 }
 
-/** Add a quiet detent without making the time picker depend on the native bridge. */
+const timeWheelHaptic = createTimeWheelHaptic(() => Device.triggerHaptic({ type: 'tickWeak' }))
+
+/** Pace quiet detents without making the time picker wait for the native bridge. */
 export async function triggerTimeWheelHaptic(): Promise<void> {
   if (!isTossRuntime()) return
-  try {
-    await Device.triggerHaptic({ type: 'tickWeak' })
-  } catch {
-    // Haptics are optional feedback; a bridge failure must not block the picker.
-  }
+  return timeWheelHaptic()
 }
 
 /** Open research sources outside the mini-app; failures are handled by the link UI. */

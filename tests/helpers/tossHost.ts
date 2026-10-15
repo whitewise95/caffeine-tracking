@@ -13,6 +13,10 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
     Reflect.set(window, 'testNavigationOptions', []);
     Reflect.set(window, 'testExternalURLs', []);
     Reflect.set(window, 'testHaptics', []);
+    const pendingHaptics: Array<() => void> = [];
+    Reflect.set(window, 'testResolveHaptics', () => {
+      for (const respond of pendingHaptics.splice(0)) respond();
+    });
     Reflect.set(window, 'testCloseRequests', 0);
     const subscriptions = new Map<string, { method: string; bridgeId: string }>();
     Reflect.set(window, 'testNativeBack', () => {
@@ -63,10 +67,15 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
       }
       if (method === 'generateHapticFeedback') {
         (Reflect.get(window, 'testHaptics') as unknown[]).push(args[0]);
+        if (Reflect.get(window, 'testFailNextHaptic')) {
+          Reflect.set(window, 'testFailNextHaptic', false);
+          result = { __instanceof: 'Error', name: 'Error', message: 'Native haptic failed' };
+        }
       }
       const emitters = Reflect.get(window, 'nativeEmitterMap') as Record<string, { emit: (event: string, value: unknown, failed: boolean) => void }>;
       const respond = () => emitters[message.bridgeId].emit(`${method}-${eventId}`, result, false);
-      if (method === 'setStorageItem' && storageKey === 'test-toss-native-avatar' && Reflect.get(window, 'testDelayAvatarSave')) Reflect.set(window, 'testResolveAvatarSave', respond);
+      if (method === 'generateHapticFeedback' && Reflect.get(window, 'testDelayHaptic')) pendingHaptics.push(respond);
+      else if (method === 'setStorageItem' && storageKey === 'test-toss-native-avatar' && Reflect.get(window, 'testDelayAvatarSave')) Reflect.set(window, 'testResolveAvatarSave', respond);
       else queueMicrotask(respond);
     } });
   }, { state: createInitialState(), platformOS });

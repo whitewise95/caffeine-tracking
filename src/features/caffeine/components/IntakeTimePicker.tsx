@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import { triggerTimeWheelHaptic } from '../../../integrations/toss/toss'
 import { displayIntakeTime } from './intakeTimeFormat'
 import { useTimeWheelGesture } from './useTimeWheelGesture'
@@ -10,7 +10,7 @@ const hours = Array.from({ length: 12 }, (_, index) => String(index + 1))
 const minutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
 
-function TimeWheel({ label, options, selected, onChange, disabled }: {
+const TimeWheel = memo(function TimeWheel({ label, options, selected, onChange, disabled }: {
   label: string
   options: readonly string[]
   selected: number
@@ -18,51 +18,26 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
   disabled: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const latest = useRef(selected)
-  const fromScroll = useRef<number | null>(null)
-  latest.current = selected
-  function updateFromScroll(index: number) {
-    if (disabled || index === latest.current) return
-    const isUserGesture = ref.current?.hasAttribute('data-interacting') ?? false
-    fromScroll.current = index
-    latest.current = index
+  function updatePosition(index: number, userGesture: boolean) {
     onChange(index)
-    if (isUserGesture) void triggerTimeWheelHaptic()
+    if (userGesture) void triggerTimeWheelHaptic()
   }
-  const { stop, ...gestures } = useTimeWheelGesture(ref, options.length, disabled, updateFromScroll)
-  function rowHeight() { return ref.current?.firstElementChild?.getBoundingClientRect().height || 48 }
-  useLayoutEffect(() => {
-    if (fromScroll.current === selected) return
-    ref.current?.scrollTo({ top: selected * rowHeight(), behavior: 'instant' })
-  }, [selected])
-  useLayoutEffect(() => {
-    const row = ref.current?.firstElementChild
-    if (!row) return
-    const observer = new ResizeObserver(() => {
-      stop()
-      ref.current?.scrollTo({ top: latest.current * rowHeight(), behavior: 'instant' })
-    })
-    observer.observe(row)
-    return () => observer.disconnect()
-  }, [stop])
+  const gestures = useTimeWheelGesture(ref, options.length, selected, disabled, updatePosition)
   return <div className="time-wheel-column">
     <span className="time-wheel-label" aria-hidden="true">{label}</span>
     <div className="time-wheel-frame">
       <div className="time-wheel-selection" aria-hidden="true" />
       <div ref={ref} className="time-wheel" role="img" data-time-wheel={label} data-value={label === '시' ? selected + 1 : selected}
         aria-label={`${label} ${options[selected]}${label === '오전·오후' ? '' : label}`} aria-disabled={disabled}
-        {...gestures}
-        onScroll={event => {
-          if (disabled) return
-          const index = Math.max(0, Math.min(options.length - 1, Math.round(event.currentTarget.scrollTop / rowHeight())))
-          updateFromScroll(index)
-        }}>
+        {...gestures}>
+        <div className="time-wheel-track">
         {options.map((option, index) => <div key={option} aria-hidden="true"
           className={`time-wheel-option${index === selected ? ' is-selected' : ''}`}>{option}</div>)}
+        </div>
       </div>
     </div>
   </div>
-}
+})
 
 export function IntakeTimePicker({ value, onDone, onCancel, disabled = false }: { value: string; onDone: (time: string) => void; onCancel: () => void; disabled?: boolean }) {
   const [initialHour, initialMinute] = value.split(':').map(Number)

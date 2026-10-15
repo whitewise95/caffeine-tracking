@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { pickTime, setTimeWheel, timeWheel } from './helpers/time-picker';
+import { expectWheelCentered, pickTime, setTimeWheel, timeWheel } from './helpers/time-picker';
 import { createInitialState } from '../src/features/caffeine/model/caffeine';
 import { installTossHost } from './helpers/tossHost';
 
@@ -65,11 +65,7 @@ async function dragWheel(page: import('@playwright/test').Page, label: string, d
 async function settledWheel(page: import('@playwright/test').Page, label: string) {
   const wheel = timeWheel(page, label);
   await expect(wheel).not.toHaveAttribute('data-interacting', 'true');
-  await expect.poll(() => wheel.evaluate((element, hour) => {
-    const height = element.firstElementChild!.getBoundingClientRect().height;
-    const selected = Number(element.getAttribute('data-value')) - (hour ? 1 : 0);
-    return Math.abs(element.scrollTop / height - selected);
-  }, label === '시')).toBeLessThan(.01);
+  await expectWheelCentered(wheel);
   return Number(await wheel.getAttribute('data-value'));
 }
 
@@ -91,7 +87,7 @@ test('a fast flick moves farther than the same slow drag and can be stopped by a
   await page.waitForTimeout(400);
   expect(await settledWheel(page, '분')).toBe(0);
   await dragWheel(page, '분', 48, 40);
-  await minute.locator('.time-wheel-option').nth(2).click({ force: true });
+  await minute.click({ force: true, position: { x: 4, y: 4 } });
   const stopped = await settledWheel(page, '분');
   await page.waitForTimeout(400);
   expect(await settledWheel(page, '분')).toBe(stopped);
@@ -116,12 +112,94 @@ test('fast drags respect bounds, pointer cancellation, and reduced motion', asyn
 test('a dragged time detent requests one weak haptic only for the user change', async ({ page }) => {
   await installTossHost(page);
   await openPicker(page);
+  // Fixture setup now uses real gesture handlers too; count only this new drag.
+  const before = await page.evaluate(() => (Reflect.get(window, 'testHaptics') as unknown[]).length);
   await dragWheel(page, '분', 48, 480);
   expect(await settledWheel(page, '분')).toBe(1);
-  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'testHaptics'))).toEqual([{ type: 'tickWeak' }]);
+  await expect.poll(() => page.evaluate(() => (Reflect.get(window, 'testHaptics') as unknown[]).length)).toBe(before + 1);
 
-  await setTimeWheel(page, '분', 20);
-  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'testHaptics'))).toEqual([{ type: 'tickWeak' }]);
+  await page.evaluate(() => { document.documentElement.style.fontSize = '24px'; });
+  await expectWheelCentered(timeWheel(page, '분'));
+  await expect.poll(() => page.evaluate(() => (Reflect.get(window, 'testHaptics') as unknown[]).length)).toBe(before + 1);
+});
+
+test('a slightly sideways touch start keeps control of the vertical wheel', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Native CDP touch injection is Chromium-only');
+  await openPicker(page);
+  const wheel = timeWheel(page, '분');
+  const box = (await wheel.boundingBox())!;
+  const session = await page.context().newCDPSession(page);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height * .7;
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 20, y: y - 2 }] });
+  for (let step = 1; step <= 6; step++) {
+    await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 20, y: y - step * 15 }] });
+    await page.waitForTimeout(35);
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  expect(await settledWheel(page, '분')).toBeGreaterThan(0);
+  await session.detach();
+});
+
+test('continuous dragging does not synchronously measure layout on every move', async ({ page }) => {
+  await openPicker(page);
+  const reads = await timeWheel(page, '분').evaluate(async element => {
+    let reads = 0;
+    for (const row of element.querySelectorAll('.time-wheel-option')) {
+      const measure = row.getBoundingClientRect.bind(row);
+      row.getBoundingClientRect = () => { reads++; return measure(); };
+    }
+    const box = element.getBoundingClientRect();
+    const y = box.y + box.height * .7;
+    const dispatch = (type: string, distance: number) => element.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, pointerId: 8, pointerType: 'touch', isPrimary: true, button: 0, buttons: 1,
+      clientX: box.x + box.width / 2, clientY: y - distance,
+    }));
+    dispatch('pointerdown', 0);
+    reads = 0;
+    for (let step = 1; step <= 12; step++) {
+      dispatch('pointermove', step * 8);
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    }
+    dispatch('pointercancel', 96);
+    return reads;
+  });
+  expect(reads).toBe(0);
+  expect(await settledWheel(page, '분')).toBe(2);
+});
+
+test('a new gesture recovers after the WebView loses the previous touch end', async ({ page }) => {
+  await openPicker(page);
+  await timeWheel(page, '분').dispatchEvent('pointerdown', {
+    pointerId: 99, pointerType: 'touch', isPrimary: true, button: 0, clientY: 300,
+  });
+  await dragWheel(page, '분', 48, 480);
+  expect(await settledWheel(page, '분')).toBe(1);
+});
+
+test('leaving the WebView during a drag does not lock the next gesture', async ({ page }) => {
+  await openPicker(page);
+  await timeWheel(page, '분').dispatchEvent('pointerdown', {
+    pointerId: 99, pointerType: 'touch', isPrimary: true, button: 0, clientY: 300,
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(timeWheel(page, '분')).not.toHaveAttribute('data-interacting', 'true');
+  await dragWheel(page, '분', 48, 480);
+  expect(await settledWheel(page, '분')).toBe(1);
+});
+
+test('done during a fling saves the displayed time and cancels the remaining motion', async ({ page }) => {
+  await openPicker(page);
+  await dragWheel(page, '분', 48, 40);
+  const displayed = await page.locator('.time-picker').evaluate(element => {
+    const value = element.querySelector('.time-picker-preview')!.textContent!;
+    element.querySelector<HTMLButtonElement>('.time-picker-actions .button-primary')!.click();
+    return value;
+  });
+  await page.waitForTimeout(400);
+  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toContainText(displayed);
+  await expect(page.locator('.time-picker')).toHaveCount(0);
 });
 
 for (const exit of ['back', 'escape', 'arrow']) {
@@ -138,7 +216,8 @@ for (const exit of ['back', 'escape', 'arrow']) {
   });
 }
 
-test('vertical touch swipe changes and snaps the minute wheel', async ({ page }) => {
+test('vertical touch swipe changes and snaps the minute wheel', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Native CDP touch injection is Chromium-only');
   await openPicker(page);
   const wheel = timeWheel(page, '분');
   const box = (await wheel.boundingBox())!;
@@ -152,17 +231,15 @@ test('vertical touch swipe changes and snaps the minute wheel', async ({ page })
   }
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await expect.poll(async () => Number(await wheel.getAttribute('data-value'))).toBeGreaterThan(0);
-  await expect.poll(() => wheel.evaluate(element => {
-    const rowHeight = element.firstElementChild!.getBoundingClientRect().height;
-    return Math.abs(element.scrollTop / rowHeight - Math.round(element.scrollTop / rowHeight));
-  })).toBeLessThan(.01);
+  await settledWheel(page, '분');
   const minute = await wheel.getAttribute('data-value');
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toContainText(`오전 10:${minute!.padStart(2, '0')}`);
   await session.detach();
 });
 
-test('native touch flicks move hours and minutes while a held drag stays precise', async ({ page }) => {
+test('native touch flicks move hours and minutes while a held drag stays precise', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Native CDP touch injection is Chromium-only');
   await openPicker(page);
   const session = await page.context().newCDPSession(page);
   async function swipe(label: string, delay: number, hold = 0) {
@@ -219,14 +296,18 @@ for (const theme of ['']) {
   test(`time wheel stays usable with enlarged text ${theme || 'dark'}`, async ({ page }, testInfo) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openPicker(page, theme);
+    // The first painted frame must already match the preview in reduced-motion mode.
+    const initialOffsets = await page.locator('.time-wheel-frame').evaluateAll(frames => frames.map(frame => {
+      const selected = frame.querySelector('.time-wheel-option.is-selected')!.getBoundingClientRect();
+      const selection = frame.querySelector('.time-wheel-selection')!.getBoundingClientRect();
+      return Math.abs(selected.y + selected.height / 2 - selection.y - selection.height / 2);
+    }));
+    for (const offset of initialOffsets) expect(offset).toBeLessThan(1);
     await page.screenshot({ path: `test-results/${testInfo.project.name}-time-picker-${theme ? 'light' : 'dark'}.png` });
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
     const minute = timeWheel(page, '분');
     await setTimeWheel(page, '분', 59);
-    await expect.poll(() => minute.evaluate(element => {
-      const height = element.firstElementChild!.getBoundingClientRect().height;
-      return Math.abs(element.scrollTop / height - 59);
-    })).toBeLessThan(.01);
+    await expectWheelCentered(minute);
     await page.getByRole('button', { name: '완료', exact: true }).scrollIntoViewIfNeeded();
     expect(await page.getByRole('dialog').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -240,21 +321,18 @@ test('number taps and keyboard input do not change a drag-only time wheel', asyn
   await openPicker(page);
   const minute = timeWheel(page, '분');
   const option = minute.locator('.time-wheel-option').nth(2);
-  const box = (await option.boundingBox())!;
-  const session = await page.context().newCDPSession(page);
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await option.tap();
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Home');
   await expect(minute).toHaveAttribute('data-value', '0');
   await expect(minute).not.toHaveAttribute('tabindex');
   await expect(minute.getByRole('button')).toHaveCount(0);
   await expect(page.locator('.time-picker-hint')).toHaveCount(0);
-  await session.detach();
 });
 
 test('time-wheel labels stay visually centered on both axes after removing option buttons', async ({ page }) => {
   await openPicker(page);
+  for (const label of ['오전·오후', '시', '분']) await expectWheelCentered(timeWheel(page, label));
   const centerOffsets = await page.locator('.time-wheel-option.is-selected').evaluateAll(options => options.map(option => {
     const optionBox = option.getBoundingClientRect();
     const text = document.createRange();

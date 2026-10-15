@@ -114,7 +114,7 @@ test('bedtime picker stores noon and midnight as the correct 24-hour times', asy
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).settings.bedtime)).toBe('00:05');
 });
 
-test('bedtime wheels support dragging, scrolling and enlarged text in a bottom sheet', async ({ page }, info) => {
+test('bedtime wheels support dragging and enlarged text in a bottom sheet', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.clock.install({ time: now });
   await page.goto('/settings');
@@ -125,10 +125,7 @@ test('bedtime wheels support dragging, scrolling and enlarged text in a bottom s
   await setTimeWheel(picker, '분', 1);
   await expect(picker.locator('.time-picker-preview')).toContainText('오후 10:01');
   const minute = timeWheel(picker, '분');
-  await minute.evaluate(element => {
-    const height = element.firstElementChild!.getBoundingClientRect().height;
-    element.scrollTo({ top: height * 15, behavior: 'instant' });
-  });
+  await setTimeWheel(picker, '분', 15);
   await expect(minute).toHaveAttribute('data-value', '15');
   await expect(picker.locator('.time-picker-preview')).toContainText('오후 10:15');
   await page.screenshot({ path: info.outputPath('bedtime-picker.png') });
