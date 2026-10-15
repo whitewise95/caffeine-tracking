@@ -38,7 +38,9 @@ test('each character tap immediately lights the liquid without restarting absorp
 });
 
 test('character glow supports keyboard and reduced motion after absorption, and keeps empty liquid empty', async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-10-06T12:00:00+09:00') });
+  await page.clock.install({ time: new Date('2026-10-06T11:00:00+09:00') });
+  // Keep the 900ms response alive until the assertion explicitly advances time.
+  await page.clock.pauseAt(new Date('2026-10-06T12:00:00+09:00'));
   await page.addInitScript(state => {
     if (!localStorage.getItem('caffeine-tracker:state:v1')) localStorage.setItem('caffeine-tracker:state:v1', JSON.stringify(state));
   }, {
@@ -69,6 +71,7 @@ test('character glow supports keyboard and reduced motion after absorption, and 
 
 for (const theme of ['dark']) {
   test(`avatar material and silhouette states in ${theme}`, async ({ page }, testInfo) => {
+    test.setTimeout(60000);
     await page.clock.install({ time: new Date('2026-10-06T12:00:00+09:00') });
     for (const [amount, stateName] of [[0, 'empty'], [120, 'active'], [220, 'full'], [330, 'high']] as const) {
       const state = createInitialState();

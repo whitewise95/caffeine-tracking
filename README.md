@@ -16,11 +16,11 @@
 
 ## 젤리 캐릭터 꾸미기
 
-홈의 옷걸이 ‘꾸미기’ 버튼으로 들어가 모자·안경·상의·하의·신발·소품을 고를 수 있어요. 각 부위에 10종, 총 60종을 처음부터 사용할 수 있으며, 기존 젤리의 유리 질감·액체·표정과 컵을 든 자세 위에 SVG 의상을 합성해요. 썸네일도 실제 착용 그래픽을 사용해요.
+홈의 옷걸이 ‘꾸미기’ 버튼으로 들어가 모자·안경·상의·하의·신발·소품을 고를 수 있어요. 각 부위에 50종, 총 300종을 처음부터 사용할 수 있으며, 기존 젤리의 유리 질감·액체·표정과 컵을 든 자세 위에 SVG 의상을 합성해요. 썸네일도 실제 착용 그래픽을 사용해요. 기존 기본 아이템에 포근한·로맨틱·스트리트·클래식·판타지 다섯 컨셉의 의상과 소품을 더했어요.
 
 선택은 미리보기에 바로 반영하고 ‘적용하기’가 성공하면 홈으로 돌아가요. 부위별 ‘착용 안 함’과 ‘모두 벗기기’도 적용 전까지는 미리보기이며, 뒤로가기는 저장하지 않은 선택을 버려요. 실패하면 미리보기를 유지한 채 재시도할 수 있어요. 착용 상태는 기기에 저장하고 새로고침 후 복원해요. 상점·계정 동기화·사용자 이미지 업로드는 없어요.
 
-이 기능은 아직 GitHub Release나 토스 테스트 버전에 포함하지 않았어요. [구현·검증 기록](docs/jelly-wardrobe.md)
+이 기능은 아직 GitHub Release나 토스 테스트 버전에 포함하지 않았어요. [꾸미기 구현 기록](docs/jelly-wardrobe.md) · [300종 컬렉션·개발 화면](docs/jelly-collection.md)
 
 ## 한 잔 기록하기
 
@@ -143,7 +143,7 @@ flowchart TD
 | [src/app/](src/app/) | 앱 구성, 화면 이동과 오버레이 관리 |
 | [src/pages/](src/pages/) | 홈·기록·리포트·카페인 지식·설정 등 화면 |
 | [src/features/insights/](src/features/insights/) | 기간별 리포트, 예상량 그래프와 월간 요약 |
-| [src/features/avatar/](src/features/avatar/) | 60개 아이템 정보·SVG 레이어, 착용 검증·저장·복원 |
+| [src/features/avatar/](src/features/avatar/) | 300개 아이템 정보·SVG 레이어, 착용 검증·저장·복원 |
 | [src/features/caffeine/components/](src/features/caffeine/components/) | 카페인 시각화와 음료 기록 UI |
 | [src/features/caffeine/model/](src/features/caffeine/model/) | 흡수·제거 계산, 시간·입력 검증과 음료 데이터 처리 |
 | [src/features/caffeine/hooks/](src/features/caffeine/hooks/) | 상태 갱신과 기록 작업, 저장 실패 처리 |

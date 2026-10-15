@@ -1,3 +1,5 @@
+import { memo } from 'react';
+import { ACCESSORY_THUMBNAIL_BOXES } from '../data/accessoryThumbnailBoxes';
 import type { AvatarItem, AvatarSlot } from '../model/avatar.types';
 import { AvatarItemGraphic, type OutfitLayer } from './AvatarOutfitLayers';
 
@@ -8,8 +10,8 @@ const boxes: Record<AvatarSlot, string> = {
 const layers: readonly OutfitLayer[] = ['back', 'body', 'front', 'sleeve'];
 
 /** Shares wearable artwork without mounting a character, animation or sensor hook. */
-export function AvatarItemThumbnail({ item }: { item: AvatarItem }) {
-  return <svg className="wardrobe-thumbnail" viewBox={boxes[item.slot]} aria-hidden="true" focusable="false">
+export const AvatarItemThumbnail = memo(function AvatarItemThumbnail({ item }: { item: AvatarItem }) {
+  return <svg className="wardrobe-thumbnail" viewBox={ACCESSORY_THUMBNAIL_BOXES[item.id] ?? boxes[item.slot]} aria-hidden="true" focusable="false">
     {layers.map(layer => <AvatarItemGraphic key={layer} itemId={item.id} slot={item.slot} layer={layer} />)}
   </svg>;
-}
+});

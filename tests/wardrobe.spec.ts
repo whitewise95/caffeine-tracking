@@ -109,15 +109,16 @@ test('avatar read errors permit caffeine use and require retry before editing', 
   await expect(page.getByRole('button', { name: '착용 안 함', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('all sixty items render real artwork, preserve the live character and fit mobile layout', async ({ page }, testInfo) => {
-  test.setTimeout(90000);
-  await page.goto('/');
-  await page.getByRole('button', { name: '캐릭터 꾸미기', exact: true }).click();
-  await page.locator('.wardrobe-preview svg[role="img"]').evaluate(svg => svg.setAttribute('data-instance-check', 'preserved'));
-  for (const category of AVATAR_CATEGORIES) {
+for (const category of AVATAR_CATEGORIES) {
+  test(`all fifty ${category.id} items render, keep their fit and preserve the live character`, async ({ page }, testInfo) => {
+    test.setTimeout(120000);
+    await page.goto('/wardrobe');
+    await page.locator('.wardrobe-preview svg[role="img"]').evaluate(svg => svg.setAttribute('data-instance-check', 'preserved'));
     await page.getByRole('tab', { name: new RegExp(category.label) }).click();
-    await expect(page.getByRole('group', { name: `${category.label} 아이템` }).getByRole('button')).toHaveCount(11);
-    for (const item of AVATAR_ITEMS.filter(item => item.slot === category.id)) {
+    await expect(page.getByRole('group', { name: `${category.label} 아이템` }).getByRole('button')).toHaveCount(51);
+    const items = AVATAR_ITEMS.filter(item => item.slot === category.id);
+    expect(items).toHaveLength(50);
+    for (const item of items) {
       const choice = page.getByRole('button', { name: item.name, exact: true });
       await expect(choice.locator('svg').locator('path,rect,circle,ellipse,polygon,line,polyline').first()).toBeAttached();
       await choice.click();
@@ -125,13 +126,24 @@ test('all sixty items render real artwork, preserve the live character and fit m
       expect(await page.locator(`.wardrobe-preview [data-avatar-item="${item.id}"]`).locator('path,rect,circle,ellipse,polygon,line,polyline').count()).toBeGreaterThan(0);
       await expect(page.locator('.wardrobe-preview svg[role="img"]')).toHaveAttribute('data-instance-check', 'preserved');
     }
-    await page.screenshot({ path: testInfo.outputPath(`wardrobe-${category.id}.png`), animations: 'disabled' });
-  }
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.getByRole('button', { name: '적용하기', exact: true }).click();
-  await expect(page.locator('.home-page')).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath('wardrobe-all-equipped-home.png'), animations: 'disabled' });
-});
+    const problems = await page.locator('.wardrobe-page').evaluate(root => {
+      const ids = Array.from(root.querySelectorAll('[id]')).map(element => element.id);
+      const brokenFills = Array.from(root.querySelectorAll('[fill^="url(#"]')).filter(element => {
+        const id = element.getAttribute('fill')!.slice(5, -1);
+        return !element.closest('svg')?.querySelector(`[id="${id}"]`);
+      });
+      return { duplicateIds: ids.length - new Set(ids).size, brokenFills: brokenFills.length };
+    });
+    expect(problems).toEqual({ duplicateIds: 0, brokenFills: 0 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`collection-${category.id}.png`), animations: 'disabled' });
+    const last = items.at(-1)!;
+    await page.getByRole('button', { name: '적용하기', exact: true }).click();
+    await expect(page.locator(`.home-page [data-avatar-item="${last.id}"]`).first()).toBeAttached();
+    await page.reload();
+    await expect(page.locator(`.home-page [data-avatar-item="${last.id}"]`).first()).toBeAttached();
+  });
+}
 
 test('keyboard, enlarged text and short viewport keep all wardrobe controls accessible', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -200,5 +212,31 @@ for (const [amount, drinking] of [[0, false], [40, false], [150, true], [350, tr
     await page.screenshot({ path: testInfo.outputPath(`mixed-${amount}-${drinking}.png`), animations: 'disabled' });
     await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+  });
+}
+
+for (const concept of ['cozy', 'romantic', 'street', 'classic', 'fantasy'] as const) {
+  test(`${concept} collection restores a full new outfit with its drinking pose`, async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-15T12:00:00+09:00'));
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const state = createInitialState();
+    state.entries = [{ id: 'collection-sample', drinkId: 'coffee', drinkName: '가상 커피', icon: 'coffee', caffeineMg: 150, consumedAt: '2026-10-15T11:45:00+09:00' }];
+    const outfit = emptyOutfit();
+    for (const { id } of AVATAR_CATEGORIES) outfit[id] = AVATAR_ITEMS.find(item => item.slot === id && item.concept === concept)!.id;
+    await page.addInitScript(({ state, outfit, avatarKey }) => {
+      localStorage.setItem('caffeine-tracker:state:v1', JSON.stringify(state));
+      localStorage.setItem(avatarKey, JSON.stringify({ version: 1, outfit }));
+    }, { state, outfit, avatarKey });
+    await page.goto('/');
+    await expect(page.locator('.avatar-sip-cup')).toHaveCount(1);
+    for (const id of Object.values(outfit)) await expect(page.locator(`.home-page [data-avatar-item="${id}"]`).first()).toBeAttached();
+    await page.screenshot({ path: testInfo.outputPath(`collection-home-${concept}.png`), animations: 'disabled' });
+    const records = await page.evaluate(() => localStorage.getItem('caffeine-tracker:state:v1'));
+    await page.getByRole('button', { name: '캐릭터 꾸미기', exact: true }).click();
+    await expect(page.locator('.wardrobe-count')).toHaveText('6 / 6');
+    await expect(page.getByRole('button', { name: '적용하기', exact: true })).toBeDisabled();
+    await page.reload();
+    for (const id of Object.values(outfit)) await expect(page.locator(`.wardrobe-preview [data-avatar-item="${id}"]`).first()).toBeAttached();
+    expect(await page.evaluate(() => localStorage.getItem('caffeine-tracker:state:v1'))).toBe(records);
   });
 }

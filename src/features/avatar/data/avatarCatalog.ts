@@ -1,3 +1,9 @@
+import { GLASSES_COLLECTION_ITEMS } from './collections/glassesCollection';
+import { SHOE_COLLECTION_ITEMS } from './collections/shoeCollection'
+import { HAT_COLLECTION_ITEMS } from './collections/hatCollection'
+import { BOTTOM_COLLECTION_ITEMS } from './collections/bottomCollection'
+import { TOP_COLLECTION_ITEMS } from './collections/topCollection'
+import { ACCESSORY_COLLECTION_ITEMS } from './collections/accessoryCollection'
 import type { AvatarItem, AvatarSlot } from '../model/avatar.types'
 
 export const AVATAR_CATEGORIES: readonly { id: AvatarSlot; label: string }[] = [
@@ -70,4 +76,10 @@ export const AVATAR_ITEMS: readonly AvatarItem[] = [
   { id: 'accessory-pouch', slot: 'accessory', name: '허리 파우치' },
   { id: 'accessory-bird', slot: 'accessory', name: '어깨 위 작은 새 인형' },
   { id: 'accessory-cape', slot: 'accessory', name: '짧은 케이프' },
+  ...TOP_COLLECTION_ITEMS,
+  ...BOTTOM_COLLECTION_ITEMS,
+  ...HAT_COLLECTION_ITEMS,
+  ...GLASSES_COLLECTION_ITEMS,
+  ...SHOE_COLLECTION_ITEMS,
+  ...ACCESSORY_COLLECTION_ITEMS,
 ]

@@ -3,15 +3,30 @@ import { AVATAR_CATEGORIES, AVATAR_ITEMS } from '../data/avatarCatalog'
 import { emptyOutfit, outfitsEqual, sanitizeOutfit } from './avatar'
 
 describe('avatar catalog and outfit', () => {
-  it('provides six independent slots and ten unique, named items for each', () => {
+  it('provides six independent slots and fifty unique, named items for each', () => {
     expect(AVATAR_CATEGORIES.map(category => category.id)).toEqual(['hat', 'glasses', 'top', 'bottom', 'shoes', 'accessory'])
-    expect(AVATAR_ITEMS).toHaveLength(60)
-    expect(new Set(AVATAR_ITEMS.map(item => item.id)).size).toBe(60)
+    expect(AVATAR_ITEMS).toHaveLength(300)
+    expect(new Set(AVATAR_ITEMS.map(item => item.id)).size).toBe(300)
     for (const category of AVATAR_CATEGORIES) {
       const items = AVATAR_ITEMS.filter(item => item.slot === category.id)
-      expect(items).toHaveLength(10)
+      expect(items).toHaveLength(50)
       expect(items.every(item => item.id.startsWith(`${item.slot}-`) && item.name.length > 0)).toBe(true)
-      expect(new Set(items.map(item => item.name)).size).toBe(10)
+      expect(new Set(items.map(item => item.name)).size).toBe(50)
+    }
+  })
+
+  it('provides eight distinct designs in each new concept for every slot', () => {
+    for (const category of AVATAR_CATEGORIES) {
+      for (const concept of ['cozy', 'romantic', 'street', 'classic', 'fantasy']) {
+        expect(AVATAR_ITEMS.filter(item => item.slot === category.id && item.concept === concept)).toHaveLength(8)
+      }
+    }
+  })
+
+  it('accepts every new item without changing the persisted outfit shape', () => {
+    for (const item of AVATAR_ITEMS) {
+      const outfit = { ...emptyOutfit(), [item.slot]: item.id }
+      expect(sanitizeOutfit(JSON.parse(JSON.stringify(outfit)))).toEqual(outfit)
     }
   })
 
