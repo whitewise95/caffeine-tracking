@@ -89,7 +89,7 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
         event.preventDefault();
         changeSlot(AVATAR_CATEGORIES[next].id);
         document.getElementById(`wardrobe-tab-${AVATAR_CATEGORIES[next].id}`)?.focus();
-      }}>{item.label}{draft[item.id] && <span className="wardrobe-tab-dot" aria-label="착용 중" />}</button>)}
+      }}>{item.label}</button>)}
     </div>
     <div className="wardrobe-items" id="wardrobe-items" role="tabpanel" aria-labelledby={`wardrobe-tab-${slot}`} ref={list} tabIndex={0}>
       <div className="wardrobe-section-label"><h2>{category.label}</h2></div>
