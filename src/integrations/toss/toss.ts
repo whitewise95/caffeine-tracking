@@ -46,6 +46,16 @@ export function createAvatarRepository(): AvatarRepository {
   return new LocalAvatarRepository(platformStorage())
 }
 
+/** Add a quiet detent without making the time picker depend on the native bridge. */
+export async function triggerTimeWheelHaptic(): Promise<void> {
+  if (!isTossRuntime()) return
+  try {
+    await Device.triggerHaptic({ type: 'tickWeak' })
+  } catch {
+    // Haptics are optional feedback; a bridge failure must not block the picker.
+  }
+}
+
 /** Open research sources outside the mini-app; failures are handled by the link UI. */
 export async function openTossExternalURL(url: string): Promise<void> {
   if (!isTossRuntime()) return

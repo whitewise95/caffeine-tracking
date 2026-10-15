@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { triggerTimeWheelHaptic } from '../../../integrations/toss/toss'
 import { displayIntakeTime } from './intakeTimeFormat'
 import { useTimeWheelGesture } from './useTimeWheelGesture'
 import './time-picker.css'
@@ -22,9 +23,11 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
   latest.current = selected
   function updateFromScroll(index: number) {
     if (disabled || index === latest.current) return
+    const isUserGesture = ref.current?.hasAttribute('data-interacting') ?? false
     fromScroll.current = index
     latest.current = index
     onChange(index)
+    if (isUserGesture) void triggerTimeWheelHaptic()
   }
   const { stop, ...gestures } = useTimeWheelGesture(ref, options.length, disabled, updateFromScroll)
   function rowHeight() { return ref.current?.firstElementChild?.getBoundingClientRect().height || 48 }

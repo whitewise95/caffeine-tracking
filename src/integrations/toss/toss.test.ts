@@ -3,7 +3,7 @@ import { Device, NavigationBar, SafeArea, Screen, Storage } from '@apps-in-toss/
 import { createInitialState } from '../../features/caffeine/model/caffeine'
 import { emptyOutfit } from '../../features/avatar/model/avatar'
 import { AVATAR_STORAGE_KEY } from '../../features/avatar/repository/LocalAvatarRepository'
-import { createAvatarRepository, createRepository, initializeTossSafeArea, isTossRuntime, openTossExternalURL, setOverlaySwipeBack, subscribeTossBack, syncTossNavigationTheme } from './toss'
+import { createAvatarRepository, createRepository, initializeTossSafeArea, isTossRuntime, openTossExternalURL, setOverlaySwipeBack, subscribeTossBack, syncTossNavigationTheme, triggerTimeWheelHaptic } from './toss'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -19,6 +19,24 @@ function tossWindow() {
 }
 
 describe('Toss runtime boundary', () => {
+  it('triggers a weak tick for time-wheel detents only inside Toss', async () => {
+    const haptic = vi.spyOn(Device, 'triggerHaptic').mockResolvedValue(undefined)
+    vi.stubGlobal('window', {})
+    await triggerTimeWheelHaptic()
+    expect(haptic).not.toHaveBeenCalled()
+
+    vi.stubGlobal('window', tossWindow())
+    await triggerTimeWheelHaptic()
+    expect(haptic).toHaveBeenCalledExactlyOnceWith({ type: 'tickWeak' })
+  })
+
+  it('keeps time selection usable when the native haptic bridge fails', async () => {
+    vi.stubGlobal('window', tossWindow())
+    vi.spyOn(Device, 'triggerHaptic').mockRejectedValue(new Error('native haptic failed'))
+
+    await expect(triggerTimeWheelHaptic()).resolves.toBeUndefined()
+  })
+
   it('persists avatars in the same browser storage using an independent key', async () => {
     const values = new Map<string, string>()
     vi.stubGlobal('window', { localStorage: {

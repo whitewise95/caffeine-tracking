@@ -12,6 +12,7 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
     });
     Reflect.set(window, 'testNavigationOptions', []);
     Reflect.set(window, 'testExternalURLs', []);
+    Reflect.set(window, 'testHaptics', []);
     Reflect.set(window, 'testCloseRequests', 0);
     const subscriptions = new Map<string, { method: string; bridgeId: string }>();
     Reflect.set(window, 'testNativeBack', () => {
@@ -23,7 +24,7 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
     Reflect.set(window, 'ReactNativeWebView', { postMessage: (raw: string) => {
       const message = JSON.parse(raw) as {
         type: string; bridgeId: string;
-        body?: { method: string; eventId: string; args: [{ key?: string; value?: string; theme?: string; backgroundColor?: string; url?: string; method?: string; subscriptionId?: string }] };
+        body?: { method: string; eventId: string; args: [{ key?: string; value?: string; theme?: string; backgroundColor?: string; url?: string; method?: string; subscriptionId?: string; type?: string }] };
       };
       if (message.type !== 'bridge' || !message.body) return;
       const { method, eventId, args } = message.body;
@@ -59,6 +60,9 @@ export async function installTossHost(page: Page, platformOS: 'ios' | 'android' 
           Reflect.set(window, 'testFailNextExternalURL', false);
           result = { __instanceof: 'Error', name: 'Error', message: 'External browser failed' };
         }
+      }
+      if (method === 'generateHapticFeedback') {
+        (Reflect.get(window, 'testHaptics') as unknown[]).push(args[0]);
       }
       const emitters = Reflect.get(window, 'nativeEmitterMap') as Record<string, { emit: (event: string, value: unknown, failed: boolean) => void }>;
       const respond = () => emitters[message.bridgeId].emit(`${method}-${eventId}`, result, false);

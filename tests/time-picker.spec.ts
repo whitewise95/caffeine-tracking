@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { pickTime, setTimeWheel, timeWheel } from './helpers/time-picker';
 import { createInitialState } from '../src/features/caffeine/model/caffeine';
+import { installTossHost } from './helpers/tossHost';
 
 test('time selection stays in the same modal and commits only on done', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-10-04T10:00:00+09:00') });
@@ -110,6 +111,17 @@ test('fast drags respect bounds, pointer cancellation, and reduced motion', asyn
   await setTimeWheel(page, '분', 0);
   await dragWheel(page, '분', -120, 40);
   expect(await settledWheel(page, '분')).toBe(0);
+});
+
+test('a dragged time detent requests one weak haptic only for the user change', async ({ page }) => {
+  await installTossHost(page);
+  await openPicker(page);
+  await dragWheel(page, '분', 48, 480);
+  expect(await settledWheel(page, '분')).toBe(1);
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'testHaptics'))).toEqual([{ type: 'tickWeak' }]);
+
+  await setTimeWheel(page, '분', 20);
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, 'testHaptics'))).toEqual([{ type: 'tickWeak' }]);
 });
 
 for (const exit of ['back', 'escape', 'arrow']) {
