@@ -17,7 +17,7 @@ export function HomePage({ state, halfLifeHours, now, onAdd, onRemaining, intake
     <header className="page-header"><div className="home-heading"><div className="brand"><span className="brand-mark"><Coffee size={17} strokeWidth={1.65} aria-hidden="true" /></span>지금 카페인</div><span className="header-date">{now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}</span></div></header>
     <CaffeineHero remaining={estimate.remainingMg} absorbingCount={absorbingCount} intakePulse={intakePulse} tiltEnabled={state.settings.tiltAnimation ?? false} onAdd={onAdd} outfit={outfit} outfitHidden={outfitHidden} onOutfitHiddenChange={onOutfitHiddenChange} onWardrobe={onWardrobe} />
     <button id="remaining-details-button" className="remaining-details-button" onClick={onRemaining}>아직 남아 있는 카페인 보기<ChevronRight size={16} aria-hidden="true" /></button>
-    <CaffeineSummary today={todayIntake(state.entries, now)} last={last}>
+    <CaffeineSummary today={todayIntake(state.entries, now)} last={last} now={now}>
       <CaffeineForecast entries={state.entries} halfLifeHours={halfLifeHours} now={now} bedtime={state.settings.bedtime ?? DEFAULT_BEDTIME} />
     </CaffeineSummary>
   </main>;
