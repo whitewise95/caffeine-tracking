@@ -2,7 +2,7 @@
 
 2026-10-15, `codex/jelly-clothing-fit`의 로컬 개발 기록이다. GitHub Release 또는 토스 배포 기록이 아니다. 기존 6개 슬롯 × 50개 아이템 구성과 저장 형식은 유지한다.
 
-## 겉멋 잠깐 끄기
+## 겉멋 끄기
 
 홈 아바타 위에 체크박스를 배치했다. 체크하면 의상과 소품을 모두 숨기고, 해제하면 저장된 코디를 다시 그린다. 캐릭터 자체, 액체 높이, 표정, 컵과 흡수 중 표현은 유지한다.
 
@@ -26,7 +26,7 @@ Chrome 개발 빌드, `localhost:5175`, 375 × 812 / 390 × 844 CSS px, reduced 
 
 | 코디 표시 | 코디 숨김 |
 | --- | --- |
-| <img src="previews/avatar-visibility/visible-390.png" width="260" alt="겉멋 잠깐 끄기 체크박스와 컵을 든 티셔츠 코디"> | <img src="previews/avatar-visibility/hidden-390.png" width="260" alt="체크 후 꾸미기만 숨겨지고 컵과 액체는 유지된 홈"> |
+| <img src="previews/avatar-visibility/visible-390.png" width="260" alt="겉멋 끄기 체크박스와 컵을 든 티셔츠 코디"> | <img src="previews/avatar-visibility/hidden-390.png" width="260" alt="체크 후 꾸미기만 숨겨지고 컵과 액체는 유지된 홈"> |
 
 [375px 화면](previews/avatar-visibility/visible-375.png) · [200% 텍스트](previews/avatar-visibility/large-text-375.png)
 

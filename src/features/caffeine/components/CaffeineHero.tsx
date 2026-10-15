@@ -12,7 +12,7 @@ export function CaffeineHero({ remaining, absorbingCount = 0, intakePulse, tiltE
       {canHideOutfit && <>
         <label className="avatar-outfit-toggle">
           <input type="checkbox" checked={outfitHidden} onChange={event => onOutfitHiddenChange(event.target.checked)} aria-describedby="avatar-outfit-toggle-hint" />
-          <span>겉멋 잠깐 끄기</span>
+          <span>겉멋 끄기</span>
         </label>
         <span id="avatar-outfit-toggle-hint" className="sr-only">체크하면 홈에서 꾸미기만 잠시 숨겨요. 해제하면 저장한 코디가 다시 보여요.</span>
       </>}

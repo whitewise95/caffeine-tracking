@@ -18,7 +18,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('temporarily hiding an outfit preserves the live avatar, cup and stored data', async ({ page }, testInfo) => {
-  const toggle = page.getByRole('checkbox', { name: '겉멋 잠깐 끄기' });
+  const toggle = page.getByRole('checkbox', { name: '겉멋 끄기' });
   await expect(toggle).toBeVisible();
   await expect(toggle).not.toBeChecked();
   for (const id of Object.values(outfit)) await expect(page.locator(`.home-page [data-avatar-item="${id}"]`).first()).toBeAttached();
@@ -43,7 +43,7 @@ test('temporarily hiding an outfit preserves the live avatar, cup and stored dat
   await expect(body).toHaveAttribute('data-live-instance', 'preserved');
   expect(await page.evaluate(keys => keys.map(key => localStorage.getItem(key)), [AVATAR_STORAGE_KEY, caffeineKey])).toEqual(saved);
 
-  const target = await page.getByText('겉멋 잠깐 끄기', { exact: true }).locator('..').boundingBox();
+  const target = await page.getByText('겉멋 끄기', { exact: true }).locator('..').boundingBox();
   expect(target!.height).toBeGreaterThanOrEqual(48);
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -52,7 +52,7 @@ test('temporarily hiding an outfit preserves the live avatar, cup and stored dat
 });
 
 test('hidden outfits stay editable and the latest saved outfit returns when revealed', async ({ page }) => {
-  const toggle = page.getByRole('checkbox', { name: '겉멋 잠깐 끄기' });
+  const toggle = page.getByRole('checkbox', { name: '겉멋 끄기' });
   await toggle.check();
   await page.getByRole('button', { name: '기록', exact: true }).click();
   await page.getByRole('button', { name: '홈', exact: true }).click();
@@ -76,7 +76,7 @@ test('hidden outfits stay editable and the latest saved outfit returns when reve
 });
 
 test('removing all items while hidden leaves an escape from hidden mode', async ({ page }) => {
-  const toggle = page.getByRole('checkbox', { name: '겉멋 잠깐 끄기' });
+  const toggle = page.getByRole('checkbox', { name: '겉멋 끄기' });
   await toggle.check();
   await page.getByRole('button', { name: '캐릭터 꾸미기', exact: true }).click();
   await page.getByRole('button', { name: '모두 벗기기' }).click();
@@ -84,7 +84,7 @@ test('removing all items while hidden leaves an escape from hidden mode', async 
   await expect(toggle).toBeChecked();
   // This empty-outfit control removes itself on click, so assert its removal
   // instead of asking uncheck() to wait for a now-detached input's state.
-  await page.getByText('겉멋 잠깐 끄기', { exact: true }).click();
+  await page.getByText('겉멋 끄기', { exact: true }).click();
   await expect(toggle).toHaveCount(0);
   await expect(page.locator('.home-page [data-avatar-item]')).toHaveCount(0);
   await page.getByRole('button', { name: '캐릭터 꾸미기', exact: true }).click();
