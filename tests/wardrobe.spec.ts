@@ -27,6 +27,11 @@ test('slots replace independently, explicit removal and reset remain drafts', as
   await page.goto('/');
   await page.getByRole('button', { name: '캐릭터 꾸미기', exact: true }).click();
   await page.getByRole('button', { name: '비니', exact: true }).click();
+  await expect(page.getByRole('button', { name: '비니', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '비니', exact: true }).click();
+  await expect(page.getByRole('button', { name: '비니', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('button', { name: '착용 안 함', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.wardrobe-preview [data-avatar-item="hat-beanie"]')).toHaveCount(0);
   await page.getByRole('button', { name: '비니', exact: true }).click();
   await expect(page.getByRole('button', { name: '비니', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('tab', { name: '안경', exact: true }).click();
@@ -153,6 +158,11 @@ test('keyboard, enlarged text and short viewport keep all wardrobe controls acce
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: '안경', exact: true })).toBeFocused();
   await page.getByRole('button', { name: '동그란 안경', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: '동그란 안경', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: '동그란 안경', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('button', { name: '착용 안 함', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: '동그란 안경', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

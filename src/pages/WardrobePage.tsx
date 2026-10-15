@@ -45,7 +45,7 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
   }, [busy, outfit]);
 
   function select(next: string | null) {
-    setDraft(previous => ({ ...previous, [slot]: next }));
+    setDraft(previous => ({ ...previous, [slot]: previous[slot] === next ? null : next }));
     setFailed(false);
   }
   function changeSlot(next: AvatarSlot) {
