@@ -92,7 +92,7 @@ export function WardrobePage({ outfit, caffeineMg, absorbingCount, tiltEnabled, 
       }}>{item.label}{draft[item.id] && <span className="wardrobe-tab-dot" aria-label="착용 중" />}</button>)}
     </div>
     <div className="wardrobe-items" id="wardrobe-items" role="tabpanel" aria-labelledby={`wardrobe-tab-${slot}`} ref={list} tabIndex={0}>
-      <div className="wardrobe-section-label"><h2>{category.label}</h2><span>10가지 아이템</span></div>
+      <div className="wardrobe-section-label"><h2>{category.label}</h2></div>
       <div className="wardrobe-grid" role="group" aria-label={`${category.label} 아이템`}>
         <button className="wardrobe-item wardrobe-item--none" aria-label="착용 안 함" aria-pressed={draft[slot] === null} disabled={busy} onClick={() => select(null)}>
           <span className="wardrobe-none-icon"><X size={24} strokeWidth={1.5} aria-hidden="true" /></span>
