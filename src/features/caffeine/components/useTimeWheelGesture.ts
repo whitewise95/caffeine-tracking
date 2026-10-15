@@ -10,7 +10,7 @@ type Gesture = {
   samples: Sample[]
 }
 
-const DRAG_THRESHOLD_PX = 6
+const DRAG_THRESHOLD_PX = 10
 const VELOCITY_WINDOW_MS = 100
 const MIN_FLING_SPEED = .3
 const FLING_PROJECTION_MS = 180

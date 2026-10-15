@@ -267,6 +267,20 @@ test('visible hour and minute numbers can be tapped without dragging', async ({ 
   await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toContainText('오전 10:31');
 });
 
+test('a touch tap with slight finger movement still selects the intended number', async ({ page }) => {
+  await openPicker(page);
+  const option = page.getByRole('button', { name: '02분 선택', exact: true });
+  const box = (await option.boundingBox())!;
+  const session = await page.context().newCDPSession(page);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 8 }] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(page.getByRole('spinbutton', { name: '분', exact: true })).toHaveAttribute('aria-valuenow', '2');
+  await session.detach();
+});
+
 test('edit picker returns to its form before the root close button dismisses editing', async ({ page }) => {
   await openPicker(page);
   await page.getByRole('button', { name: '취소', exact: true }).click();
