@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createInitialState, remainingCaffeine } from '../src/features/caffeine/model/caffeine';
 import { installTossHost } from './helpers/tossHost';
 import { chooseBedtime, openBedtimeSettings } from './helpers/bedtime';
+import { setTimeWheel, timeWheel } from './helpers/time-picker';
 
 const now = new Date('2026-10-06T16:00:00+09:00');
 const state = {
@@ -84,8 +85,8 @@ test('bedtime sheet cancels drafts and Android back returns to settings before l
   for (const exit of ['cancel', 'close', 'escape', 'browser-back', 'android-back']) {
     await control.click();
     const picker = page.getByRole('dialog', { name: '예정 취침 시각', exact: true });
-    await picker.getByRole('spinbutton', { name: '시', exact: true }).press('Home');
-    await picker.getByRole('spinbutton', { name: '분', exact: true }).press('End');
+    await setTimeWheel(picker, '시', 0);
+    await setTimeWheel(picker, '분', 59);
     await expect(picker.locator('.time-picker-preview')).toContainText('오후 1:59');
     expect(await page.evaluate(() => localStorage.getItem('test-toss-native-state'))).toBe(saved);
     if (exit === 'cancel') await picker.getByRole('button', { name: '취소', exact: true }).click();
@@ -113,27 +114,26 @@ test('bedtime picker stores noon and midnight as the correct 24-hour times', asy
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('caffeine-tracker:state:v1')!).settings.bedtime)).toBe('00:05');
 });
 
-test('bedtime wheels support tapping, scrolling and enlarged text in a bottom sheet', async ({ page }, info) => {
+test('bedtime wheels support dragging, scrolling and enlarged text in a bottom sheet', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.clock.install({ time: now });
   await page.goto('/settings');
   await openBedtimeSettings(page);
   await page.getByRole('button', { name: '예정 취침 시각', exact: true }).click();
   const picker = page.getByRole('dialog', { name: '예정 취침 시각', exact: true });
-  await picker.getByRole('button', { name: '10시 선택', exact: true }).tap();
-  await picker.getByRole('button', { name: '01분 선택', exact: true }).tap();
+  await setTimeWheel(picker, '시', 9);
+  await setTimeWheel(picker, '분', 1);
   await expect(picker.locator('.time-picker-preview')).toContainText('오후 10:01');
-  const minute = picker.getByRole('spinbutton', { name: '분', exact: true });
+  const minute = timeWheel(picker, '분');
   await minute.evaluate(element => {
     const height = element.firstElementChild!.getBoundingClientRect().height;
     element.scrollTo({ top: height * 15, behavior: 'instant' });
   });
-  await expect(minute).toHaveAttribute('aria-valuenow', '15');
+  await expect(minute).toHaveAttribute('data-value', '15');
   await expect(picker.locator('.time-picker-preview')).toContainText('오후 10:15');
   await page.screenshot({ path: info.outputPath('bedtime-picker.png') });
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
-  await minute.press('End');
-  await expect(minute).toHaveAttribute('aria-valuenow', '59');
+  await setTimeWheel(picker, '분', 59);
   const done = picker.getByRole('button', { name: '완료', exact: true });
   await done.scrollIntoViewIfNeeded();
   expect(await picker.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);

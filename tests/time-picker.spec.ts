@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { pickTime } from './helpers/time-picker';
+import { pickTime, setTimeWheel, timeWheel } from './helpers/time-picker';
 import { createInitialState } from '../src/features/caffeine/model/caffeine';
 
 test('time selection stays in the same modal and commits only on done', async ({ page }) => {
@@ -15,18 +15,13 @@ test('time selection stays in the same modal and commits only on done', async ({
   await expect(page.getByRole('heading', { name: '시작 시간 선택' })).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(1);
   expect(await originalDialog!.evaluate(element => element === document.querySelector('dialog'))).toBe(true);
-  const hour = page.getByRole('spinbutton', { name: '시', exact: true });
-  await hour.focus();
-  await hour.press('Home');
-  await hour.press('ArrowUp');
+  await setTimeWheel(page, '시', 1);
   await page.getByRole('button', { name: '취소', exact: true }).click();
   const start = page.getByRole('button', { name: '마시기 시작한 시각', exact: true });
   await expect(start).toContainText('오전 10:00');
   await expect(start).toBeFocused();
   await start.click();
-  await hour.focus();
-  await hour.press('Home');
-  await hour.press('ArrowUp');
+  await setTimeWheel(page, '시', 1);
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(start).toContainText('오전 2:00');
   await expect(page.getByLabel('마시기 시작한 날짜', { exact: true })).toHaveValue('2026-10-04');
@@ -45,7 +40,7 @@ async function openPicker(page: import('@playwright/test').Page, theme = '') {
 }
 
 async function dragWheel(page: import('@playwright/test').Page, label: string, distance: number, duration: number, cancel = false) {
-  await page.getByRole('spinbutton', { name: label, exact: true }).evaluate((element, gesture) => {
+  await timeWheel(page, label).evaluate((element, gesture) => {
     const box = element.getBoundingClientRect();
     const startY = box.y + box.height * .6;
     const started = performance.now();
@@ -67,59 +62,52 @@ async function dragWheel(page: import('@playwright/test').Page, label: string, d
 }
 
 async function settledWheel(page: import('@playwright/test').Page, label: string) {
-  const wheel = page.getByRole('spinbutton', { name: label, exact: true });
+  const wheel = timeWheel(page, label);
   await expect(wheel).not.toHaveAttribute('data-interacting', 'true');
   await expect.poll(() => wheel.evaluate((element, hour) => {
     const height = element.firstElementChild!.getBoundingClientRect().height;
-    const selected = Number(element.getAttribute('aria-valuenow')) - (hour ? 1 : 0);
+    const selected = Number(element.getAttribute('data-value')) - (hour ? 1 : 0);
     return Math.abs(element.scrollTop / height - selected);
   }, label === '시')).toBeLessThan(.01);
-  return Number(await wheel.getAttribute('aria-valuenow'));
+  return Number(await wheel.getAttribute('data-value'));
 }
 
 test('a fast flick moves farther than the same slow drag and can be stopped by a tap', async ({ page }) => {
   await openPicker(page);
-  const minute = page.getByRole('spinbutton', { name: '분', exact: true });
-  await minute.focus();
-  await minute.press('Home');
-  await minute.press('PageUp');
-  await minute.press('PageUp');
+  const minute = timeWheel(page, '분');
+  await setTimeWheel(page, '분', 20);
   await dragWheel(page, '분', 48, 480);
   const slow = await settledWheel(page, '분');
   expect(slow).toBe(21);
-  await minute.press('Home');
-  await minute.press('PageUp');
-  await minute.press('PageUp');
+  await setTimeWheel(page, '분', 20);
   await dragWheel(page, '분', 48, 40);
   const fast = await settledWheel(page, '분');
   expect(fast).toBeGreaterThanOrEqual(slow + 3);
   expect(fast).toBeLessThanOrEqual(slow + 8);
   await dragWheel(page, '분', -48, 40);
-  await minute.press('Home');
-  await expect(minute).toHaveAttribute('aria-valuenow', '0');
+  await setTimeWheel(page, '분', 0);
+  await expect(minute).toHaveAttribute('data-value', '0');
   await page.waitForTimeout(400);
   expect(await settledWheel(page, '분')).toBe(0);
   await dragWheel(page, '분', 48, 40);
-  await page.getByRole('button', { name: '02분 선택', exact: true }).click({ force: true });
-  expect(await settledWheel(page, '분')).toBe(2);
+  await minute.locator('.time-wheel-option').nth(2).click({ force: true });
+  const stopped = await settledWheel(page, '분');
   await page.waitForTimeout(400);
-  expect(await settledWheel(page, '분')).toBe(2);
+  expect(await settledWheel(page, '분')).toBe(stopped);
 });
 
 test('fast drags respect bounds, pointer cancellation, and reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openPicker(page);
-  const minute = page.getByRole('spinbutton', { name: '분', exact: true });
-  await minute.focus();
-  await minute.press('Home');
+  await setTimeWheel(page, '분', 0);
   await dragWheel(page, '분', 48, 40, true);
   expect(await settledWheel(page, '분')).toBe(1);
   await dragWheel(page, '분', 48, 40);
   expect(await settledWheel(page, '분')).toBeGreaterThanOrEqual(5);
-  await minute.press('End');
+  await setTimeWheel(page, '분', 59);
   await dragWheel(page, '분', 120, 40);
   expect(await settledWheel(page, '분')).toBe(59);
-  await minute.press('Home');
+  await setTimeWheel(page, '분', 0);
   await dragWheel(page, '분', -120, 40);
   expect(await settledWheel(page, '분')).toBe(0);
 });
@@ -127,9 +115,7 @@ test('fast drags respect bounds, pointer cancellation, and reduced motion', asyn
 for (const exit of ['back', 'escape', 'arrow']) {
   test(`${exit} cancels a pending time without clearing the drink`, async ({ page }) => {
     await openPicker(page);
-    const minute = page.getByRole('spinbutton', { name: '분', exact: true });
-    await minute.focus();
-    await minute.press('End');
+    await setTimeWheel(page, '분', 59);
     if (exit === 'back') await page.goBack();
     else if (exit === 'escape') await page.keyboard.press('Escape');
     else await page.getByRole('button', { name: '기록 화면으로 돌아가기' }).click();
@@ -142,7 +128,7 @@ for (const exit of ['back', 'escape', 'arrow']) {
 
 test('vertical touch swipe changes and snaps the minute wheel', async ({ page }) => {
   await openPicker(page);
-  const wheel = page.getByRole('spinbutton', { name: '분', exact: true });
+  const wheel = timeWheel(page, '분');
   const box = (await wheel.boundingBox())!;
   const session = await page.context().newCDPSession(page);
   const x = box.x + box.width / 2;
@@ -153,22 +139,22 @@ test('vertical touch swipe changes and snaps the minute wheel', async ({ page })
     await page.waitForTimeout(35);
   }
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect.poll(async () => Number(await wheel.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
+  await expect.poll(async () => Number(await wheel.getAttribute('data-value'))).toBeGreaterThan(0);
   await expect.poll(() => wheel.evaluate(element => {
     const rowHeight = element.firstElementChild!.getBoundingClientRect().height;
     return Math.abs(element.scrollTop / rowHeight - Math.round(element.scrollTop / rowHeight));
   })).toBeLessThan(.01);
-  const minute = await wheel.getAttribute('aria-valuenow');
+  const minute = await wheel.getAttribute('data-value');
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toContainText(`오전 10:${minute!.padStart(2, '0')}`);
   await session.detach();
 });
 
-test('native touch flicks accelerate hours and minutes while a held drag stays precise', async ({ page }) => {
+test('native touch flicks move hours and minutes while a held drag stays precise', async ({ page }) => {
   await openPicker(page);
   const session = await page.context().newCDPSession(page);
   async function swipe(label: string, delay: number, hold = 0) {
-    const wheel = page.getByRole('spinbutton', { name: label, exact: true });
+    const wheel = timeWheel(page, label);
     const box = (await wheel.boundingBox())!;
     const x = box.x + box.width / 2;
     const y = box.y + box.height * .65;
@@ -184,48 +170,31 @@ test('native touch flicks accelerate hours and minutes while a held drag stays p
     await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', timestamp: started + (delay * 2 + hold) / 1000, touchPoints: [] });
     return settledWheel(page, label);
   }
-  const minute = page.getByRole('spinbutton', { name: '분', exact: true });
-  await minute.focus();
-  await minute.press('Home');
-  await minute.press('PageUp');
-  await minute.press('PageUp');
-  expect(await swipe('분', 140)).toBe(21);
-  await minute.press('Home');
-  await minute.press('PageUp');
-  await minute.press('PageUp');
-  expect(await swipe('분', 8)).toBeGreaterThanOrEqual(24);
-  await minute.press('Home');
-  await minute.press('PageUp');
-  await minute.press('PageUp');
+  await setTimeWheel(page, '분', 20);
+  const slowMinute = await swipe('분', 140);
+  expect(slowMinute).toBe(21);
+  await setTimeWheel(page, '분', 20);
+  expect(await swipe('분', 8)).toBeGreaterThan(slowMinute);
+  await setTimeWheel(page, '분', 20);
   expect(await swipe('분', 8, 200)).toBe(21);
-  const hour = page.getByRole('spinbutton', { name: '시', exact: true });
-  await hour.focus();
-  await hour.press('Home');
-  for (let i = 0; i < 4; i++) await hour.press('ArrowUp');
-  expect(await swipe('시', 140)).toBe(6);
-  await hour.press('Home');
-  for (let i = 0; i < 4; i++) await hour.press('ArrowUp');
-  await swipe('시', 8);
-  await expect.poll(async () => Number(await hour.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(8);
+  await setTimeWheel(page, '시', 4);
+  const slowHour = await swipe('시', 140);
+  expect(slowHour).toBe(6);
+  await setTimeWheel(page, '시', 4);
+  expect(await swipe('시', 8)).toBeGreaterThanOrEqual(slowHour);
   await session.detach();
 });
 
-test('tapping numbers and keyboard boundaries convert noon and midnight correctly', async ({ page }) => {
+test('drag-wheel values convert noon and midnight correctly', async ({ page }) => {
   await openPicker(page);
-  await page.getByRole('button', { name: '오후 선택', exact: true }).click();
-  const hour = page.getByRole('spinbutton', { name: '시', exact: true });
-  await hour.focus();
-  await hour.press('End');
-  const minute = page.getByRole('spinbutton', { name: '분', exact: true });
-  await minute.focus();
-  await minute.press('Home');
-  await minute.press('ArrowDown');
-  await expect(minute).toHaveAttribute('aria-valuenow', '0');
+  await setTimeWheel(page, '오전·오후', 1);
+  await setTimeWheel(page, '시', 11);
+  await setTimeWheel(page, '분', 0);
   await page.getByRole('button', { name: '완료', exact: true }).click();
   const start = page.getByRole('button', { name: '마시기 시작한 시각', exact: true });
   await expect(start).toContainText('오후 12:00');
   await start.click();
-  await page.getByRole('button', { name: '오전 선택', exact: true }).click();
+  await setTimeWheel(page, '오전·오후', 0);
   await page.getByRole('button', { name: '완료', exact: true }).click();
   await expect(start).toContainText('오전 12:00');
   await page.getByRole('button', { name: '기록 저장', exact: true }).click();
@@ -240,10 +209,8 @@ for (const theme of ['']) {
     await openPicker(page, theme);
     await page.screenshot({ path: `test-results/${testInfo.project.name}-time-picker-${theme ? 'light' : 'dark'}.png` });
     await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
-    const minute = page.getByRole('spinbutton', { name: '분', exact: true });
-    await minute.focus();
-    await minute.press('End');
-    await expect(minute).toHaveAttribute('aria-valuenow', '59');
+    const minute = timeWheel(page, '분');
+    await setTimeWheel(page, '분', 59);
     await expect.poll(() => minute.evaluate(element => {
       const height = element.firstElementChild!.getBoundingClientRect().height;
       return Math.abs(element.scrollTop / height - 59);
@@ -257,27 +224,20 @@ for (const theme of ['']) {
   });
 }
 
-test('visible hour and minute numbers can be tapped without dragging', async ({ page }) => {
+test('number taps and keyboard input do not change a drag-only time wheel', async ({ page }) => {
   await openPicker(page);
-  await page.getByRole('button', { name: '10시 선택', exact: true }).click();
-  await page.getByRole('button', { name: '31분 선택', exact: true }).click();
-  await expect(page.getByRole('spinbutton', { name: '시', exact: true })).toHaveAttribute('aria-valuenow', '10');
-  await expect(page.getByRole('spinbutton', { name: '분', exact: true })).toHaveAttribute('aria-valuenow', '31');
-  await page.getByRole('button', { name: '완료', exact: true }).click();
-  await expect(page.getByRole('button', { name: '마시기 시작한 시각', exact: true })).toContainText('오전 10:31');
-});
-
-test('a touch tap with slight finger movement still selects the intended number', async ({ page }) => {
-  await openPicker(page);
-  const option = page.getByRole('button', { name: '02분 선택', exact: true });
+  const minute = timeWheel(page, '분');
+  const option = minute.locator('.time-wheel-option').nth(2);
   const box = (await option.boundingBox())!;
   const session = await page.context().newCDPSession(page);
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
   await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-  await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + 8 }] });
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect(page.getByRole('spinbutton', { name: '분', exact: true })).toHaveAttribute('aria-valuenow', '2');
+  await expect(minute).toHaveAttribute('data-value', '0');
+  await expect(minute).not.toHaveAttribute('tabindex');
+  await expect(minute.getByRole('button')).toHaveCount(0);
+  await expect(page.locator('.time-picker-hint')).toHaveCount(0);
   await session.detach();
 });
 
@@ -291,9 +251,7 @@ test('edit picker returns to its form before the root close button dismisses edi
   const dialog = await page.getByRole('dialog').elementHandle();
   await page.getByRole('button', { name: '마신 시각', exact: true }).click();
   expect(await dialog!.evaluate(element => element === document.querySelector('dialog'))).toBe(true);
-  const hour = page.getByRole('spinbutton', { name: '시', exact: true });
-  await hour.focus();
-  await hour.press('Home');
+  await setTimeWheel(page, '시', 0);
   await page.goBack();
   await expect(page.getByRole('button', { name: '마신 시각', exact: true })).toContainText('오전 10:00');
   await page.getByRole('button', { name: '마신 시각', exact: true }).click();

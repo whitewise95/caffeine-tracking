@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type MouseEvent, type PointerEvent, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, type PointerEvent, type RefObject } from 'react'
 
 type Sample = { y: number; time: number }
 type Gesture = {
@@ -21,7 +21,6 @@ const MAX_FLING_ROWS = 8
 export function useTimeWheelGesture(ref: RefObject<HTMLDivElement>, count: number, disabled: boolean, onPosition: (index: number) => void) {
   const gesture = useRef<Gesture | null>(null)
   const frame = useRef<number | null>(null)
-  const suppressClick = useRef(false)
   const notify = useRef(onPosition)
   notify.current = onPosition
 
@@ -49,8 +48,6 @@ export function useTimeWheelGesture(ref: RefObject<HTMLDivElement>, count: numbe
     if (!active.dragged && Math.abs(distance) < DRAG_THRESHOLD_PX) return
     if (!active.dragged) {
       active.dragged = true
-      suppressClick.current = true
-      event.currentTarget.focus({ preventScroll: true })
       // Only active browser pointers can be captured.
       if (capture && event.nativeEvent.isTrusted) event.currentTarget.setPointerCapture(event.pointerId)
     }
@@ -107,7 +104,6 @@ export function useTimeWheelGesture(ref: RefObject<HTMLDivElement>, count: numbe
     onPointerDown(event: PointerEvent<HTMLDivElement>) {
       if (disabled || !event.isPrimary || event.button !== 0 || gesture.current) return
       stop()
-      suppressClick.current = false
       const node = event.currentTarget
       node.setAttribute('data-interacting', 'true')
       gesture.current = {
@@ -123,12 +119,6 @@ export function useTimeWheelGesture(ref: RefObject<HTMLDivElement>, count: numbe
       // Touch begins with implicit capture on a number button. Its loss bubbles
       // when capture moves to the wheel, and must not cancel the active drag.
       if (event.target === event.currentTarget) finish(event, true)
-    },
-    onClickCapture(event: MouseEvent<HTMLDivElement>) {
-      if (!suppressClick.current) return
-      suppressClick.current = false
-      event.preventDefault()
-      event.stopPropagation()
     },
   }
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { pickTime } from './helpers/time-picker';
+import { pickTime, setTimeWheel } from './helpers/time-picker';
 
 const storageKey = 'caffeine-tracker:state:v1';
 async function openRecord(page: Page, now = '2026-10-14T12:00:00+09:00') {
@@ -91,7 +91,7 @@ test('a manually changed finish remains fixed after later start changes in recor
   await expect(page.getByLabel('마신 마지막 시각', { exact: true })).toContainText('오전 9:30');
   // Cancelling the picker, or confirming the same minute, does not count as a change.
   await page.getByLabel('마신 마지막 시각', { exact: true }).click();
-  await page.getByRole('spinbutton', { name: '분', exact: true }).press('End');
+  await setTimeWheel(page, '분', 59);
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await pickTime(page, '마시기 시작한 시각', '09:10');
   await expect(page.getByLabel('마신 마지막 시각', { exact: true })).toContainText('오전 9:40');

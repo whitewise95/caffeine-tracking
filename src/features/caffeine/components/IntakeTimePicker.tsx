@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { displayIntakeTime } from './intakeTimeFormat'
 import { useTimeWheelGesture } from './useTimeWheelGesture'
 import './time-picker.css'
@@ -28,14 +28,6 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
   }
   const { stop, ...gestures } = useTimeWheelGesture(ref, options.length, disabled, updateFromScroll)
   function rowHeight() { return ref.current?.firstElementChild?.getBoundingClientRect().height || 48 }
-  function select(index: number) {
-    stop()
-    const next = Math.max(0, Math.min(options.length - 1, index))
-    latest.current = next
-    fromScroll.current = null
-    ref.current?.scrollTo({ top: next * rowHeight(), behavior: 'instant' })
-    onChange(next)
-  }
   useLayoutEffect(() => {
     if (fromScroll.current === selected) return
     ref.current?.scrollTo({ top: selected * rowHeight(), behavior: 'instant' })
@@ -50,32 +42,20 @@ function TimeWheel({ label, options, selected, onChange, disabled }: {
     observer.observe(row)
     return () => observer.disconnect()
   }, [stop])
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (disabled) return
-    const delta: Record<string, number> = { ArrowUp: 1, ArrowDown: -1, PageUp: 10, PageDown: -10 }
-    if (event.key === 'Home') select(0)
-    else if (event.key === 'End') select(options.length - 1)
-    else if (event.key in delta) select(latest.current + delta[event.key])
-    else return
-    event.preventDefault()
-  }
   return <div className="time-wheel-column">
     <span className="time-wheel-label" aria-hidden="true">{label}</span>
     <div className="time-wheel-frame">
       <div className="time-wheel-selection" aria-hidden="true" />
-      <div ref={ref} className="time-wheel" role="spinbutton" tabIndex={disabled ? -1 : 0} aria-label={label} aria-disabled={disabled}
+      <div ref={ref} className="time-wheel" role="img" data-time-wheel={label} data-value={label === '시' ? selected + 1 : selected}
+        aria-label={`${label} ${options[selected]}${label === '오전·오후' ? '' : label}`} aria-disabled={disabled}
         {...gestures}
-        aria-valuemin={label === '시' ? 1 : 0} aria-valuemax={label === '시' ? 12 : options.length - 1}
-        aria-valuenow={label === '시' ? selected + 1 : selected} aria-valuetext={`${options[selected]}${label === '오전·오후' ? '' : label}`}
-        onKeyDown={onKeyDown} onScroll={event => {
+        onScroll={event => {
           if (disabled) return
           const index = Math.max(0, Math.min(options.length - 1, Math.round(event.currentTarget.scrollTop / rowHeight())))
           updateFromScroll(index)
         }}>
-        {options.map((option, index) => <button type="button" key={option} tabIndex={-1} disabled={disabled}
-          className={`time-wheel-option${index === selected ? ' is-selected' : ''}`}
-          aria-label={`${option}${label === '오전·오후' ? '' : label} 선택`}
-          onClick={() => { ref.current?.focus({ preventScroll: true }); select(index) }}>{option}</button>)}
+        {options.map((option, index) => <div key={option} aria-hidden="true"
+          className={`time-wheel-option${index === selected ? ' is-selected' : ''}`}>{option}</div>)}
       </div>
     </div>
   </div>
@@ -91,8 +71,7 @@ export function IntakeTimePicker({ value, onDone, onCancel, disabled = false }: 
   return <div className="time-picker">
     <div className="time-picker-content">
       <p className="time-picker-preview" aria-live="polite" aria-atomic="true">{displayIntakeTime(time)}</p>
-      <p className="time-picker-hint" id="time-picker-hint">위아래로 밀거나 숫자를 눌러 선택해요.</p>
-      <div className="time-picker-wheels" role="group" aria-label="시간 선택" aria-describedby="time-picker-hint">
+      <div className="time-picker-wheels" role="group" aria-label="시간 선택">
         <TimeWheel label="오전·오후" options={periods} selected={period} onChange={setPeriod} disabled={disabled} />
         <TimeWheel label="시" options={hours} selected={hour} onChange={setHour} disabled={disabled} />
         <TimeWheel label="분" options={minutes} selected={minute} onChange={setMinute} disabled={disabled} />

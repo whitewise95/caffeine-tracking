@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { pickTime } from './helpers/time-picker';
+import { pickTime, setTimeWheel } from './helpers/time-picker';
 
 test('home clock selection keeps explicit dates and saves an overnight interval', async ({ page }) => {
   await page.clock.install({ time: new Date('2026-10-31T22:00:00+09:00') });
@@ -45,7 +45,7 @@ test('cancelling an overnight clock choice does not change dates or duration', a
   await page.getByRole('button', { name: /아메리카노\s*150\s*mg/ }).click();
   await page.getByRole('button', { name: '천천히 마시기', exact: true }).click();
   await page.getByRole('button', { name: '마신 마지막 시각', exact: true }).click();
-  await page.getByRole('spinbutton', { name: '시', exact: true }).press('Home');
+  await setTimeWheel(page, '시', 0);
   await page.getByRole('button', { name: '취소', exact: true }).click();
   await expect(page.getByLabel('마신 마지막 날짜', { exact: true })).toHaveValue('2026-10-06');
   await expect(page.getByRole('button', { name: '마신 마지막 시각', exact: true })).toContainText('오후 12:00');

@@ -1,8 +1,7 @@
 .time-picker { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 12px 24px 24px; }
 .time-picker-content { flex-shrink: 0; margin-block: auto; padding-block: 12px 28px; }
 .time-picker-preview { margin: 0; text-align: center; color: var(--text-primary); font-size: 2rem; font-weight: 500; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-.time-picker-hint { margin: 12px 0 28px; text-align: center; color: var(--text-secondary); font-size: .75rem; line-height: 1.6; }
-.time-picker-wheels { --wheel-row: clamp(48px, 3rem, 72px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.time-picker-wheels { --wheel-row: clamp(48px, 3rem, 72px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 28px; }
 .time-wheel-column { min-width: 0; }
 .time-wheel-label { display: block; margin-bottom: 12px; text-align: center; font-size: .75rem; color: var(--text-secondary); }
 .time-wheel-frame { position: relative; }
@@ -13,8 +12,6 @@
 .time-wheel[aria-disabled='true'] { pointer-events: none; opacity: .5; }
 .time-wheel-option { display: block; width: 100%; height: var(--wheel-row); min-height: 48px; padding: 0; border: 0; background: transparent; color: var(--text-secondary); font-size: 1.25rem; font-variant-numeric: tabular-nums; scroll-snap-align: center; touch-action: pan-x pinch-zoom; transform: none; transition: color var(--motion-fast); }
 .time-wheel-option.is-selected { color: var(--accent-pink-strong); font-weight: 600; }
-.time-wheel-option:active { background: var(--surface-pressed); border-radius: 12px; }
-.time-wheel:focus-visible { outline: 2px solid var(--text-primary); outline-offset: var(--focus-ring-offset); }
 .time-picker-actions { display: grid; flex-shrink: 0; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: auto; }
 .time-picker-actions button { min-width: 0; min-height: 52px; }
 .sheet-dialog--edit { height: min(740px, calc(94dvh - var(--safe-top))); }
