@@ -12,8 +12,8 @@ export function ClothingItemGraphic({ itemId, layer, drinking }: {
   drinking: boolean;
 }): ReactNode {
   if (itemId.startsWith('top-')) return <TopItem itemId={itemId} layer={layer} drinking={drinking} />;
+  if (itemId.startsWith('bottom-')) return <BottomItem itemId={itemId} layer={layer} />;
   if (layer !== 'body') return null;
-  if (itemId.startsWith('bottom-')) return <BottomItem itemId={itemId} />;
   if (itemId.startsWith('shoes-')) return <ShoeItem itemId={itemId} />;
   return null;
 }

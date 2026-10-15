@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { GarmentSurface } from './clothing/GarmentSurface';
+import { garmentPalettes } from './clothing/garmentPalette';
 
 type ItemLayer = 'back' | 'body' | 'front';
 
@@ -8,24 +10,23 @@ interface HeadItemGraphicProps {
   drinking: boolean;
 }
 
-// These materials belong to the artwork, rather than the application's UI theme.
-// Solid shaded shapes keep thumbnails cheap and avoid shared SVG definition IDs.
-const ink = '#343A46';
-const cream = '#E9DFCA';
-const creamShade = '#BFB29C';
-const denim = '#667F9E';
-const denimShade = '#435773';
-const rose = '#CCA0AF';
-const roseShade = '#966E80';
-const mint = '#A6BFB1';
-const metal = '#C8C7C0';
-const highlight = '#FFF5E3';
+// Shared muted materials and thin edges keep small wearables part of the outfit.
+const ink = '#505B64';
+const cream = garmentPalettes.cream.base;
+const creamShade = '#AAA28F';
+const denim = garmentPalettes.denim.base;
+const denimShade = garmentPalettes.denim.shade;
+const rose = garmentPalettes.blush.base;
+const roseShade = garmentPalettes.blush.shade;
+const mint = garmentPalettes.mint.base;
+const metal = '#C6C8C0';
+const highlight = '#EEE6D7';
 
 function HatGraphic({ itemId }: { itemId: string }): ReactNode {
   switch (itemId) {
     case 'hat-beanie':
       return <g>
-        <path d="M108 86 C108 54 126 37 159 37 C192 37 211 55 213 86 Z" fill={denim} stroke={ink} />
+        <GarmentSurface d="M108 86 C108 54 126 37 159 37 C192 37 211 55 213 86 Z" palette={garmentPalettes.denim} />
         <path d="M182 42 C202 50 211 66 213 86 H196 C196 65 191 51 182 42" fill={denimShade} stroke="none" />
         <path d="M124 76 Q125 51 139 45 M143 75 Q143 51 148 43 M162 75 V43 M181 76 Q180 54 173 44 M198 78 Q194 59 188 53" fill="none" stroke="#97AEC5" strokeWidth="1.1" opacity=".7" />
         <path d="M108 78 Q160 71 212 78 L215 92 Q161 102 106 92 Z" fill={denimShade} stroke={ink} />
@@ -37,7 +38,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
     case 'hat-beret':
       return <g>
         <path d="M155 44 Q151 36 158 32 Q163 32 161 43" fill={roseShade} stroke={ink} />
-        <path d="M103 75 C92 59 113 44 143 41 C174 36 207 47 217 64 C230 85 188 91 148 88 C127 87 112 83 103 75 Z" fill={rose} stroke={ink} />
+        <GarmentSurface d="M103 75 C92 59 113 44 143 41 C174 36 207 47 217 64 C230 85 188 91 148 88 C127 87 112 83 103 75 Z" palette={garmentPalettes.blush} />
         <path d="M105 75 Q153 83 204 71 Q219 68 220 66 C225 86 185 91 148 88 Q118 87 105 75" fill={roseShade} stroke="none" />
         <path d="M116 79 Q158 85 199 78 L199 88 Q160 96 118 88 Z" fill="#765764" stroke={ink} />
         <path d="M113 61 Q127 47 152 47" fill="none" stroke="#EBD0D5" strokeWidth="3" opacity=".65" />
@@ -45,7 +46,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-cap':
       return <g>
-        <path d="M110 85 C111 58 130 43 158 43 C185 43 206 62 207 86 Z" fill={mint} stroke={ink} />
+        <GarmentSurface d="M110 85 C111 58 130 43 158 43 C185 43 206 62 207 86 Z" palette={garmentPalettes.mint} />
         <path d="M172 45 C195 53 205 67 207 86 H178 Q183 64 172 45" fill="#789489" stroke="none" />
         <path d="M155 44 Q143 60 143 81 M156 44 Q174 61 176 82" fill="none" stroke="#718B80" strokeWidth="1.1" />
         <ellipse cx="157" cy="44" rx="5" ry="2.5" fill="#718B80" stroke={ink} />
@@ -56,7 +57,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-bucket':
       return <g>
-        <path d="M121 50 Q160 42 198 51 L210 84 H109 Z" fill={cream} stroke={ink} />
+        <GarmentSurface d="M121 50 Q160 42 198 51 L210 84 H109 Z" palette={garmentPalettes.cream} />
         <path d="M185 49 L198 51 L210 84 H194 Z" fill={creamShade} stroke="none" />
         <path d="M114 72 Q159 78 204 73 L209 86 Q160 93 110 85 Z" fill="#D5C7B0" stroke="none" />
         <path d="M110 80 Q160 87 209 80 L226 98 Q228 103 221 104 Q160 112 100 103 Q94 102 97 97 Z" fill={cream} stroke={ink} />
@@ -67,7 +68,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-fedora':
       return <g>
-        <path d="M118 82 L126 46 Q130 38 142 43 L157 49 L181 40 Q193 37 197 50 L206 84 Z" fill="#777987" stroke={ink} />
+        <GarmentSurface d="M118 82 L126 46 Q130 38 142 43 L157 49 L181 40 Q193 37 197 50 L206 84 Z" palette={garmentPalettes.grey} />
         <path d="M181 41 Q187 56 184 77 L205 84 L197 50 Q193 38 181 41" fill="#555A68" stroke="none" />
         <path d="M133 46 Q144 50 157 55 Q170 49 182 45" fill="none" stroke="#B7B6C1" strokeWidth="2" />
         <path d="M120 70 Q160 79 202 70 L206 85 Q161 95 118 84 Z" fill="#3F4351" stroke={ink} />
@@ -87,7 +88,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-party':
       return <g>
-        <path d="M143 75 L171 21 Q173 17 176 22 L198 80 Q171 90 143 75 Z" fill="#A2A1C4" stroke={ink} />
+        <GarmentSurface d="M143 75 L171 21 Q173 17 176 22 L198 80 Q171 90 143 75 Z" palette={garmentPalettes.lavender} />
         <path d="M176 25 L198 80 Q186 84 181 82 Z" fill="#777A9E" stroke="none" />
         <path d="M155 51 Q169 59 187 59 L191 70 Q168 70 151 61 Z" fill={cream} stroke="none" />
         <path d="M163 36 Q171 41 181 41 L184 50 Q171 50 159 44 Z" fill={rose} stroke="none" />
@@ -98,7 +99,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-sleep':
       return <g>
-        <path d="M113 82 Q119 45 155 41 C189 37 220 42 225 68 L219 77 Q211 55 190 61 Q192 76 205 85 Z" fill="#B9B4CF" stroke={ink} />
+        <GarmentSurface d="M113 82 Q119 45 155 41 C189 37 220 42 225 68 L219 77 Q211 55 190 61 Q192 76 205 85 Z" palette={garmentPalettes.lavender} />
         <path d="M176 43 Q204 42 215 61 Q221 70 219 77 L225 68 Q222 42 193 41 Z" fill="#8885AA" stroke="none" />
         <path d="M126 69 Q132 50 151 49" fill="none" stroke="#E4DEED" strokeWidth="3" />
         <path d="M114 78 Q161 74 205 82 L206 96 Q161 89 111 92 Z" fill={cream} stroke={ink} />
@@ -109,7 +110,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-sailor':
       return <g>
-        <path d="M110 64 Q107 49 122 45 Q158 36 199 46 Q215 50 211 64 L203 82 H119 Z" fill={cream} stroke={ink} />
+        <GarmentSurface d="M110 64 Q107 49 122 45 Q158 36 199 46 Q215 50 211 64 L203 82 H119 Z" palette={garmentPalettes.cream} />
         <path d="M196 46 Q206 57 198 76 L203 82 L211 64 Q215 51 196 46" fill={creamShade} stroke="none" />
         <path d="M118 50 Q150 43 181 47" fill="none" stroke={highlight} strokeWidth="3" />
         <path d="M115 73 Q160 80 206 73 L207 91 Q159 100 114 91 Z" fill={denimShade} stroke={ink} />
@@ -120,7 +121,7 @@ function HatGraphic({ itemId }: { itemId: string }): ReactNode {
       </g>;
     case 'hat-baker':
       return <g>
-        <path d="M116 77 C98 75 99 54 112 50 C113 33 132 29 145 39 C154 23 178 27 184 42 C203 35 218 51 211 66 Q218 80 201 83 Z" fill={cream} stroke={ink} />
+        <GarmentSurface d="M116 77 C98 75 99 54 112 50 C113 33 132 29 145 39 C154 23 178 27 184 42 C203 35 218 51 211 66 Q218 80 201 83 Z" palette={garmentPalettes.cream} />
         <path d="M183 43 Q194 44 194 59 Q208 60 201 79 L201 83 Q218 80 211 66 C216 53 205 38 191 40 Z" fill={creamShade} stroke="none" />
         <path d="M111 60 Q108 52 120 49 M130 41 Q137 37 144 44 M153 37 Q165 29 176 40" fill="none" stroke={highlight} strokeWidth="3" />
         <path d="M119 74 Q160 81 201 75 L200 95 Q159 100 119 92 Z" fill="#D7C8AC" stroke={ink} />
@@ -216,19 +217,24 @@ function GlassesGraphic({ itemId }: { itemId: string }): ReactNode {
 function AccessoryGraphic({ itemId, layer, drinking }: HeadItemGraphicProps): ReactNode {
   if (layer === 'back') {
     switch (itemId) {
+      case 'accessory-scarf':
+        return <GarmentSurface d="M104 147 Q108 137 125 139 Q159 149 195 139 Q211 136 216 146 L215 158 Q159 179 105 158 Z" palette={garmentPalettes.sage} />;
+      case 'accessory-crossbody':
+        return <path d="M204 143 Q222 154 220 181" fill="none" stroke={garmentPalettes.sand.shade} strokeWidth="7" />;
       case 'accessory-backpack':
         return <g>
-          <path d="M137 162 V150 Q159 130 183 151 V163" fill="none" stroke={creamShade} strokeWidth="8" />
-          <path d="M137 162 V150 Q159 130 183 151 V163" fill="none" stroke={cream} strokeWidth="3" />
-          <path d="M112 158 Q160 145 210 159 Q232 167 234 195 L232 239 Q230 255 211 257 H110 Q91 253 89 235 L88 193 Q89 167 112 158 Z" fill={denimShade} stroke={ink} />
-          <path d="M104 173 Q91 190 97 231 M217 171 Q229 191 223 235" fill="none" stroke={denim} strokeWidth="3" />
-          <path d="M89 207 L80 210 Q75 212 78 232 L81 242 Q84 247 94 246 M233 207 L241 210 Q247 213 243 234 L240 244 Q236 248 229 246" fill={denim} stroke={ink} />
+          <path d="M137 162 V150 Q159 132 183 151 V163" fill="none" stroke={creamShade} strokeWidth="7" />
+          <path d="M137 162 V150 Q159 132 183 151 V163" fill="none" stroke={cream} strokeWidth="2" />
+          <GarmentSurface d="M112 158 Q160 145 210 159 Q230 168 232 195 L231 238 Q229 254 211 257 H110 Q92 253 90 235 L89 193 Q90 168 112 158 Z" palette={garmentPalettes.navy} />
+          <path d="M104 173 Q93 190 98 231 M217 171 Q227 191 222 235" fill="none" stroke={denim} strokeWidth="2" />
+          <GarmentSurface d="M90 208 L83 211 Q78 213 80 230 L83 240 Q85 245 94 244 L95 213 Z M231 208 L238 211 Q243 213 240 232 L238 242 Q235 246 228 244 L227 214 Z" palette={garmentPalettes.denim} />
         </g>;
       case 'accessory-cape':
         return <g>
-          <path d={drinking ? 'M107 146 Q158 132 211 144 Q232 168 252 224 Q245 249 217 252 Q190 269 161 259 Q131 271 105 255 Q75 254 67 233 Q84 177 107 146 Z' : 'M107 146 Q159 132 211 146 Q230 177 249 234 Q242 253 216 254 Q190 269 161 259 Q130 271 104 255 Q76 254 68 234 Q85 177 107 146 Z'} fill="#82758F" stroke={ink} />
-          <path d="M104 166 Q93 205 83 239 M123 165 Q113 217 113 254 M200 165 Q210 215 213 253 M217 165 Q230 211 235 240" fill="none" stroke="#665D78" strokeWidth="2.5" />
-          <path d="M80 239 Q93 251 106 248 Q132 264 161 252 Q189 263 215 248 Q232 249 240 237" fill="none" stroke="#C3B2C7" strokeWidth="3" />
+          <GarmentSurface d={drinking ? 'M107 146 Q158 132 211 144 Q232 168 252 224 Q245 249 217 252 Q190 269 161 259 Q131 271 105 255 Q75 254 67 233 Q84 177 107 146 Z' : 'M107 146 Q159 132 211 146 Q230 177 249 234 Q242 253 216 254 Q190 269 161 259 Q130 271 104 255 Q76 254 68 234 Q85 177 107 146 Z'} palette={garmentPalettes.lavender} />
+          <path d="M111 153 Q91 208 83 239 Q94 249 106 249 Q112 203 126 156 Z M195 155 Q209 203 215 249 Q229 250 238 239 Q226 191 209 152 Z" fill="#625F70" fillOpacity=".24" stroke="none" />
+          <path d="M104 166 Q93 205 83 239 M123 165 Q113 217 113 254 M200 165 Q210 215 213 253 M217 165 Q230 211 235 240" fill="none" stroke="#736C82" strokeWidth="1.3" />
+          <path d="M80 239 Q93 251 106 248 Q132 264 161 252 Q189 263 215 248 Q232 249 240 237" fill="none" stroke="#D2C8CF" strokeWidth="1.8" strokeOpacity=".7" />
         </g>;
       default:
         return null;
@@ -259,13 +265,16 @@ function AccessoryGraphic({ itemId, layer, drinking }: HeadItemGraphicProps): Re
       </g>;
     case 'accessory-scarf':
       return <g>
-        <path d="M129 165 Q130 191 117 215 Q130 224 144 219 Q155 193 151 169 Z" fill={mint} stroke={ink} />
-        <path d="M136 181 Q135 199 128 215 M121 210 L145 214" fill="none" stroke="#718E81" />
-        <path d="M120 216 L118 222 M127 219 L125 225 M135 220 L133 226 M142 218 L141 224" stroke={creamShade} strokeWidth="2" />
-        <path d="M110 150 Q157 168 210 150 L211 166 Q160 187 111 166 Z" fill={mint} stroke={ink} />
-        <path d="M114 154 Q158 171 204 155" fill="none" stroke="#CFE0D0" strokeWidth="2.3" />
-        <path d="M113 162 Q157 179 207 163" fill="none" stroke="#718E81" />
-        <path d="M134 158 Q146 161 150 167 L145 180 Q136 177 130 169 Z" fill="#8EAA9C" stroke={ink} />
+        <path d="M130 174 Q133 197 120 218 Q132 229 147 221 Q157 198 152 173 Z" fill="#253D3D" fillOpacity=".22" stroke="none" />
+        <GarmentSurface d="M128 166 Q132 190 117 214 Q128 223 142 219 Q155 193 150 169 Z" palette={garmentPalettes.mint} />
+        <path d="M135 181 Q136 197 128 214 M121 209 Q132 216 145 213" fill="none" stroke="#657F77" strokeWidth="1" />
+        <path d="M122 214 L120 221 M129 217 L127 224 M136 217 L135 224 M142 215 L141 222" stroke="#9DAA98" strokeWidth="1.6" />
+        <path d="M107 159 Q158 183 213 158 L211 169 Q159 190 109 169 Z" fill="#253D3D" fillOpacity=".23" stroke="none" />
+        <GarmentSurface d="M108 146 Q111 143 119 147 Q159 163 202 147 Q212 142 214 149 L213 163 Q160 184 108 164 Q105 156 108 146 Z" palette={garmentPalettes.mint} />
+        <path d="M112 151 Q158 170 208 151" fill="none" stroke="#D3E2D3" strokeWidth="1.7" strokeOpacity=".8" />
+        <path d="M112 161 Q157 180 209 161" fill="none" stroke="#657F77" strokeWidth="1.1" />
+        <GarmentSurface d="M133 156 Q146 158 152 166 L146 180 Q135 179 129 169 Q128 162 133 156 Z" palette={garmentPalettes.sage} />
+        <path d="M135 160 Q139 164 139 171" fill="none" stroke="#D3E2D3" strokeWidth="1.2" strokeOpacity=".65" />
       </g>;
     case 'accessory-pendant':
       return <g>
@@ -278,35 +287,39 @@ function AccessoryGraphic({ itemId, layer, drinking }: HeadItemGraphicProps): Re
       </g>;
     case 'accessory-crossbody':
       return <g>
-        <path d={drinking ? 'M207 148 Q167 177 119 221' : 'M209 152 Q164 181 118 221'} fill="none" stroke={ink} strokeWidth="10" />
-        <path d={drinking ? 'M207 148 Q167 177 119 221' : 'M209 152 Q164 181 118 221'} fill="none" stroke={creamShade} strokeWidth="7" />
-        <path d="M185 166 L177 173" fill="none" stroke={cream} strokeWidth="3" />
-        <path d="M102 205 Q122 199 144 208 L147 238 Q123 248 100 237 Z" fill={cream} stroke={ink} />
-        <path d="M103 226 Q124 233 146 226 L147 238 Q123 248 100 237 L101 228" fill={creamShade} stroke="none" />
-        <path d="M102 205 Q125 200 144 208 L141 221 Q121 228 103 218 Z" fill="#D7C9B0" stroke={ink} />
-        <path d="M108 208 Q122 205 138 210" fill="none" stroke={highlight} strokeWidth="1.6" />
+        <path d="M208 149 Q191 166 171 181 Q145 200 123 219" fill="none" stroke="#28343E" strokeOpacity=".26" strokeWidth="9" />
+        <GarmentSurface d="M204 143 Q209 143 211 149 Q194 163 176 177 Q149 197 123 219 L117 213 Q143 191 171 170 Q190 154 204 143 Z" palette={garmentPalettes.sand} />
+        <path d="M202 148 Q182 165 159 183" fill="none" stroke="#E3D5BC" strokeWidth="1.2" strokeOpacity=".8" />
+        <path d="M184 164 L179 170 L183 173 L188 167 Z" fill={metal} stroke="#6B695F" strokeWidth=".9" />
+        <path d="M103 231 Q124 242 149 231 L150 242 Q125 253 102 243 Z" fill="#28343E" fillOpacity=".25" stroke="none" />
+        <GarmentSurface d="M102 205 Q122 198 143 205 Q147 207 148 214 L149 234 Q147 242 126 245 Q108 245 101 238 Q98 221 102 205 Z" palette={garmentPalettes.cream} />
+        <path d="M103 229 Q124 237 147 229 L148 235 Q144 241 127 243 Q110 243 102 237 Z" fill="#8A877E" fillOpacity=".5" stroke="none" />
+        <GarmentSurface d="M102 205 Q122 198 143 205 L144 216 Q126 228 103 218 Z" palette={garmentPalettes.sand} />
+        <path d="M107 207 Q121 203 138 208" fill="none" stroke={highlight} strokeWidth="1.3" strokeOpacity=".8" />
         <rect x="120" y="216" width="7" height="8" rx="2" fill={denimShade} stroke={ink} strokeWidth="1" />
+        <path d="M122 219 H125" stroke={metal} strokeWidth="1" />
       </g>;
     case 'accessory-backpack':
       return <g>
-        <path d="M113 151 Q103 169 109 198 Q112 208 122 208 L126 198 Q118 179 124 157 Z" fill={creamShade} stroke={ink} />
-        <path d={drinking ? 'M204 148 Q218 160 216 192 L212 203 L201 201 Q207 174 194 155 Z' : 'M204 151 Q218 170 212 199 Q208 209 198 208 L194 197 Q203 178 194 157 Z'} fill={creamShade} stroke={ink} />
-        <path d="M114 160 Q108 176 114 192" fill="none" stroke={cream} strokeWidth="2" />
-        <path d={drinking ? 'M205 158 Q213 174 208 191' : 'M205 160 Q212 176 206 192'} fill="none" stroke={cream} strokeWidth="2" />
-        <rect x="110" y="188" width="13" height="12" rx="3" fill={denimShade} stroke={ink} />
-        <rect x={drinking ? 201 : 198} y="188" width="13" height="12" rx="3" fill={denimShade} stroke={ink} />
-        <path d="M114 192 H119 M116 196 H120" stroke={metal} strokeWidth="1" />
+        <path d="M114 151 Q106 171 114 194 Q117 203 124 206 M202 151 Q211 173 203 195 Q200 203 195 206" fill="none" stroke="#26313B" strokeOpacity=".24" strokeWidth="13" />
+        <GarmentSurface d="M112 146 Q104 154 104 171 Q104 193 114 207 Q119 212 126 207 L128 199 Q116 183 119 163 L124 153 Q119 149 112 146 Z" palette={garmentPalettes.sand} />
+        <GarmentSurface d={drinking ? 'M198 144 Q208 145 211 156 Q214 176 205 195 Q201 203 195 207 L190 199 Q201 180 197 162 L191 153 Z' : 'M199 146 Q208 149 211 161 Q214 180 205 198 Q201 206 195 209 L190 200 Q201 180 198 164 L192 154 Z'} palette={garmentPalettes.sand} />
+        <path d="M114 155 Q108 169 114 187 M201 154 Q208 168 201 187" fill="none" stroke="#E3D5BC" strokeWidth="1.5" strokeOpacity=".85" />
+        <path d="M112 189 L122 188 L124 199 L115 201 Z M196 188 L206 190 L202 201 L192 198 Z" fill={denimShade} stroke={ink} strokeWidth="1" />
+        <path d="M115 193 L120 192 M116 197 L121 196 M198 192 L203 193 M196 196 L201 197" stroke={metal} strokeWidth="1" />
       </g>;
     case 'accessory-pouch':
       return <g>
-        <path d="M98 222 Q162 236 226 220 L227 231 Q162 248 97 233 Z" fill={denimShade} stroke={ink} />
-        <path d="M109 224 Q160 237 214 225" fill="none" stroke="#829AB4" strokeWidth="1.3" />
-        <rect x="102" y="225" width="15" height="12" rx="3" fill={metal} stroke={ink} />
-        <path d="M127 221 Q151 215 178 222 L176 244 Q152 255 131 244 Z" fill={denim} stroke={ink} />
-        <path d="M131 235 Q153 243 177 234 L176 244 Q152 255 131 244 Z" fill={denimShade} stroke="none" />
-        <path d="M133 226 Q151 223 172 227" fill="none" stroke={creamShade} strokeWidth="2" />
-        <path d="M166 228 L166 234" stroke={cream} strokeWidth="2" />
-        <path d="M134 222 Q146 219 156 221" fill="none" stroke="#ABC1D2" strokeWidth="1.4" />
+        <path d="M99 231 Q162 251 224 230 L224 239 Q162 260 99 241 Z" fill="#28343E" fillOpacity=".24" stroke="none" />
+        <GarmentSurface d="M99 222 Q161 241 222 221 L224 232 Q162 252 98 234 Z" palette={garmentPalettes.navy} />
+        <path d="M105 226 Q160 243 217 226" fill="none" stroke="#8195A4" strokeWidth="1.2" />
+        <path d="M104 227 L117 230 L116 239 L103 236 Z" fill={metal} stroke={ink} strokeWidth="1" />
+        <path d="M109 229 L108 237" fill="none" stroke="#6D7C87" strokeWidth="1.2" />
+        <GarmentSurface d="M128 223 Q152 217 176 224 Q181 230 177 244 Q169 252 153 253 Q139 252 131 245 Z" palette={garmentPalettes.denim} />
+        <path d="M131 237 Q152 248 179 236 L177 244 Q168 252 153 252 Q139 251 132 245 Z" fill={denimShade} fillOpacity=".55" stroke="none" />
+        <path d="M134 228 Q151 224 172 229" fill="none" stroke="#D6CDBA" strokeWidth="1.6" />
+        <path d="M168 229 L168 234" stroke={cream} strokeWidth="1.8" />
+        <path d="M134 224 Q145 221 155 223" fill="none" stroke="#A0B9CA" strokeWidth="1.3" />
       </g>;
     case 'accessory-bird':
       return <g>
@@ -321,9 +334,11 @@ function AccessoryGraphic({ itemId, layer, drinking }: HeadItemGraphicProps): Re
       </g>;
     case 'accessory-cape':
       return <g>
-        <path d="M110 145 Q130 153 157 155 L148 175 Q123 171 108 159 Z M210 145 Q189 153 163 155 L173 175 Q198 171 212 159 Z" fill="#AB9AB5" stroke={ink} />
-        <path d="M115 150 Q131 158 148 159 M169 159 Q188 158 204 150" fill="none" stroke="#D1C2D6" strokeWidth="1.6" />
-        <path d="M153 163 Q160 171 168 163" fill="none" stroke={creamShade} strokeWidth="2" />
+        <path d="M109 151 Q127 162 154 162 L149 178 Q123 176 108 164 Z M211 151 Q190 162 165 162 L172 178 Q197 176 213 164 Z" fill="#332F43" fillOpacity=".23" stroke="none" />
+        <GarmentSurface d="M110 144 Q130 152 157 155 L148 174 Q124 172 109 159 Q106 153 110 144 Z M210 144 Q190 152 163 155 L173 174 Q198 172 211 159 Q215 153 210 144 Z" palette={garmentPalettes.lavender} />
+        <path d="M114 149 Q131 158 148 160 M170 160 Q188 158 206 149" fill="none" stroke="#D2C8CF" strokeWidth="1.3" />
+        <path d="M113 162 Q129 171 148 172 M173 172 Q193 171 208 162" fill="none" stroke="#736C82" strokeWidth="1.1" />
+        <path d="M153 163 Q160 171 168 163" fill="none" stroke={creamShade} strokeWidth="1.7" />
         <circle cx="152" cy="162" r="3" fill={cream} stroke="#8F8064" strokeWidth="1" />
         <circle cx="168" cy="162" r="3" fill={cream} stroke="#8F8064" strokeWidth="1" />
       </g>;
@@ -339,5 +354,5 @@ export function HeadItemGraphic({ itemId, layer, drinking }: HeadItemGraphicProp
   if (itemId.startsWith('glasses-') && layer === 'front') graphic = GlassesGraphic({ itemId });
   if (itemId.startsWith('accessory-')) graphic = AccessoryGraphic({ itemId, layer, drinking });
   if (!graphic) return null;
-  return <g aria-hidden="true" data-avatar-item={itemId} data-avatar-layer={layer} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{graphic}</g>;
+  return <g aria-hidden="true" data-avatar-item={itemId} data-avatar-layer={layer} strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round">{graphic}</g>;
 }

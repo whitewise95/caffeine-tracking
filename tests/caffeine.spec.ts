@@ -10,7 +10,9 @@ async function addAmericano(page: Page) {
 }
 
 test('record, adjust, visualize, create a drink, reload, edit and delete', async ({ page }, testInfo) => {
-  await page.clock.install({ time: new Date('2026-10-04T10:00:00+09:00') });
+  test.setTimeout(60000);
+  // Keep intake timestamps exact while UI timers and animations keep running.
+  await page.clock.setFixedTime(new Date('2026-10-04T10:00:00+09:00'));
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
@@ -22,7 +24,7 @@ test('record, adjust, visualize, create a drink, reload, edit and delete', async
   await expect(page.getByRole('region', { name: '아직 남아 있는 카페인' })).toContainText('흡수 중');
   await page.getByRole('button', { name: '홈으로 돌아가기' }).click();
   await expect(page.getByRole('button', { name: '아직 남아 있는 카페인 보기' })).toBeVisible();
-  await page.clock.setSystemTime(new Date('2026-10-04T10:30:00+09:00'));
+  await page.clock.setFixedTime(new Date('2026-10-04T10:30:00+09:00'));
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByTestId('remaining-mg')).toHaveText('132');
   await expect(page.locator('.body-visual')).toHaveAttribute('data-level', 'FILLED');
@@ -51,7 +53,7 @@ test('record, adjust, visualize, create a drink, reload, edit and delete', async
   await page.screenshot({ path: `test-results/${testInfo.project.name}-sheet.png` });
   await page.getByRole('button', { name: '기록 저장' }).click();
   await expect(page.getByTestId('remaining-mg')).toHaveText('132');
-  await page.clock.setSystemTime(new Date('2026-10-04T11:00:00+09:00'));
+  await page.clock.setFixedTime(new Date('2026-10-04T11:00:00+09:00'));
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByTestId('remaining-mg')).toHaveText('208');
   await expect(page.locator('.body-visual')).toHaveAttribute('data-level', 'HIGH_VISUAL');
@@ -105,7 +107,8 @@ test('back closes a sheet first, deep routes work, half-life cannot be edited ma
 });
 
 test('dark appearance and keyboard focus remain usable', async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-10-04T10:00:00+09:00') });
+  // Keep intake timestamps exact while UI timers and animations keep running.
+  await page.clock.setFixedTime(new Date('2026-10-04T10:00:00+09:00'));
   await page.goto('/?theme=light');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('button', { name: '카페인 추가', exact: true }).click();
@@ -124,7 +127,7 @@ test('dark appearance and keyboard focus remain usable', async ({ page }) => {
   await expect(page.getByRole('region', { name: '아직 남아 있는 카페인' })).toContainText('흡수 중');
   await page.getByRole('button', { name: '홈으로 돌아가기' }).click();
   await expect(page.getByRole('button', { name: '아직 남아 있는 카페인 보기' })).toBeVisible();
-  await page.clock.setSystemTime(new Date('2026-10-04T10:30:00+09:00'));
+  await page.clock.setFixedTime(new Date('2026-10-04T10:30:00+09:00'));
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(page.getByTestId('remaining-mg')).toHaveText('128');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

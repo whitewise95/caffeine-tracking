@@ -51,3 +51,7 @@
 - `npx playwright test tests/wardrobe.spec.ts tests/liquid-avatar.spec.ts tests/liquid-gravity.spec.ts tests/caffeine.spec.ts tests/android-back.spec.ts tests/tilt-animation-setting.spec.ts --workers=4`: 375 × 812 / 390 × 844에서 98개 항목 검증. 최초 93개 통과, 브라우저 조작 지연 4개와 발광 타이머 판정 1개 재검증. 발광 검증 시간을 고정한 뒤 `npx playwright test --last-failed --workers=1`에서 나머지 5개 모두 통과.
 - 독립 코드 리뷰에서 발견한 스커트/부츠 레이어 겹침을 수정하고, 실제 SVG 도형의 그리기 순서와 모든 썸네일 경계를 검증하는 회귀 테스트를 추가했다.
 - 기존 원본 폴더는 main과 다른 작업의 미커밋 변경을 보존했다. 이 기능은 별도 worktree·5174 포트에서 검증했다.
+
+## 후속 비주얼 개선
+
+상의·하의의 몸을 감싸는 실루엣과 재질, 음용 소매를 다듬은 내용은 [2026-10-15 렌더링 개선 기록](jelly-clothing-fit.md)에 별도로 남겼다. 위 화면과 검증 결과는 최초 구현 당시의 기록이다.
