@@ -10,7 +10,7 @@
 .time-wheel[data-interacting='true'] { scroll-snap-type: none; }
 .time-wheel::-webkit-scrollbar { display: none; }
 .time-wheel[aria-disabled='true'] { pointer-events: none; opacity: .5; }
-.time-wheel-option { display: block; width: 100%; height: var(--wheel-row); min-height: 48px; padding: 0; border: 0; background: transparent; color: var(--text-secondary); font-size: 1.25rem; font-variant-numeric: tabular-nums; scroll-snap-align: center; touch-action: pan-x pinch-zoom; transform: none; transition: color var(--motion-fast); }
+.time-wheel-option { display: block; width: 100%; height: var(--wheel-row); min-height: 48px; padding: 0; border: 0; background: transparent; color: var(--text-secondary); font-size: 1.25rem; font-variant-numeric: tabular-nums; text-align: center; scroll-snap-align: center; touch-action: pan-x pinch-zoom; transform: none; transition: color var(--motion-fast); }
 .time-wheel-option.is-selected { color: var(--accent-pink-strong); font-weight: 600; }
 .time-picker-actions { display: grid; flex-shrink: 0; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: auto; }
 .time-picker-actions button { min-width: 0; min-height: 52px; }
